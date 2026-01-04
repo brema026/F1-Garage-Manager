@@ -1,0 +1,31 @@
+body {
+  font-family: Arial, sans-serif;
+}
+
+.navbar {
+  background: #222;
+  padding: 10px;
+}
+
+.navbar button {
+  margin-right: 8px;
+  color: white;
+  background: #444;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.container {
+  padding: 20px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+}
