@@ -41,7 +41,7 @@ CREATE TABLE dbo.usuario (
     password_hash    NVARCHAR(255) NOT NULL,
     rol              NVARCHAR(20)  NOT NULL,  -- Admin | Engineer | Driver
     activo           BIT NOT NULL CONSTRAINT df_usuario_activo DEFAULT (1),
-    id_equipo        INT NULL, -- "si aplica" (Engineer casi siempre tendrá equipo)
+    id_equipo        INT NULL, -- "si aplica" (Engineer casi siempre tendrÃ¡ equipo)
     CONSTRAINT pk_usuario PRIMARY KEY (id_usuario),
     CONSTRAINT uq_usuario_email UNIQUE (email),
     CONSTRAINT ck_usuario_rol CHECK (rol IN ('Admin', 'Engineer', 'Driver')),
@@ -153,7 +153,7 @@ CREATE TABLE dbo.carro (
     finalizado       BIT NOT NULL CONSTRAINT df_carro_finalizado DEFAULT (0),
     CONSTRAINT pk_carro PRIMARY KEY (id_carro),
     CONSTRAINT fk_carro_equipo FOREIGN KEY (id_equipo) REFERENCES dbo.equipo(id_equipo)
-    -- Regla "máximo 2 carros por equipo" -> se valida por Stored Procedure
+    -- Regla "mÃ¡ximo 2 carros por equipo" -> se valida por Stored Procedure
 );
 GO
 
@@ -170,9 +170,9 @@ GO
 /* =========================================================
    Tabla intermedia N:M (CarSetup <-> Pieza)
    - PK compuesta
-   - Garantiza 1 pieza por categoría dentro de un setup:
+   - Garantiza 1 pieza por categorÃ­a dentro de un setup:
        PRIMARY KEY (setup_id, category_id)
-   - Garantiza coherencia pieza<->categoría con FK compuesta
+   - Garantiza coherencia pieza<->categorÃ­a con FK compuesta
    ========================================================= */
 
 CREATE TABLE dbo.car_setup_pieza (
@@ -188,7 +188,7 @@ CREATE TABLE dbo.car_setup_pieza (
 GO
 
 /* =========================
-   Circuitos y simulación
+   Circuitos y simulaciÃ³n
    ========================= */
 
 CREATE TABLE dbo.circuito (
@@ -207,7 +207,7 @@ CREATE TABLE dbo.simulacion (
     id_simulacion    INT IDENTITY(1,1) NOT NULL,
     id_circuito      INT NOT NULL,
     fecha_hora       DATETIME2 NOT NULL CONSTRAINT df_simulacion_fecha DEFAULT (SYSUTCDATETIME()),
-    id_usuario       INT NULL, -- quién ejecuta (Admin). Puede ser NULL si no aplica aún.
+    id_usuario       INT NULL, -- quiÃ©n ejecuta (Admin). Puede ser NULL si no aplica aÃºn.
     CONSTRAINT pk_simulacion PRIMARY KEY (id_simulacion),
     CONSTRAINT fk_simulacion_circuito FOREIGN KEY (id_circuito) REFERENCES dbo.circuito(id_circuito),
     CONSTRAINT fk_simulacion_usuario  FOREIGN KEY (id_usuario)  REFERENCES dbo.usuario(id_usuario)
@@ -232,4 +232,5 @@ CREATE TABLE dbo.resultado_simulacion (
     CONSTRAINT ck_resultado_posicion CHECK (posicion > 0),
     CONSTRAINT ck_resultado_tiempo CHECK (tiempo_segundos >= 0)
 );
+
 GO
