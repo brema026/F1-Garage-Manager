@@ -14,12 +14,18 @@ function App() {
   const renderView = () => {
     switch (view) {
       case "users": return <Users />;
-      case "teams": return <Teams />;
       case "drivers": return <Drivers />;
       case "sponsors": return <Sponsors />;
       case "parts": return <Parts />;
-      case "inventory": return <Inventory />;
-      case "setup": return <CarSetup />;
+      case "teams": 
+        return <Teams setView={setView} />;
+
+      case "inventory": 
+        return <Inventory setView={setView} />;
+
+      case "setup": 
+        return <CarSetup setView={setView} />;
+
       default: return <Users />;
     }
   };

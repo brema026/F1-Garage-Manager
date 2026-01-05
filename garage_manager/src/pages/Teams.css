@@ -1,0 +1,116 @@
+.teams-page {
+  background-color: #0b0b0b;
+  min-height: 100vh;
+  padding: 30px;
+  color: white;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.title {
+  letter-spacing: 2px;
+}
+
+.main-btn {
+  background: linear-gradient(90deg, #b00000, #ff3b3b);
+  border: none;
+  color: white;
+  padding: 12px 18px;
+  font-size: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.main-btn:hover {
+  opacity: 0.9;
+}
+
+.teams-container {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+}
+
+.team-card {
+  background: linear-gradient(180deg, #1a1a1a, #0f0f0f);
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 20px;
+  width: 320px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+.team-card h2 {
+  text-align: center;
+  color: #ff3b3b;
+  margin-bottom: 20px;
+}
+
+.section {
+  margin-bottom: 15px;
+}
+
+.section h3 {
+  font-size: 13px;
+  color: #ccc;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.money {
+  font-size: 22px;
+  color: #ffd700;
+  font-weight: bold;
+}
+
+ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+ul li {
+  background-color: #1f1f1f;
+  padding: 6px;
+  border-radius: 6px;
+  margin-bottom: 5px;
+  text-align: center;
+}
+
+.buttons-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.secondary-btn {
+  flex: 1;
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  color: white;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.secondary-btn:hover {
+  background-color: #3a3a3a;
+}
+
+.car-btn {
+  flex: 1;
+  background-color: #151515;
+  border: 1px solid #555;
+  color: white;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.car-btn:hover {
+  background-color: #222;
+}
