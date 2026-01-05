@@ -79,6 +79,41 @@ function Teams() {
             <button className="car-btn">Coche 2</button>
           </div>
         </div>
+
+        {/* EQUIPO 3 */}
+        <div className="team-card">
+          <h2>Quantum Drive</h2>
+
+          <div className="section">
+            <h3>Presupuesto</h3>
+            <p className="money">$550,000</p>
+          </div>
+
+          <div className="section">
+            <h3>Conductores</h3>
+            <ul>
+              <li>Charles Leclerc</li>
+              <li>	George Russell</li>
+            </ul>
+          </div>
+
+          <div className="section">
+            <h3>Patrocinadores</h3>
+            <ul>
+              <li>Oracle</li>
+              <li>Castrol</li>
+            </ul>
+          </div>
+
+          <div className="buttons-row">
+            <button className="secondary-btn">Inventario</button>
+          </div>
+
+          <div className="buttons-row">
+            <button className="car-btn">Coche 1</button>
+            <button className="car-btn">Coche 2</button>
+          </div>
+        </div>
       </div>
     </div>
   );
