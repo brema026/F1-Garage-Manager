@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Navbar from "./components/Navbar";
 import Users from "./pages/Users";
 import Teams from "./pages/Teams";
@@ -27,7 +27,7 @@ function App() {
   return (
     <div>
       <Navbar setView={setView} />
-      <div className="container">
+      <div style={{ padding: "20px" }}>
         {renderView()}
       </div>
     </div>
