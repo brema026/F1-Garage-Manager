@@ -6,19 +6,19 @@ GO
 -- BLOQUE 1 
 INSERT INTO part_category (nombre) VALUES
 ('Unidad de potencia'),
-('Paquete aerodin·mico'),
-('Neum·ticos'),
-('SuspensiÛn'),
+('Paquete aerodin√°mico'),
+('Neum√°ticos'),
+('Suspensi√≥n'),
 ('Caja de cambios');
 
 SELECT * FROM part_category;
 
--- BLOQUE 2 ñ PIEZAS
+-- BLOQUE 2 ‚Äì PIEZAS
 INSERT INTO pieza (nombre, precio, p, a, m, categoria_id) VALUES
 ('PU Ferrari', 500000, 9, 3, 2, 1),
 ('Aero RedBull', 300000, 2, 9, 3, 2),
 ('Pirelli Soft', 150000, 1, 4, 9, 3),
-('SuspensiÛn Mercedes', 200000, 3, 5, 8, 4),
+('Suspensi√≥n Mercedes', 200000, 3, 5, 8, 4),
 ('Gearbox ZF', 180000, 4, 6, 5, 5);
 
 SELECT id_pieza, nombre, categoria_id FROM pieza;
@@ -41,7 +41,7 @@ SELECT * FROM equipo;
 
 -- BLOQUE 5: USUARIO (ENGINEER)
 INSERT INTO usuario (nombre, email, password_hash, rol, id_equipo)
-VALUES ('Ian GÛmez', 'ian@tec.cr', 'HASH_DUMMY', 'Engineer', 1);
+VALUES ('Ian G√≥mez', 'ian@tec.cr', 'HASH_DUMMY', 'Engineer', 1);
 
 SELECT id_usuario, nombre, rol, id_equipo FROM usuario;
 
@@ -66,9 +66,9 @@ SELECT * FROM car_setup;
 -- BLOQUE 9: CAR SETUP - PIEZAS (ARMADO)
 INSERT INTO car_setup_pieza (setup_id, category_id, part_id) VALUES
 (1, 1, 1), -- Unidad de potencia
-(1, 2, 2), -- Paquete aerodin·mico
-(1, 3, 3), -- Neum·ticos
-(1, 4, 4), -- SuspensiÛn
+(1, 2, 2), -- Paquete aerodin√°mico
+(1, 3, 3), -- Neum√°ticos
+(1, 4, 4), -- Suspensi√≥n
 (1, 5, 5); -- Caja de cambios
 
 SELECT * FROM car_setup_pieza;
@@ -90,5 +90,6 @@ INSERT INTO resultado_simulacion
 (id_simulacion, id_carro, setup_id, posicion, vrecta, vcurva, penalizacion, tiempo_segundos)
 VALUES
 (1, 1, 1, 1, 330.5, 145.2, 520.0, 4821.3);
+
 
 SELECT * FROM resultado_simulacion;
