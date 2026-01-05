@@ -34,10 +34,6 @@ function Teams() {
           </div>
 
           <div className="buttons-row">
-            <button className="secondary-btn">Inventario</button>
-          </div>
-
-          <div className="buttons-row">
             <button className="car-btn">Coche 1</button>
             <button className="car-btn">Coche 2</button>
           </div>
@@ -69,10 +65,6 @@ function Teams() {
           </div>
 
           <div className="buttons-row">
-            <button className="secondary-btn">Inventario</button>
-          </div>
-
-          <div className="buttons-row">
             <button className="car-btn">Coche 1</button>
             <button className="car-btn">Coche 2</button>
           </div>
@@ -101,10 +93,6 @@ function Teams() {
               <li>Oracle</li>
               <li>Castrol</li>
             </ul>
-          </div>
-
-          <div className="buttons-row">
-            <button className="secondary-btn">Inventario</button>
           </div>
 
           <div className="buttons-row">
