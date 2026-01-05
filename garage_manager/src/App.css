@@ -17,7 +17,7 @@ body {
 }
 
 .container {
-  padding: 20px;
+  padding: 30px;
 }
 
 table {
@@ -26,6 +26,6 @@ table {
 }
 
 th, td {
-  border: 1px solid #ccc;
+  border: 0px solid #ccc;
   padding: 0px;
 }

@@ -3,10 +3,8 @@ import "./Teams.css";
 function Teams() {
   return (
     <div className="teams-page">
-      <div className="header">
         <h1 className="title">Gestión del Equipo</h1>
         <button className="main-btn">Crear / Editar Equipo</button>
-      </div>
 
       <div className="teams-container">
         {/* EQUIPO 1 */}
