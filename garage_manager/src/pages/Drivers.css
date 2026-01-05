@@ -1,0 +1,152 @@
+/* ===== Página general ===== */
+.drivers-page {
+  min-height: 100vh;
+  background-color: #0b0b0b;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+.title {
+  margin-bottom: 15px;
+}
+
+/* ===== Botón principal ===== */
+.main-btn {
+  background-color: #e10600;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.main-btn:hover {
+  background-color: #b80500;
+}
+
+/* ===== Layout principal ===== */
+.drivers-container {
+  display: flex;
+  gap: 20px;
+}
+
+/* ===== LISTA DE CONDUCTORES ===== */
+.drivers-list {
+  width: 35%;
+  background-color: #1e1e1e;
+  padding: 15px;
+  border-radius: 8px;
+
+  /* 🔥 SCROLL AQUÍ 🔥 */
+  max-height: 540px;
+  overflow-y: auto;
+}
+
+/* Scroll bonito (Chrome / Edge) */
+.drivers-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.drivers-list::-webkit-scrollbar-thumb {
+  background-color: #555;
+  border-radius: 4px;
+}
+
+/* ===== Items de conductor ===== */
+.driver-item {
+  background-color: #2a2a2a;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+}
+
+.driver-item:hover {
+  background-color: #333;
+}
+
+.driver-item.active {
+  border-left: 4px solid #e10600;
+}
+
+/* ===== Texto ===== */
+.driver-name {
+  font-weight: bold;
+}
+
+.driver-h {
+  opacity: 0.8;
+}
+
+/* ===== DETALLE ===== */
+.driver-detail {
+  width: 65%;
+  background-color: #1e1e1e;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.detail-box {
+  background-color: #2a2a2a;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}
+
+/* ===== Tabla ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th, td {
+  padding: 8px;
+  border-bottom: 1px solid #444;
+  text-align: left;
+}
+
+th {
+  background-color: #222;
+}
+
+/* ===== Totales ===== */
+.total-points {
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+/* ===== Acciones ===== */
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.secondary-btn {
+  background-color: #555;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.secondary-btn:hover {
+  background-color: #666;
+}
+
+.danger-btn {
+  background-color: #a00000;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.danger-btn:hover {
+  background-color: #c00000;
+}
