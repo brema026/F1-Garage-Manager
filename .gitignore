@@ -1,0 +1,130 @@
+# ============================================================================
+# F1 GARAGE MANAGER - GITIGNORE
+# ============================================================================
+
+# ============================================================================
+# REACT / NODE.JS (garage_manager)
+# ============================================================================
+
+# Dependencies
+garage_manager/node_modules/
+garage_manager/package-lock.json
+garage_manager/yarn.lock
+
+# Production build
+garage_manager/build/
+garage_manager/dist/
+
+# Environment variables
+garage_manager/.env
+garage_manager/.env.local
+garage_manager/.env.development.local
+garage_manager/.env.test.local
+garage_manager/.env.production.local
+
+# Logs
+garage_manager/npm-debug.log*
+garage_manager/yarn-debug.log*
+garage_manager/yarn-error.log*
+garage_manager/*.log
+
+# Editor / IDE
+garage_manager/.vscode/
+garage_manager/.idea/
+garage_manager/*.swp
+garage_manager/*.swo
+garage_manager/*~
+garage_manager/.DS_Store
+
+# Testing
+garage_manager/coverage/
+garage_manager/.nyc_output/
+
+# ============================================================================
+# SQL SERVER / DATABASE (BD folder)
+# ============================================================================
+
+# SQL Server backups
+BD/*.bak
+BD/*.trn
+BD/*.ldf
+BD/*.mdf
+
+# Temporary scripts
+BD/*_temp.sql
+BD/*_backup.sql
+
+# ============================================================================
+# LATEX / DOCUMENTATION (docs)
+# ============================================================================
+
+# LaTeX compilation artifacts
+docs/**/*.aux
+docs/**/*.log
+docs/**/*.out
+docs/**/*.toc
+docs/**/*.fls
+docs/**/*.fdb_latexmk
+docs/**/*.synctex.gz
+docs/**/*.dvi
+docs/**/*.ps
+docs/**/*.pdf
+
+# Overleaf / Build directories
+docs/**/build/
+docs/**/_minted-*/
+docs/**/texput.log
+
+# Temporary LaTeX files
+docs/**/*~
+docs/**/*.bbl
+docs/**/*.blg
+
+# ============================================================================
+# GENERAL / OS
+# ============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Desktop.ini
+*.lnk
+
+# Linux
+.directory
+
+# ============================================================================
+# IDE / EDITOR
+# ============================================================================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.sublime-project
+.sublime-workspace
+*.code-workspace
+
+# ============================================================================
+# MISCELLANEOUS
+# ============================================================================
+
+# Backup files
+*.backup
+*.bak
+*.old
+*_old.*
+
+# Temporary files
+*.tmp
+*.temp
+~*
+
+# OS-specific
+.env.vault
+.DS_Store
