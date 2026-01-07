@@ -1,0 +1,212 @@
+.car-setup-page {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1a1a1a, #000);
+  color: white;
+  padding: 30px;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 30px;
+  letter-spacing: 2px;
+}
+
+.car-setup-container {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 25px;
+}
+
+/* PANEL IZQUIERDO */
+.setup-panel {
+  background-color: #111;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.8);
+}
+
+.setup-panel h2 span {
+  font-size: 14px;
+  color: #aaa;
+  margin-left: 10px;
+}
+
+.part-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #1b1b1b;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.part-card h3 {
+  margin: 0;
+}
+
+.part-card p {
+  margin: 4px 0;
+  color: #ccc;
+}
+
+.stats {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.stat {
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.stat.p { background-color: #f1c40f; color: #000; }
+.stat.a { background-color: #2ecc71; color: #000; }
+.stat.m { background-color: #3498db; color: #fff; }
+
+.action-btn {
+  background-color: #b00000;
+  border: none;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.action-btn:hover {
+  background-color: #e10600;
+}
+
+.simple-part {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #1b1b1b;
+  padding: 12px 15px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+/* PANEL DERECHO */
+.summary-panel {
+  background-color: #111;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.8);
+}
+
+.car-preview {
+  height: 200px;
+  background: linear-gradient(135deg, #222, #000);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 15px 0;
+  color: #777;
+}
+
+.driver {
+  margin: 15px 0;
+  font-weight: bold;
+}
+
+.final-stats {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.car-preview {
+  height: 350px;
+  background: linear-gradient(135deg, #222, #000);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 15px 0;
+  overflow: hidden;
+}
+
+.car-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 15px rgba(0, 0, 0, 0.8));
+}
+
+select {
+  background-color: #111;
+  color: white;
+  border: 2px solid #333;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-top: 6px;
+  cursor: pointer;
+}
+
+select:hover {
+  border-color: #e10600;
+}
+
+.driver-select {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #1b1b1b;
+  padding: 12px;
+  border-radius: 10px;
+  margin: 15px 0;
+  font-weight: bold;
+}
+
+/* Selector alineado a la derecha */
+.side-select {
+  background-color: #111;
+  color: white;
+  border: 2px solid #333;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  min-width: 160px;
+}
+
+.side-select:hover {
+  border-color: #e10600;
+}
+
+/* Botones Carro 1 / Carro 2 */
+.car-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 15px 0;
+}
+
+.car-btn {
+  background-color: transparent;
+  border: 2px solid #444;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+.car-btn:hover {
+  border-color: #e10600;
+  color: #e10600;
+}
+
+.car-btn.active {
+  background-color: #e10600;
+  border-color: #e10600;
+  color: white;
+}
