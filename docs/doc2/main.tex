@@ -1,0 +1,361 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage{setspace}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{amsmath} % Para fórmulas matemáticas
+\geometry{
+    a4paper,
+    top=3cm,
+    bottom=3cm,
+    left=2.5cm,
+    right=2.5cm
+}
+
+\renewcommand{\baselinestretch}{1.2}
+
+% Hipervínculos
+\hypersetup{
+    colorlinks,
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=black
+}
+
+% Encabezados y pies
+\fancyhf{}
+\pagestyle{fancy}
+\fancyhead[L]{\textcolor{black}{F1 Garage Manager}}
+\fancyhead[R]{\textcolor{black}{CE-3101 Bases de Datos}}
+\fancyfoot[C]{\fontsize{10}{12}\selectfont Página \thepage\ de \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Comando para la portada
+\newcommand{\portada}{
+    \begin{titlepage}
+        \thispagestyle{empty}
+        \pagecolor{white}
+        \color{black}
+        
+        \vspace*{0.8cm}
+        
+        {\centering
+        \begin{minipage}[c]{0.3\textwidth}
+            \centering
+            \includegraphics[width=1\textwidth]{logo-tec.png} % Asegúrate de subir esta imagen
+        \end{minipage}
+        }
+        
+        \vspace{1.2cm}
+        {\noindent\rule{\linewidth}{1.5pt}}
+        \vspace{.3cm}
+        
+        {\centering
+        \fontsize{28}{34}\selectfont
+        \textbf{F1 Garage Manager}\\
+        \vspace{0.5cm}
+        }
+        
+        {\centering
+        \fontsize{12}{14}\selectfont
+        \textit{Sistema integral de gestión de equipos y simulación de carreras de Fórmula 1}\\
+        }
+        
+        \vspace{1cm}
+        {\noindent\rule{\linewidth}{1.5pt}}
+        
+        \vfill
+        
+        {\centering
+        \fontsize{14}{17}\selectfont
+        \textbf{Entregable \#2:  Crow’s Foot, esquema inicial y
+vistas base}\\
+        }
+        
+        \vspace{1.1cm}
+        {\centering
+        \fontsize{10}{12}\selectfont
+        Trabajo presentado para la obtención de evaluación en\\
+        }
+        
+        \vspace{0.3cm}
+        {\centering
+        \fontsize{12}{14}\selectfont
+        \textbf{CE-3101 Bases de Datos}\\
+        }
+        
+        \vspace{0.8cm}
+        {\centering
+        \fontsize{11}{13}\selectfont
+        \textit{Modalidad Verano Intensivo}\\
+        }
+        
+        \vspace{0.2cm}
+        {\centering
+        \fontsize{10}{12}\selectfont
+        Diciembre 2025 – Enero 2026\\
+        }
+        
+        \vspace{0.8cm}
+        {\centering
+        \fontsize{9}{11}\selectfont
+        Instituto Tecnológico de Costa Rica\\
+        \vspace{0.05cm}
+        Escuela de Ingeniería en Computadores\\
+        }
+        
+        \vfill
+        
+        {\centering
+        \fontsize{10}{12}\selectfont
+        \begin{tabular}{ll}
+        \textbf{Integrantes} & Steven Aguilar Alvarez | 2024202865\\
+                             & Sebastián Chaves Ruiz | 2021032506\\
+                             & Ian Yoel Gómez Oses | 2023216136\\
+                             & Mauro Brenes Brenes | 2023213314\\
+        \\
+        \textbf{Profesor}    & MSc. Andrés Vargas Rivera \\
+        \end{tabular}
+        }
+        
+        \vfill
+        {\centering
+        \fontsize{9}{11}\selectfont
+        \today\\
+        }
+        \vspace{0.8cm}
+    \end{titlepage}
+    \pagecolor{white}
+    \color{black}
+}
+
+\begin{document}
+
+\portada
+
+\tableofcontents
+\newpage
+
+\section{Introducción}
+Este proyecto corresponde al desarrollo de un sistema de información para la gestión de equipos de Fórmula 1, denominado \textbf{F1 Garage Manager}. El objetivo primordial es aplicar conceptos de modelado de bases de datos relacionales para administrar de forma íntegra equipos, conductores, componentes de vehículos y la simulación de carreras basada en parámetros de rendimiento físico y técnico. El dominio abarca desde la gestión financiera mediante patrocinios hasta la ingeniería detallada de configuración de monoplazas.
+
+\section{Diagrama Crow's Foot}
+
+\subsection*{Estructura}
+
+El diagrama contiene \textbf{17 entidades} organizadas en 6 dominios:
+
+\begin{enumerate}
+    \item Gestión Organizacional: Patrocinador, Equipo, Aporte
+    \item Usuarios y Autenticación: Usuario, Session, AuditLog
+    \item Recursos Humanos: Conductor
+    \item Componentes: PartCategory, Pieza, PartStock
+    \item Compras: HistorialCompras
+    \item Carros y Simulación: Carro, CarSetup, CarSetupParte, Circuito, Simulacion, ResultadoSimulacion
+\end{enumerate}
+
+Total de relaciones: 23
+
+\subsection*{Notación Crow's Foot}
+
+La notación utiliza símbolos en los extremos de las líneas para indicar cardinalidad:
+
+\begin{itemize}
+    \item \textbf{\texttt{||}} (línea recta): Exactamente uno (1)
+    \item \textbf{\texttt{o|}} (círculo + línea): Cero o uno (0..1)
+    \item \textbf{\texttt{o\{}} (círculo + pata de cuervo): Cero o muchos (0..N)
+    \item \textbf{\texttt{|\{}} (línea + pata de cuervo): Uno o muchos (1..N)
+\end{itemize}
+
+\subsection*{Relaciones principales}
+
+\begin{itemize}
+    \item \textbf{Patrocinador} $||--o\{$ \textbf{Aporte} (realiza): Un patrocinador realiza cero o muchos aportes.
+    
+    \item \textbf{Aporte} $\}o--||$ \textbf{Equipo} (recibe): Muchos aportes van a un equipo.
+    
+    \item \textbf{Usuario} $||--o|$ \textbf{Equipo} (opera): Un usuario opera cero o un equipo (Admin/Driver: NULL, Engineer: NOT NULL).
+    
+    \item \textbf{Usuario} $||--o\{$ \textbf{Session} (tiene): Un usuario puede tener múltiples sesiones activas.
+    
+    \item \textbf{AuditLog} $\}o--||$ \textbf{Usuario} (registra): Registra quién realizó cada operación.
+    
+    \item \textbf{Conductor} $\}o--||$ \textbf{Equipo} (pertenece\_a): Muchos conductores pertenecen a un equipo.
+    
+    \item \textbf{PartCategory} $||--o\{$ \textbf{Pieza} (contiene): Una categoría contiene muchas piezas.
+    
+    \item \textbf{Pieza} $||--||$ \textbf{PartStock} (tiene): Relación uno-a-uno.
+    
+    \item \textbf{HistorialCompras} $\}o--||$ \textbf{Equipo} (de\_equipo): Un equipo tiene muchas compras.
+    
+    \item \textbf{HistorialCompras} $\}o--||$ \textbf{Pieza} (de\_pieza): Una pieza tiene muchas compras registradas.
+    
+    \item \textbf{Carro} $\}o--||$ \textbf{Equipo} (tiene): Un equipo puede tener máximo 2 carros.
+    
+    \item \textbf{CarSetup} $\}o--||$ \textbf{Carro} (configura): Un carro tiene múltiples setups.
+    
+    \item \textbf{CarSetupParte} $\}o--||$ \textbf{CarSetup} (parte\_de): Tabla pivote descompone N:M.
+    
+    \item \textbf{CarSetupParte} $\}o--||$ \textbf{PartCategory} (para\_categoria): Mapea la categoría de la pieza.
+    
+    \item \textbf{CarSetupParte} $\}o--||$ \textbf{Pieza} (instala): Mapea la pieza específica instalada.
+    
+    \item \textbf{Simulacion} $\}o--||$ \textbf{Circuito} (en): Muchas simulaciones en un circuito.
+    
+    \item \textbf{Simulacion} $\}o--||$ \textbf{Usuario} (ejecuta): Solo Admin ejecuta simulaciones.
+    
+    \item \textbf{ResultadoSimulacion} $\}o--||$ \textbf{Simulacion} (de): Una simulación genera múltiples resultados.
+    
+    \item \textbf{ResultadoSimulacion} $\}o--||$ \textbf{Carro} (de\_carro): Un carro participa en múltiples simulaciones.
+    
+    \item \textbf{ResultadoSimulacion} $\}o--||$ \textbf{CarSetup} (usa): Un setup se usa en múltiples simulaciones.
+    
+    \item \textbf{ResultadoSimulacion} $\}o--||$ \textbf{Conductor} (con\_conductor): Un conductor participa en múltiples simulaciones.
+\end{itemize}
+
+\subsection*{Restricciones clave}
+
+\begin{itemize}
+    \item Máximo 2 carros por equipo (TRIGGER)
+    \item Exactamente 5 piezas por setup, una de cada categoría: \texttt{UNIQUE(id\_setup, id\_categoria)}
+    \item Rol vs equipo: \texttt{CHECK chk\_rol\_equipo}
+    \item Solo Admin ejecuta simulaciones
+    \item Atributos P, A, M (Pieza): rango 0-9
+    \item Habilidad conductor: rango 0-100
+    \item Presupuesto equipo = suma de Aportes
+\end{itemize}
+
+\subsection*{Diagrama}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=1\textwidth]{Crow’s Foot.pdf}
+\caption{Diagrama Crow's Foot del F1 Garage Manager con 17 entidades y 23 relaciones.}
+\label{fig:crows_foot}
+\end{figure}
+
+\section{Esquema inicial en SQL Server}
+
+\section{Stored Procedures iniciales}
+
+\section{Frontend – Vistas base (dummy)}
+
+\subsection{Tecnologías usadas}
+El frontend del sistema fue desarrollado utilizando React, enfocado únicamente en la construcción de la interfaz visual. En esta etapa del proyecto, React se emplea para definir la estructura de las pantallas, la organización de los componentes y la presentación de la información, sin integración directa con la base de datos ni con una API backend.
+
+\subsection{Vistas base existentes}
+\begin{enumerate}
+    \item Usuarios
+    
+    Se implementó una vista base para la gestión de usuarios, la cual permite simular la creación de usuarios y la asignación de roles (Administrador, Engineer y Driver).
+
+    La interfaz incluye una pantalla de inicio de sesión (login) y representa de forma visual el control de acceso por rol y la asociación de Engineers y Drivers a equipos.
+    
+    En esta etapa no se implementa autenticación real ni manejo de sesiones, pero la interfaz fue diseñada considerando un esquema de autenticación segura basado en sesiones, el cual será desarrollado en entregables posteriores.
+
+    \begin{center}
+    \includegraphics[width=0.8\textwidth]{Interfaces/usuarios.png}
+    \end{center}
+    
+    \item Equipos
+
+    Se desarrolló una vista base para la gestión de equipos, la cual permite simular la creación y edición de equipos utilizando datos dummy.
+
+    La interfaz permite visualizar el detalle de cada equipo, incluyendo información como presupuesto, patrocinadores asociados, carros registrados y conductores asignados.
+    
+    La restricción de un máximo de dos carros por equipo se considera a nivel de diseño de la interfaz, quedando su validación lógica para etapas posteriores del proyecto.
+
+    \begin{center}
+    \includegraphics[width=0.8\textwidth]{Interfaces/equipos.png}
+    \end{center}
+    
+    \item Conductores
+
+    Se implementó una vista base para la gestión de conductores, que permite simular el registro de conductores con un valor de habilidad (H) dentro del rango de 0 a 100.
+
+    La interfaz contempla la asociación de conductores a un equipo y la visualización de estadísticas generales, como resultados históricos y promedios, representadas de forma simulada.
+    
+    En esta etapa, las estadísticas no se calculan a partir de datos reales, sino que se muestran como parte de un prototipo visual para definir la estructura de la información.
+
+    \begin{center}
+    \includegraphics[width=0.8\textwidth]{Interfaces/conductores.png}
+    \end{center}
+    
+
+    \item Patrocinadores
+
+    Se desarrolló una vista base para la gestión de patrocinadores, la cual permite simular el registro de patrocinadores y la visualización de sus aportes monetarios a los equipos, incluyendo información como fecha, monto y descripción.
+
+    La interfaz representa de forma visual la relación entre patrocinadores y equipos, así como el impacto de los aportes en el presupuesto del equipo.
+    
+    En esta etapa, el cálculo del presupuesto se muestra de manera simulada, sirviendo como base para la implementación posterior de la regla de negocio que establece que el presupuesto de un equipo se determina únicamente a partir de los aportes registrados.
+
+    \begin{center}
+    \includegraphics[width=0.8\textwidth]{Interfaces/patrocinadores.png}
+    \end{center}
+    
+    
+    \item Tienda de Partes
+
+    Se implementó una vista base para la tienda de partes, que permite simular el registro y consulta de un catálogo de partes disponibles, mostrando información como categoría, precio, stock y valores de rendimiento.
+
+    La interfaz permite visualizar la disponibilidad de cada parte y simula la validación de stock durante el proceso de compra.
+    
+    En esta etapa, las operaciones de compra y validación no afectan datos reales, sirviendo como un prototipo visual para definir el flujo de adquisición de partes en el sistema.
+
+    \begin{center}
+    \includegraphics[width=0.8\textwidth]{Interfaces/partes.png}
+    \end{center}
+    
+\end{enumerate}
+
+\section{Vista de inventario y pantalla de armado}
+
+\subsection{Vista de inventario}
+
+Se desarrolló una vista base para el inventario por equipo, la cual permite visualizar de forma simulada las partes que posee cada equipo, incluyendo la cantidad disponible y la fecha de adquisición cuando aplica, utilizando datos dummy.
+
+La interfaz representa el registro automático de las compras exitosas en el inventario y simula la actualización de cantidades al instalar, desinstalar o reemplazar partes durante el proceso de armado del carro.
+
+En esta etapa, estas operaciones se muestran únicamente a nivel visual, funcionando como un prototipo para la implementación futura de las reglas de negocio asociadas al manejo de inventario.
+
+\begin{center}
+    \includegraphics[width=0.8\textwidth]{Interfaces/inventario.png}
+\end{center}
+
+\subsection{Vista armado del carro}
+
+Se implementó una pantalla base de armado del carro que permite seleccionar una parte por cada categoría, utilizando datos dummy. La vista muestra en tiempo real un resumen del carro con los valores de Potencia (P), Aerodinámica (A), Manejo (M) y la habilidad (H) del conductor seleccionado.
+
+La interfaz permite simular el reemplazo de una parte por otra variante de la misma categoría, con el objetivo de representar el proceso de configuración del vehículo.
+
+\begin{center}
+    \includegraphics[width=0.8\textwidth]{Interfaces/armado.png}
+\end{center}
+
+\subsubsection{Reglas mínimas de armado (nivel interfaz)}
+
+Las reglas mínimas de armado se consideran a nivel de diseño de la interfaz, permitiendo simular restricciones como la instalación de una única parte por categoría, el uso exclusivo de partes disponibles en el inventario del equipo y la actualización visual del inventario al instalar o reemplazar componentes.
+
+Asimismo, la interfaz representa la condición de finalización de un carro únicamente cuando todas las categorías requeridas han sido seleccionadas, así como la restricción de un máximo de dos carros por equipo, quedando la validación lógica completa para fases posteriores del proyecto.
+
+
+\section{Referencias}
+
+Elmasri, R., \& Navathe, S. B. (2016). \textit{Fundamentals of database systems} (7th ed.). Addison-Wesley. \\
+
+Instituto Tecnológico de Costa Rica. (2025). \textit{Especificación del Proyecto: F1 Garage Manager}. CE-3101 Bases de Datos.\\
+
+Meta Platforms, Inc. (2024). 
+\textit{React: A JavaScript library for building user interfaces.}\\
+
+\end{document}

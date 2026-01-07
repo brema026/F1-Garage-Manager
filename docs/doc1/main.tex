@@ -1,0 +1,301 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage{setspace}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{amsmath} % Para fórmulas matemáticas
+\geometry{
+    a4paper,
+    top=3cm,
+    bottom=3cm,
+    left=2.5cm,
+    right=2.5cm
+}
+
+\renewcommand{\baselinestretch}{1.2}
+
+% Hipervínculos
+\hypersetup{
+    colorlinks,
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=black
+}
+
+% Encabezados y pies
+\fancyhf{}
+\pagestyle{fancy}
+\fancyhead[L]{\textcolor{black}{F1 Garage Manager}}
+\fancyhead[R]{\textcolor{black}{CE-3101 Bases de Datos}}
+\fancyfoot[C]{\fontsize{10}{12}\selectfont Página \thepage\ de \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Comando para la portada
+\newcommand{\portada}{
+    \begin{titlepage}
+        \thispagestyle{empty}
+        \pagecolor{white}
+        \color{black}
+        
+        \vspace*{0.8cm}
+        
+        {\centering
+        \begin{minipage}[c]{0.3\textwidth}
+            \centering
+            \includegraphics[width=1\textwidth]{logo-tec.png} % Asegúrate de subir esta imagen
+        \end{minipage}
+        }
+        
+        \vspace{1.2cm}
+        {\noindent\rule{\linewidth}{1.5pt}}
+        \vspace{.3cm}
+        
+        {\centering
+        \fontsize{28}{34}\selectfont
+        \textbf{F1 Garage Manager}\\
+        \vspace{0.5cm}
+        }
+        
+        {\centering
+        \fontsize{12}{14}\selectfont
+        \textit{Sistema integral de gestión de equipos y simulación de carreras de Fórmula 1}\\
+        }
+        
+        \vspace{1cm}
+        {\noindent\rule{\linewidth}{1.5pt}}
+        
+        \vfill
+        
+        {\centering
+        \fontsize{14}{17}\selectfont
+        \textbf{Entregable \#1: Modelo Conceptual}\\
+        }
+        
+        \vspace{1.1cm}
+        {\centering
+        \fontsize{10}{12}\selectfont
+        Trabajo presentado para la obtención de evaluación en\\
+        }
+        
+        \vspace{0.3cm}
+        {\centering
+        \fontsize{12}{14}\selectfont
+        \textbf{CE-3101 Bases de Datos}\\
+        }
+        
+        \vspace{0.8cm}
+        {\centering
+        \fontsize{11}{13}\selectfont
+        \textit{Modalidad Verano Intensivo}\\
+        }
+        
+        \vspace{0.2cm}
+        {\centering
+        \fontsize{10}{12}\selectfont
+        Diciembre 2025 – Enero 2026\\
+        }
+        
+        \vspace{0.8cm}
+        {\centering
+        \fontsize{9}{11}\selectfont
+        Instituto Tecnológico de Costa Rica\\
+        \vspace{0.05cm}
+        Escuela de Ingeniería en Computadores\\
+        }
+        
+        \vfill
+        
+        {\centering
+        \fontsize{10}{12}\selectfont
+        \begin{tabular}{ll}
+        \textbf{Integrantes} & Steven Aguilar Alvarez | 2024202865\\
+                             & Sebastián Chaves Ruiz | 2021032506\\
+                             & Ian Yoel Gómez Oses | 2023216136\\
+                             & Mauro Brenes Brenes | 2023213314\\
+        \\
+        \textbf{Profesor}    & MSc. Andrés Vargas Rivera \\
+        \end{tabular}
+        }
+        
+        \vfill
+        {\centering
+        \fontsize{9}{11}\selectfont
+        \today\\
+        }
+        \vspace{0.8cm}
+    \end{titlepage}
+    \pagecolor{white}
+    \color{black}
+}
+
+\begin{document}
+
+\portada
+
+\tableofcontents
+\newpage
+
+\section{Introducción}
+Este proyecto corresponde al desarrollo de un sistema de información para la gestión de equipos de Fórmula 1, denominado \textbf{F1 Garage Manager}. El objetivo primordial es aplicar conceptos de modelado de bases de datos relacionales para administrar de forma íntegra equipos, conductores, componentes de vehículos y la simulación de carreras basada en parámetros de rendimiento físico y técnico. El dominio abarca desde la gestión financiera mediante patrocinios hasta la ingeniería detallada de configuración de monoplazas.
+
+\section{Diagrama Entidad-Relación (ER)}
+En esta sección se presenta el modelo conceptual que representa las entidades del negocio y sus interacciones.
+
+\subsection{Simbología utilizada}
+De acuerdo con los requerimientos del curso, se ha utilizado la siguiente nomenclatura visual:
+\begin{itemize}
+    \item \textbf{Rectángulo Azul:} Entidades principales.
+    \item \textbf{Rombo Blanco:} Relaciones entre entidades.
+    \item \textbf{Óvalo Amarillo (Subrayado):} Atributos clave (Primary Keys).
+    \item \textbf{Óvalo Verde:} Atributos simples.
+    \item \textbf{Óvalo Gris (Punteado):} Atributos derivados.
+\end{itemize}
+
+\subsection{Descripción de Entidades}
+El modelo integra 13 entidades principales organizadas en cuatro dominios funcionales:
+
+\subsubsection{Dominio: Gestión Organizacional}
+
+\begin{itemize}
+    \item \textbf{Equipo:} Almacena información del equipo y su presupuesto derivado (calculado a partir de los Aportes de Patrocinadores). Restricción: máximo 2 Carros por Equipo.
+    
+    \item \textbf{Patrocinador:} Entidad que financia a los Equipos. Almacena identificador único, nombre y correo electrónico para contacto.
+    
+    \item \textbf{Aporte:} Registra contribuciones monetarias de Patrocinadores a Equipos. Contiene fecha del aporte, monto y descripción del patrocinio.
+    
+    \item \textbf{Usuario:} Gestiona el acceso al sistema con roles definidos (Admin, Engineer, Driver). Almacena identificador, correo, hash de contraseña. Un Usuario opera exactamente 1 Equipo.
+\end{itemize}
+
+\subsubsection{Dominio: Recursos Humanos}
+
+\begin{itemize}
+    \item \textbf{Conductor:} Piloto asignado a un Equipo. Registra identificador único, nombre y habilidad ($H$) en rango $[0, 100]$ (entero). La habilidad afecta directamente al rendimiento en simulaciones.
+\end{itemize}
+
+\subsubsection{Dominio: Componentes y Configuración}
+
+\begin{itemize}
+    \item \textbf{Pieza (Part):} Catálogo de componentes con identificador único, nombre, precio y tres atributos de rendimiento (enteros $[0, 9]$): potencia ($p$), aerodinámica ($a$) y manejo ($m$).
+    
+    \item \textbf{PartCategory:} Categoría de piezas (exactamente 5 obligatorias: Unidad de potencia, Paquete aerodinámico, Neumáticos, Suspensión, Caja de cambios). Almacena identificador único y nombre.
+    
+    \item \textbf{PartStock:} Registro de disponibilidad en la tienda. Almacena identificador de Pieza, cantidad disponible en stock y fecha de última actualización.
+    
+    
+    \item \textbf{Carro:} Monoplaza del Equipo. Representa el vehículo el cual debe poseer exactamente 5 categorías de piezas instaladas para considerarse ``Finalizado''. Máximo 2 por Equipo.
+    
+    \item \textbf{CarSetup:} Configuración específica de un Carro en un momento dado. Almacena identificador único, fecha de instalación y tres atributos derivados: $P_{total}$, $A_{total}$, $M_{total}$ (suma de valores de rendimiento de las 5 Piezas).
+\end{itemize}
+
+\subsubsection{Dominio: Circuitos y Simulaciones}
+
+\begin{itemize}
+    \item \textbf{Circuito:} Pista de carrera. Almacena identificador único, nombre, distancia total ($D$ en kilómetros) y cantidad de curvas ($C$).
+    
+    \item \textbf{Simulación:} Registro de eventos de carrera en circuitos específicos. Almacena identificador único, fecha/hora de ejecución e identificador del Circuito. Una Simulación genera múltiples ResultadoSimulación.
+    
+    \item \textbf{ResultadoSimulación:} Resultado individual de un Carro en una Simulación. Almacena el identificador del Carro, configuración utilizada, velocidades calculadas ($V_{recta}$, $V_{curva}$), penalización, tiempo total en segundos y posición final (ranking).
+\end{itemize}
+
+\subsection{Diagrama ER}
+\begin{figure}[h]
+    \centering
+    % Reemplaza 'diagrama_er.png' con el nombre de tu archivo subido
+    \includegraphics[width=1\linewidth]{er.png} 
+    \caption{Modelo Conceptual ER - F1 Garage Manager}
+\end{figure}
+
+    \section{Reglas de Negocio}
+A continuación, se describen las restricciones y lógicas aplicadas al modelo:
+
+\subsection{Gestión Financiera y Compras}
+\begin{itemize}
+    \item El presupuesto de un equipo se calcula exclusivamente a partir de los aportes registrados de sus patrocinadores.
+    \item Para realizar una compra, el sistema valida que exista stock disponible en la tienda y que el equipo posea presupuesto suficiente.
+
+\end{itemize}
+
+\subsection{Armado y Configuración del Carro}
+\begin{itemize}
+    \item Un equipo puede poseer un máximo de \textbf{2 carros}.
+    \item Para que un carro se considere "Finalizado", debe tener instalada exactamente una pieza de cada una de las 5 categorías: Unidad de potencia, Paquete aerodinámico, Neumáticos, Suspensión y Caja de cambios.
+\end{itemize}
+
+\subsection{Lógica de Simulación}
+La simulación calcula el rendimiento basándose en las siguientes fórmulas matemáticas:
+
+\textbf{Velocidades ($km/h$):}
+\begin{itemize}
+    \item $V_{recta} = 200 + 3P + 0.2H - A$
+    \item $V_{curva} = 90 + 2A + 2M + 0.2H$
+\end{itemize}
+
+\textbf{Tiempo y Penalización:}
+\begin{itemize}
+    \item $Penalizacion (seg) = \frac{C \cdot 40}{1 + (H/100)}$
+    \item $Tiempo_{total} (seg) = (Tiempo_{horas} \cdot 3600) + Penalizacion$
+\end{itemize}
+Donde $P, A, M$ son los totales del carro, $H$ la habilidad del conductor y $C$ la cantidad de curvas del circuito.
+
+\newpage
+
+\section{Análisis de Cardinalidad}
+
+Las siguientes son las 15 relaciones principales del modelo con sus respectivas cardinalidades:
+
+\begin{center}
+\begin{tabular}{|l|c|p{5cm}|}
+\hline
+\textbf{Relación} & \textbf{Card.} & \textbf{Descripción} \\
+\hline
+Patrocinador \textit{realiza} Aporte & $(1, N)$ & Un patrocinador realiza muchos aportes \\
+\hline
+Aporte \textit{recibe} Equipo & $(N, 1)$ & Muchos aportes van a un equipo \\
+\hline
+Usuario \textit{opera} Equipo & $(1, 1)$ & Un usuario opera un equipo (Engineer) \\
+\hline
+Equipo \textit{tiene} Carro & $(1, N)$ & Un equipo tiene hasta 2 carros máximo \\
+\hline
+Conductor \textit{pertenece\_a} Equipo & $(N, 1)$ & Muchos conductores pertenecen a un equipo \\
+\hline
+Equipo \textit{posee} Pieza & $(1, N)$ & Un equipo contiene muchas piezas \\
+\hline
+PartCategory \textit{contiene} Pieza & $(1, N)$ & Una categoría contiene muchas piezas \\
+\hline
+CarSetup \textit{instala} Pieza & $(N, M)$ & Un setup instala 5 piezas (una por categoría) \\
+\hline
+Carro \textit{configurado\_por} CarSetup & $(1, N)$ & Un carro tiene múltiples configuraciones \\
+\hline
+Circuito \textit{se\_ejecuta\_en} Simulación & $(1, N)$ & Un circuito alberga muchas simulaciones \\
+\hline
+Simulación \textit{genera} ResultadoSimulación & $(1, N)$ & Una simulación genera un resultado por carro \\
+\hline
+Usuario \textit{ejecuta} Simulación & $(1, N)$ & Un Admin ejecuta muchas simulaciones \\
+\hline
+Carro \textit{genera} ResultadoSimulación & $(1, N)$ & Un carro genera muchos resultados en diferentes simulaciones \\
+\hline
+CarSetup \textit{para\_categoria} PartCategory & $(N, 1)$ & Muchos setups pueden usar piezas de una categoría \\
+\hline
+Pieza \textit{tiene\_stock} PartStock & $(1, 1)$ & Una pieza tiene exactamente un registro de stock \\
+\hline
+\end{tabular}
+\end{center}
+
+\newpage
+
+\section{Referencias}
+
+Elmasri, R., \& Navathe, S. B. (2016). \textit{Fundamentals of database systems} (7th ed.). Addison-Wesley. \\
+
+Instituto Tecnológico de Costa Rica. (2025). \textit{Especificación del Proyecto: F1 Garage Manager}. CE-3101 Bases de Datos.
+
+\end{document}
