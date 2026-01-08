@@ -20,6 +20,8 @@
     right=2.5cm
 }
 
+\usepackage{hyperref}
+
 \renewcommand{\baselinestretch}{1.2}
 
 % Hipervínculos
@@ -245,7 +247,226 @@ La notación utiliza símbolos en los extremos de las líneas para indicar cardi
 
 \section{Esquema inicial en SQL Server}
 
+El esquema inicial de la base de datos fue implementado en \textit{Microsoft SQL Server} a partir del modelo Entidad--Relación y del diagrama Crow’s Foot previamente definidos y aprobados.  
+Esta etapa tiene como objetivo materializar el modelo conceptual en un esquema relacional funcional, asegurando integridad referencial, consistencia de datos y una base sólida para la evolución futura del sistema.
+
+\subsection{Objetivo del esquema}
+
+Los objetivos principales del esquema inicial son:
+
+\begin{itemize}
+    \item Definir las tablas que representan las entidades del dominio.
+    \item Establecer claves primarias (PK) y claves foráneas (FK).
+    \item Implementar restricciones básicas que reflejen reglas del negocio.
+    \item Garantizar la correcta traducción de relaciones 1:1, 1:N y N:M.
+    \item Permitir la verificación del modelo mediante datos dummy.
+\end{itemize}
+
+\subsection{Convenciones de diseño}
+
+Durante la implementación se siguieron las siguientes convenciones:
+
+\begin{itemize}
+    \item Uso de nombres en \texttt{snake\_case} para tablas y columnas.
+    \item Claves primarias con el formato \texttt{id\_entidad}.
+    \item Uso del esquema \texttt{dbo}.
+    \item Definición explícita de restricciones \texttt{PRIMARY KEY}, \texttt{FOREIGN KEY}, \texttt{UNIQUE} y \texttt{CHECK}.
+    \item Separación entre definición estructural (schema) y carga de datos de prueba.
+\end{itemize}
+
+\subsection{Organización general del esquema}
+
+El esquema relacional se organiza en los siguientes dominios funcionales:
+
+\begin{itemize}
+    \item \textbf{Gestión organizacional}: \texttt{equipo}, \texttt{patrocinador}, \texttt{aporte}.
+    \item \textbf{Usuarios y roles}: \texttt{usuario}.
+    \item \textbf{Recursos humanos}: \texttt{conductor}.
+    \item \textbf{Componentes e inventario}: \texttt{part\_category}, \texttt{pieza}, \texttt{part\_stock}, \texttt{inventario\_equipo}.
+    \item \textbf{Carros y configuración}: \texttt{carro}, \texttt{car\_setup}, \texttt{car\_setup\_pieza}.
+    \item \textbf{Simulación}: \texttt{circuito}, \texttt{simulacion}, \texttt{resultado\_simulacion}.
+\end{itemize}
+
+\subsection{Tablas principales y restricciones}
+
+\subsubsection*{Equipo}
+
+La tabla \texttt{equipo} representa a los equipos de Fórmula 1.
+
+\begin{itemize}
+    \item \textbf{PK}: \texttt{id\_equipo}.
+    \item \textbf{Restricciones}:
+    \begin{itemize}
+        \item \texttt{UNIQUE(nombre)} para evitar duplicidad de equipos.
+        \item El presupuesto del equipo se deriva de los aportes registrados.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection*{Usuario}
+
+La tabla \texttt{usuario} gestiona los usuarios del sistema y sus roles.
+
+\begin{itemize}
+    \item \textbf{PK}: \texttt{id\_usuario}.
+    \item \textbf{FK}: \texttt{id\_equipo} $\rightarrow$ \texttt{equipo(id\_equipo)}.
+    \item \textbf{Restricciones}:
+    \begin{itemize}
+        \item \texttt{UNIQUE(email)}.
+        \item \texttt{CHECK} sobre el rol del usuario.
+        \item Restricción que valida la coherencia entre rol e id\_equipo:
+        \begin{itemize}
+            \item \textbf{Admin} y \textbf{Driver}: \texttt{id\_equipo = NULL}.
+            \item \textbf{Engineer}: \texttt{id\_equipo IS NOT NULL}.
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\subsubsection*{Piezas y categorías}
+
+Las tablas \texttt{part\_category} y \texttt{pieza} modelan los componentes del carro.
+
+\begin{itemize}
+    \item \textbf{PK}: \texttt{category\_id}, \texttt{id\_pieza}.
+    \item \textbf{FK}: \texttt{pieza.categoria\_id} $\rightarrow$ \texttt{part\_category(category\_id)}.
+    \item \textbf{Restricciones}:
+    \begin{itemize}
+        \item \texttt{CHECK(precio >= 0)}.
+        \item \texttt{CHECK} para atributos de rendimiento \texttt{P, A, M} en rango 0--9.
+        \item \texttt{UNIQUE(id\_pieza, categoria\_id)} para garantizar coherencia pieza--categoría.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection*{CarSetup--Pieza (relación N:M)}
+
+La relación N:M entre \texttt{car\_setup} y \texttt{pieza} se implementa mediante la tabla intermedia \texttt{car\_setup\_pieza}.
+
+\begin{itemize}
+    \item \textbf{PK compuesta}: \texttt{(setup\_id, category\_id)}.
+    \item \textbf{FK}:
+    \begin{itemize}
+        \item \texttt{setup\_id} $\rightarrow$ \texttt{car\_setup(setup\_id)}.
+        \item \texttt{category\_id} $\rightarrow$ \texttt{part\_category(category\_id)}.
+        \item \texttt{(part\_id, category\_id)} $\rightarrow$ \texttt{pieza(id\_pieza, categoria\_id)}.
+    \end{itemize}
+\end{itemize}
+
+Esta estructura permite implementar la regla de negocio \textit{``exactamente una pieza por categoría''} dentro de un setup, evitando duplicidades y garantizando consistencia semántica.
+
+\subsubsection*{Simulación y resultados}
+
+Las tablas \texttt{simulacion} y \texttt{resultado\_simulacion} almacenan la ejecución y resultados de las simulaciones.
+
+\begin{itemize}
+    \item \textbf{Simulación}:
+    \begin{itemize}
+        \item \textbf{PK}: \texttt{id\_simulacion}.
+        \item \textbf{FK}: \texttt{id\_circuito}, \texttt{id\_usuario}.
+    \end{itemize}
+    
+    \item \textbf{ResultadoSimulación}:
+    \begin{itemize}
+        \item \textbf{PK}: \texttt{id\_resultado}.
+        \item \textbf{FK}: \texttt{id\_simulacion}, \texttt{id\_carro}, \texttt{setup\_id}.
+        \item \textbf{Restricción}: \texttt{UNIQUE(id\_simulacion, id\_carro)}.
+        \item \textbf{Checks básicos}: posición mayor a cero y tiempos no negativos.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Verificación del esquema}
+
+El esquema fue creado y probado exitosamente en \textit{SQL Server Management Studio (SSMS)}.  
+Se ejecutaron scripts de inserción de datos dummy para validar:
+
+\begin{itemize}
+    \item Integridad referencial entre tablas.
+    \item Correcto funcionamiento de las restricciones definidas.
+    \item Coherencia de la relación N:M entre setups y piezas.
+\end{itemize}
+
 \section{Stored Procedures iniciales}
+
+
+Como parte del diseño lógico del sistema, se implementaron stored procedures en Microsoft SQL Server para encapsular la lógica de negocio asociada a operaciones críticas. Estas implementaciones permiten centralizar validaciones, cálculos derivados y modificaciones consistentes sobre múltiples tablas, reduciendo la dependencia de lógica en la capa de aplicación.
+
+Los stored procedures desarrollados en esta etapa corresponden a una versión preliminar y tienen como objetivo validar el diseño de datos y las reglas del negocio definidas para el sistema.
+
+\subsection{Cálculo de presupuesto por equipo}
+
+Este stored procedure implementa una consulta agregada sobre la entidad de aportes para obtener el presupuesto disponible de un equipo.
+
+A nivel técnico, el procedimiento:
+
+\begin{itemize}
+    \item Recibe el identificador del equipo como parámetro de entrada.
+    \item Realiza una operación LEFT JOIN entre la tabla de equipos y la tabla de aportes.
+    \item Utiliza la función de agregación SUM() para calcular el total de los montos asociados al equipo.
+    \item Emplea la función ISNULL() para garantizar que el resultado sea cero en caso de no existir aportes registrados.
+\end{itemize}
+
+El resultado del procedimiento es un valor derivado, no persistente, lo cual cumple con la regla de normalización y con el requerimiento de que el presupuesto del equipo sea calculado exclusivamente a partir de los aportes registrados. Este enfoque evita inconsistencias entre el presupuesto almacenado y los movimientos financieros reales del sistema.
+
+\subsection{Compra de piezas por equipo}
+
+Este stored procedure implementa una operación de escritura compleja, ya que involucra validaciones de negocio y modificaciones coordinadas sobre múltiples entidades del sistema.
+
+Desde un punto de vista técnico, el procedimiento realiza las siguientes etapas:
+
+\subsubsection{Obtención de datos base}
+
+\begin{itemize}
+    \item Consulta el precio unitario de la pieza desde la tabla de piezas.
+    \item Obtiene el stock disponible desde la tabla de control de inventario de la tienda.
+    \item Calcula el presupuesto disponible del equipo mediante una consulta agregada sobre la tabla de aportes.
+\end{itemize}
+
+\subsubsection{Cálculo del costo de la operación}
+
+Multiplica el precio unitario por la cantidad solicitada para obtener el costo total de la compra.
+
+\subsubsection{Validaciones de integridad}
+
+\begin{itemize}
+    \item Verifica que el stock disponible sea suficiente para cubrir la cantidad solicitada.
+    \item Verifica que el presupuesto disponible del equipo sea mayor o igual al costo total.
+\end{itemize}
+
+En caso de que alguna validación falle, el procedimiento aborta la operación y genera un error controlado mediante RAISERROR.
+
+\subsubsection{Actualización de datos}
+
+\begin{itemize}
+    \item Actualiza el stock de la pieza en la tienda, decrementando la cantidad disponible.
+    \item Inserta o actualiza el registro correspondiente en el inventario del equipo, dependiendo de si la pieza ya se encontraba registrada previamente.
+\end{itemize}
+
+Este procedimiento permite garantizar que una compra solo se complete si se cumplen las restricciones de presupuesto y stock, evitando modificaciones parciales no autorizadas en el sistema.
+
+\subsection{Consideraciones sobre consistencia y transacciones}
+
+Aunque el stored procedure de compra modifica múltiples tablas, en esta fase del proyecto no se ha incorporado explícitamente el uso de transacciones (BEGIN TRANSACTION, COMMIT, ROLLBACK). Esta decisión responde a que la implementación corresponde a una versión preliminar enfocada en validar el modelo de datos y la lógica base.
+
+En entregables posteriores, este procedimiento será extendido para ejecutar la operación de compra dentro de una transacción, garantizando atomicidad y consistencia ante fallos, de acuerdo con los principios ACID y los lineamientos del curso.
+
+\subsection{Alcance técnico actual}
+
+Los stored procedures implementados demuestran el uso adecuado de:
+
+\begin{itemize}
+    \item Consultas agregadas.
+    \item Validaciones de reglas de negocio a nivel de base de datos.
+    \item Actualizaciones coordinadas sobre múltiples tablas.
+    \item Control básico de errores.
+\end{itemize}
+
+Estas implementaciones constituyen la base técnica para la futura integración con la API en Node.js y el frontend en React, donde las operaciones críticas serán invocadas exclusivamente a través de stored procedures.
+
+
+
+
+
+
+
+
 
 \section{Frontend – Vistas base (dummy)}
 
@@ -253,8 +474,7 @@ La notación utiliza símbolos en los extremos de las líneas para indicar cardi
 El frontend del sistema fue desarrollado utilizando React, enfocado únicamente en la construcción de la interfaz visual. En esta etapa del proyecto, React se emplea para definir la estructura de las pantallas, la organización de los componentes y la presentación de la información, sin integración directa con la base de datos ni con una API backend.
 
 \subsection{Vistas base existentes}
-\begin{enumerate}
-    \item Usuarios
+    \subsubsection{Usuarios}
     
     Se implementó una vista base para la gestión de usuarios, la cual permite simular la creación de usuarios y la asignación de roles (Administrador, Engineer y Driver).
 
@@ -266,7 +486,7 @@ El frontend del sistema fue desarrollado utilizando React, enfocado únicamente 
     \includegraphics[width=0.8\textwidth]{Interfaces/usuarios.png}
     \end{center}
     
-    \item Equipos
+    \subsubsection{Equipos}
 
     Se desarrolló una vista base para la gestión de equipos, la cual permite simular la creación y edición de equipos utilizando datos dummy.
 
@@ -278,7 +498,7 @@ El frontend del sistema fue desarrollado utilizando React, enfocado únicamente 
     \includegraphics[width=0.8\textwidth]{Interfaces/equipos.png}
     \end{center}
     
-    \item Conductores
+    \subsubsection{Conductores}
 
     Se implementó una vista base para la gestión de conductores, que permite simular el registro de conductores con un valor de habilidad (H) dentro del rango de 0 a 100.
 
@@ -291,7 +511,7 @@ El frontend del sistema fue desarrollado utilizando React, enfocado únicamente 
     \end{center}
     
 
-    \item Patrocinadores
+    \subsubsection{Patrocinadores}
 
     Se desarrolló una vista base para la gestión de patrocinadores, la cual permite simular el registro de patrocinadores y la visualización de sus aportes monetarios a los equipos, incluyendo información como fecha, monto y descripción.
 
@@ -304,7 +524,7 @@ El frontend del sistema fue desarrollado utilizando React, enfocado únicamente 
     \end{center}
     
     
-    \item Tienda de Partes
+    \subsubsection{Tienda de Partes}
 
     Se implementó una vista base para la tienda de partes, que permite simular el registro y consulta de un catálogo de partes disponibles, mostrando información como categoría, precio, stock y valores de rendimiento.
 
@@ -315,8 +535,6 @@ El frontend del sistema fue desarrollado utilizando React, enfocado únicamente 
     \begin{center}
     \includegraphics[width=0.8\textwidth]{Interfaces/partes.png}
     \end{center}
-    
-\end{enumerate}
 
 \section{Vista de inventario y pantalla de armado}
 
@@ -348,10 +566,20 @@ Las reglas mínimas de armado se consideran a nivel de diseño de la interfaz, p
 
 Asimismo, la interfaz representa la condición de finalización de un carro únicamente cuando todas las categorías requeridas han sido seleccionadas, así como la restricción de un máximo de dos carros por equipo, quedando la validación lógica completa para fases posteriores del proyecto.
 
+\section{Repositorio de GitHub}
+
+El repositorio oficial del proyecto se encuentra disponible en GitHub. En él es posible consultar el código fuente, la documentación y todos los recursos relacionados. \\
+
+\noindent\href{https://github.com/brema026/F1-Garage-Manager}{\textbf{Repositorio en GitHub: F1-Garage-Manager}}
+
+\newpage
 
 \section{Referencias}
 
 Elmasri, R., \& Navathe, S. B. (2016). \textit{Fundamentals of database systems} (7th ed.). Addison-Wesley. \\
+
+Delaney, K. (2015). 
+\textit{SQL Server internals: In-memory OLTP.} Microsoft Press.\\
 
 Instituto Tecnológico de Costa Rica. (2025). \textit{Especificación del Proyecto: F1 Garage Manager}. CE-3101 Bases de Datos.\\
 
