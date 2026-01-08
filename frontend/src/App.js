@@ -33,7 +33,7 @@ function App() {
   return (
     <div>
       <Navbar setView={setView} />
-      <div style={{ padding: "0px" }}>
+      <div>
         {renderView()}
       </div>
     </div>
