@@ -1,5 +1,6 @@
 --F1 Garage Manager - Schema inicial (SQL Server)
-
+USE f1_garage_tec;
+GO
 
 --  DROP (para re-ejecutar)
 IF OBJECT_ID('dbo.resultado_simulacion', 'U') IS NOT NULL DROP TABLE dbo.resultado_simulacion;
