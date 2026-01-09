@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai'
 import { FaGoogle, FaApple, FaFacebook } from 'react-icons/fa'
+import FullLogo from '../../assets/logo/full-logo-white.png';
 
 /**
  * Login Form Component
@@ -20,6 +21,16 @@ export function LoginForm() {
     <div className="w-full lg:w-1/2 h-screen bg-dark flex items-center justify-center p-8">
       {/* Form Box */}
       <div className="w-full max-w-md">
+
+        {/* Logo */}
+                <div className="mb-8 text-center">
+                <img 
+                    src={FullLogo} 
+                    alt="F1 Garage Logo"
+                    className="w-40 h-auto mx-auto"
+                />
+                </div>
+        
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">

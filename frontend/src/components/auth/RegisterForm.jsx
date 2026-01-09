@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import { FaGoogle, FaApple, FaFacebook } from "react-icons/fa";
-import FullLogo from '../../assets/logo/logo.png';
+import FullLogo from '../../assets/logo/full-logo-white.png';
 
 export function RegisterForm() {
     const [showPassword, setShowPassword] = useState(false);
@@ -20,13 +20,13 @@ export function RegisterForm() {
             {/* Form Box */}
             <div className="w-full max-w-md">
 
-                {/* Logo - Solo visible en móvil */}
-                <div className="lg:hidden mb-8 text-center">
-                    <img 
-                        src={FullLogo} 
-                        alt="F1 Garage Logo"
-                        className="w-40 h-auto mx-auto"
-                    />
+                {/* Logo */}
+                <div className="mb-8 text-center">
+                <img 
+                    src={FullLogo} 
+                    alt="F1 Garage Logo"
+                    className="w-40 h-auto mx-auto"
+                />
                 </div>
 
                 {/* Header Section */}

@@ -28,14 +28,7 @@ export function Carousel() {
         />
 
         {/* Overlay: Dark semi-transparent layer with content positioned absolutely */}
-        <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-between p-8">
-          {/* Logo Section: Brand name displayed at the top */}
-          <img
-            src={FullLogo}
-            alt="Logo"
-            className="h-[100px] object-contain drop-shadow-[0_0_10px_white]"
-          />
-
+        <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-end p-8">
           {/* Navigation Dots: Interactive buttons to jump to specific slides */}
           <div className="flex gap-2">
             {/* Map over carousel images to create a button for each */}

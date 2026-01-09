@@ -1,11 +1,12 @@
 import React from "react";
 import "./Navbar.css";
+import Logo from '../assets/logo/logo.png';
 
 function Navbar({ setView }) {
   return (
     <nav className="navbar">
       <div className="navbar-logo">
-        F1 <span>Garage</span>
+        <img src={Logo} alt="F1 Garage" className="navbar-logo-img" />
       </div>
 
       <div className="navbar-buttons">

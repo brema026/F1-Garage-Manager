@@ -49,6 +49,13 @@
   box-shadow: 0 4px 8px rgba(225, 6, 0, 0.4);
 }
 
+/* Imagen del logo */
+.navbar-logo-img {
+  height: 30px;
+  width: auto;
+  object-fit: contain;
+}
+
 /* Click */
 .navbar-buttons button:active {
   transform: translateY(0);

@@ -30,11 +30,11 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Login y Register - Sin Navbar */}
+        {/* Login y Register */}
         <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
         <Route path="/register" element={<Register />} />
-        
-        {/* Dashboard - Con Navbar (ellos) */}
+
+        {/* Dashboard - Con Navbar */}
         <Route
           path="/dashboard/*"
           element={
