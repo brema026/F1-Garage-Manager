@@ -9,7 +9,6 @@ function Navbar({ setView }) {
       </div>
 
       <div className="navbar-buttons">
-        <button onClick={() => setView("users")}>Usuarios</button>
         <button onClick={() => setView("teams")}>Equipos</button>
         <button onClick={() => setView("drivers")}>Conductores</button>
         <button onClick={() => setView("sponsors")}>Patrocinadores</button>

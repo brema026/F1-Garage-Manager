@@ -1,42 +1,54 @@
-import { useState } from "react";
-import Navbar from "./components/Navbar";
-import Users from "./pages/Users";
-import Teams from "./pages/Teams";
-import Drivers from "./pages/Drivers";
-import Sponsors from "./pages/Sponsors";
-import Parts from "./pages/Parts";
-import Inventory from "./pages/Inventory";
-import CarSetup from "./pages/CarSetup";
+import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Login } from './pages/Login';
+import { Register } from './pages/Register';
+import Navbar from './components/Navbar';
+import Users from './pages/Users';
+import Teams from './pages/Teams';
+import Drivers from './pages/Drivers';
+import Sponsors from './pages/Sponsors';
+import Parts from './pages/Parts';
+import Inventory from './pages/Inventory';
+import CarSetup from './pages/CarSetup';
 
 function App() {
-  const [view, setView] = useState("users");
+  const [view, setView] = useState('equipos');
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Cambiar después con auth real
 
   const renderView = () => {
     switch (view) {
-      case "users": return <Users />;
-      case "drivers": return <Drivers />;
-      case "sponsors": return <Sponsors />;
-      case "parts": return <Parts />;
-      case "teams": 
-        return <Teams setView={setView} />;
-
-      case "inventory": 
-        return <Inventory setView={setView} />;
-
-      case "setup": 
-        return <CarSetup setView={setView} />;
-
-      default: return <Users />;
+      case 'drivers': return <Drivers />;
+      case 'sponsors': return <Sponsors />;
+      case 'parts': return <Parts />;
+      case 'teams': return <Teams setView={setView} />;
+      case 'inventory': return <Inventory setView={setView} />;
+      case 'setup': return <CarSetup setView={setView} />;
+      default: return <Teams />;
     }
   };
 
   return (
-    <div>
-      <Navbar setView={setView} />
-      <div>
-        {renderView()}
-      </div>
-    </div>
+    <Router>
+      <Routes>
+        {/* Login y Register - Sin Navbar */}
+        <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
+        <Route path="/register" element={<Register />} />
+        
+        {/* Dashboard - Con Navbar (ellos) */}
+        <Route
+          path="/dashboard/*"
+          element={
+            <>
+              <Navbar setView={setView} />
+              <div>{renderView()}</div>
+            </>
+          }
+        />
+
+        {/* Default redirect a login */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </Router>
   );
 }
 
