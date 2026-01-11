@@ -42,7 +42,7 @@ export function Drivers() {
           <h1 className="text-4xl md:text-6xl font-black text-white mb-3 tracking-tight">
             DRIVERS F1
           </h1>
-          <p className="text-light/50 text-sm md:text-base">Gestiona y visualiza el desempeño de tus pilotos</p>
+          <p className="text-light/50 text-sm md:text-base">Gestionar y visualizar el desempeño de pilotos</p>
         </div>
       </div>
 

@@ -78,7 +78,7 @@ export function Sponsors() {
           <h1 className="text-4xl md:text-6xl font-black text-white mb-3 tracking-tight">
             PATROCINADORES
           </h1>
-          <p className="text-light/50 text-sm md:text-base">Gestiona patrocinadores y aportes a equipos</p>
+          <p className="text-light/50 text-sm md:text-base">Gestionar patrocinadores y aportes a equipos</p>
         </div>
       </div>
 
