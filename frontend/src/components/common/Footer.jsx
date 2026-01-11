@@ -19,7 +19,7 @@ function Footer() {
             <img 
               src={Logo} 
               alt="F1 Garage Manager" 
-              className="h-7 sm:h-14 w-auto object-contain opacity-85 hover:opacity-100 transition-opacity duration-300"
+              className="h-12 sm:h-14 w-auto object-contain opacity-85 hover:opacity-100 transition-opacity duration-300"
             />
           </div>
 

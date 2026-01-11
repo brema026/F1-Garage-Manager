@@ -9,3 +9,37 @@ export const CAROUSEL_IMAGES = [
 ]
 
 export const CAROUSEL_INTERVAL = 5000;
+
+// Categorías
+export const CATEGORIAS = [
+  'Todas',
+  'Unidad de potencia',
+  'Paquete aerodinámico',
+  'Neumáticos',
+  'Suspensión',
+  'Caja de cambios'
+];
+
+// Categorías para CarSetup
+export const CARSETUP_CATEGORIES = [
+  'Unidad de Potencia',
+  'Paquete Aerodinámico',
+  'Neumáticos',
+  'Suspensión',
+  'Caja de Cambios'
+];
+
+// Estados de carros
+export const CAR_STATUS = {
+  PENDIENTE: 'pendiente',
+  EN_CONFIGURACION: 'en_configuracion',
+  FINALIZADO: 'finalizado'
+};
+
+// Colores de habilidad
+export const SKILL_LEVELS = {
+  EXCELENTE: 90,
+  MUY_BUENO: 80,
+  BUENO: 70,
+  REGULAR: 60,
+};

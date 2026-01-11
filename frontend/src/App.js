@@ -4,7 +4,6 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import Navbar from './components/Navbar';
 import Footer from './components/common/Footer';
-import Users from './pages/Users';
 import Teams from './pages/Teams';
 import Drivers from './pages/Drivers';
 import Sponsors from './pages/Sponsors';
