@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CATEGORIAS, INVENTORY, EQUIPOS, formatDate, getTotalItems, getCategoriesCount } from '../data/InventoryData';
-import { FiPlus, FiX, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiX, FiTrash2, FiChevronRight } from 'react-icons/fi';
 
 export function Inventory() {
   const [selectedEquipo, setSelectedEquipo] = useState(INVENTORY && INVENTORY.length > 0 ? INVENTORY[0].id_equipo : 1);
@@ -59,22 +59,48 @@ export function Inventory() {
         {/* Selector de Equipo */}
         <div className="lg:col-span-1">
           <div className="sticky top-8 space-y-4">
-            {/* Select Equipo */}
-            <div className="bg-[#0f1419]/80 border border-light/5 backdrop-blur rounded-2xl overflow-hidden p-4 space-y-3">
-              <label className="block text-xs font-bold text-light/70 uppercase tracking-wider">
-                Seleccionar Equipo
-              </label>
-              <select
-                value={selectedEquipo}
-                onChange={(e) => setSelectedEquipo(parseInt(e.target.value))}
-                className="w-full px-4 py-3 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all text-sm"
-              >
-                {EQUIPOS.map((equipo) => (
-                  <option key={equipo.id_equipo} value={equipo.id_equipo}>
-                    {equipo.nombre}
-                  </option>
-                ))}
-              </select>
+            {/* Botón crear */}
+            <button
+              onClick={handleAddItem}
+              className="w-full bg-gradient-to-r from-primary to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg shadow-primary/30 hover:shadow-primary/50 flex items-center justify-center gap-2 md:text-sm"
+            >
+              <FiPlus className="text-lg" />
+              AGREGAR PARTE
+            </button>
+
+            {/* Lista de equipos */}
+            <div className="bg-[#0f1419]/80 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
+              <div className="p-4 border-b border-light/5">
+                <h2 className="text-sm font-bold text-light/70 uppercase tracking-wider">EQUIPOS ({EQUIPOS.length})</h2>
+              </div>
+
+              <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto px-3 py-3 custom-scrollbar">
+                {EQUIPOS.map((equipo) => {
+                  const equipoInventory = INVENTORY.find(inv => inv.id_equipo === equipo.id_equipo);
+                  const totalItems = equipoInventory ? getTotalItems(equipoInventory.items) : 0;
+                  
+                  return (
+                    <button
+                      key={equipo.id_equipo}
+                      onClick={() => setSelectedEquipo(equipo.id_equipo)}
+                      className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 group ${
+                        selectedEquipo === equipo.id_equipo
+                          ? 'bg-primary/20 border border-primary shadow-lg shadow-primary/20'
+                          : 'bg-[#1a1f3a]/50 border border-light/5 hover:bg-[#1a1f3a] hover:border-primary/30'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-sm md:text-base text-white truncate">{equipo.nombre}</span>
+                        <FiChevronRight className={`text-primary transition-transform ${selectedEquipo === equipo.id_equipo ? 'translate-x-1' : ''}`} />
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-light/50">{equipoInventory ? equipoInventory.items.length : 0} items</span>
+                        <span className="text-accent font-bold">{totalItems} piezas</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
