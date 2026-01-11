@@ -126,18 +126,6 @@ export function RegisterForm() {
                         </button>
                     </div>
 
-                    {/* Terms and Conditions Checkbox */}
-                    <div className="flex items-start">
-                        <input
-                            type="checkbox"
-                            id="terms"
-                            className="mt-1 mr-2 text-primary focus:ring-primary accent-primary"
-                        />
-                        <label htmlFor="terms" className="text-sm text-gray-600">
-                            Acepto los <a href="#" className="text-primary hover:underline">Términos de Servicio</a> y la <a href="#" className="text-primary hover:underline">Política de Privacidad</a>.
-                        </label>
-                    </div>
-
                     {/* Submit Button */}
                     <button
                         type="submit"
@@ -145,26 +133,6 @@ export function RegisterForm() {
                     >
                         Crear cuenta
                     </button>
-
-                    {/* Divider */}
-                    <div className="flex items-center my-6">
-                        <div className="flex-1 border-t border-light"></div>
-                        <span className="px-3 text-light text-sm">O continuar con</span>
-                        <div className="flex-1 border-t border-light"></div>
-                    </div>
-
-                    {/* Social Register Buttons */}
-                    <div className="flex gap-4 justify-center">
-                        <button className="flex items-center justify-center w-14 h-14 border border-gray-300 rounded-lg bg-white hover:bg-gray-300 transition-colors">
-                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-7 h-7" />
-                        </button>
-                        <button className="flex items-center justify-center w-14 h-14 border border-gray-300 rounded-lg bg-white hover:bg-gray-300 transition-colors">
-                            <FaApple className="text-3xl text-black" />
-                        </button>
-                        <button className="flex items-center justify-center w-14 h-14 border border-gray-300 rounded-lg bg-white hover:bg-gray-300 transition-colors">
-                            <FaFacebook className="text-3xl" style={{ color: '#1877F2' }} />
-                        </button>
-                    </div>
                 </form>
             </div>
         </div>

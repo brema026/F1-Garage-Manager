@@ -77,14 +77,7 @@ export function LoginForm() {
               )}
             </button>
           </div>
-
-          {/* Forgot Password */}
-          <div className="text-right">
-            <a href="#" className="text-sm text-light font-semibold hover:underline">
-              ¿Olvidó su contraseña?
-            </a>
-          </div>
-
+          
           {/* Login Button */}
           <button
             type="submit"
@@ -93,26 +86,6 @@ export function LoginForm() {
             Iniciar sesión
           </button>
         </form>
-
-        {/* Divider */}
-        <div className="flex items-center my-6">
-          <div className="flex-1 border-t border-light"></div>
-          <span className="px-3 text-light text-sm">O continúa con</span>
-          <div className="flex-1 border-t border-light"></div>
-        </div>
-
-        {/* Social Login Buttons */}
-        <div className="flex gap-4 justify-center">
-          <button className="flex items-center justify-center w-14 h-14 border border-gray-300 rounded-lg bg-white hover:bg-gray-300 transition-colors">
-            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-7 h-7" />
-          </button>
-          <button className="flex items-center justify-center w-14 h-14 border border-gray-300 rounded-lg bg-white hover:bg-gray-300 transition-colors">
-            <FaApple className="text-3xl text-black" />
-          </button>
-          <button className="flex items-center justify-center w-14 h-14 border border-gray-300 rounded-lg bg-white hover:bg-gray-300 transition-colors">
-            <FaFacebook className="text-3xl" style={{ color: '#1877F2' }} />
-          </button>
-        </div>
       </div>
     </div>
   )
