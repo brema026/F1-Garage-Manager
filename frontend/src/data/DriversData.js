@@ -30,29 +30,5 @@ export const DRIVERS = [
       promedio_puntos: 5.5,
       campeonatos: 0,
     },
-  },
+  }
 ];
-
-export const HABILIDAD_COLORES = {
-  excelente: 'from-green-500 to-green-400',
-  muy_bueno: 'from-blue-500 to-blue-400',
-  bueno: 'from-yellow-500 to-yellow-400',
-  regular: 'from-orange-500 to-orange-400',
-  bajo: 'from-red-500 to-red-400',
-};
-
-export const getHabilidadColor = (habilidad) => {
-  if (habilidad >= 90) return HABILIDAD_COLORES.excelente;
-  if (habilidad >= 80) return HABILIDAD_COLORES.muy_bueno;
-  if (habilidad >= 70) return HABILIDAD_COLORES.bueno;
-  if (habilidad >= 60) return HABILIDAD_COLORES.regular;
-  return HABILIDAD_COLORES.bajo;
-};
-
-export const getHabilidadLabel = (habilidad) => {
-  if (habilidad >= 90) return 'Excelente';
-  if (habilidad >= 80) return 'Muy Bueno';
-  if (habilidad >= 70) return 'Bueno';
-  if (habilidad >= 60) return 'Regular';
-  return 'Bajo';
-};

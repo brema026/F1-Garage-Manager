@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { DRIVERS, getHabilidadColor, getHabilidadLabel } from '../data/DriversData';
+import { DRIVERS } from '../data/DriversData';
 import { FiEdit, FiPlus, FiX, FiChevronRight } from 'react-icons/fi';
+import { HABILIDAD_COLORES, getHabilidadColor, getHabilidadLabel, formatCurrency, calculateTotalAportes, calculateTotalByTeam, getTotalItems, getCategoriesCount, formatDate, getPartsByCategory, getPartById, calculateCarStats, isCarComplete } from '../utils/helpers';
 
 export function Drivers() {
   const [selectedDriver, setSelectedDriver] = useState(DRIVERS && DRIVERS.length > 0 ? DRIVERS[0] : null);

@@ -62,26 +62,3 @@ export const SPONSORS = [
     ],
   },
 ];
-
-export const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('es-ES', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-  }).format(amount);
-};
-
-export const formatDate = (dateString) => {
-  const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
-  return new Date(dateString).toLocaleDateString('es-ES', options);
-};
-
-export const calculateTotalAportes = (aportes) => {
-  return aportes.reduce((sum, aporte) => sum + aporte.monto, 0);
-};
-
-export const calculateTotalByTeam = (aportes, teamId) => {
-  return aportes
-    .filter(aporte => aporte.id_equipo === teamId)
-    .reduce((sum, aporte) => sum + aporte.monto, 0);
-};

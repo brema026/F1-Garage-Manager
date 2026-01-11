@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { CATEGORIAS, INVENTORY, EQUIPOS, formatDate, getTotalItems, getCategoriesCount } from '../data/InventoryData';
+import { INVENTORY } from '../data/InventoryData';
 import { FiPlus, FiX, FiTrash2, FiChevronRight } from 'react-icons/fi';
+import { HABILIDAD_COLORES, getHabilidadColor, getHabilidadLabel, formatCurrency, calculateTotalAportes, calculateTotalByTeam, getTotalItems, getCategoriesCount, formatDate, getPartsByCategory, getPartById, calculateCarStats, isCarComplete } from '../utils/helpers';
+import { CATEGORIAS} from '../utils/constants';
+import { TEAMS } from '../data/TeamsData';
 
 export function Inventory() {
   const [selectedEquipo, setSelectedEquipo] = useState(INVENTORY && INVENTORY.length > 0 ? INVENTORY[0].id_equipo : 1);
@@ -71,11 +74,11 @@ export function Inventory() {
             {/* Lista de equipos */}
             <div className="bg-[#0f1419]/80 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-light/5">
-                <h2 className="text-sm font-bold text-light/70 uppercase tracking-wider">EQUIPOS ({EQUIPOS.length})</h2>
+                <h2 className="text-sm font-bold text-light/70 uppercase tracking-wider">EQUIPOS ({TEAMS.length})</h2>
               </div>
 
               <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto px-3 py-3 custom-scrollbar">
-                {EQUIPOS.map((equipo) => {
+                {TEAMS.map((equipo) => {
                   const equipoInventory = INVENTORY.find(inv => inv.id_equipo === equipo.id_equipo);
                   const totalItems = equipoInventory ? getTotalItems(equipoInventory.items) : 0;
                   

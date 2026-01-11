@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
-import { PARTS, CATEGORIAS } from '../data/PartsData';
+import { PARTS } from '../data/PartsData';
 import { FiEdit, FiPlus, FiX, FiChevronRight, FiTrash2 } from 'react-icons/fi';
+import { HABILIDAD_COLORES, getHabilidadColor, getHabilidadLabel, formatCurrency, calculateTotalAportes, calculateTotalByTeam, getTotalItems, getCategoriesCount, formatDate, getPartsByCategory, getPartById, calculateCarStats, isCarComplete } from '../utils/helpers';
+import { CATEGORIAS} from '../utils/constants';
 
 export function Parts() {
   const [selectedPart, setSelectedPart] = useState(PARTS && PARTS.length > 0 ? PARTS[0] : null);

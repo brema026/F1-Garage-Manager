@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { SPONSORS, formatCurrency, formatDate, calculateTotalAportes } from '../data/SponsorsData';
+import { SPONSORS } from '../data/SponsorsData';
 import { FiEdit, FiPlus, FiX, FiChevronRight, FiTrash2 } from 'react-icons/fi';
+import { HABILIDAD_COLORES, getHabilidadColor, getHabilidadLabel, formatCurrency, calculateTotalAportes, calculateTotalByTeam, getTotalItems, getCategoriesCount, formatDate, getPartsByCategory, getPartById, calculateCarStats, isCarComplete } from '../utils/helpers';
 
 export function Sponsors() {
   const [selectedSponsor, setSelectedSponsor] = useState(SPONSORS && SPONSORS.length > 0 ? SPONSORS[0] : null);
