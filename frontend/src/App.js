@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import Navbar from './components/Navbar';
+import Footer from './components/common/Footer';
 import Users from './pages/Users';
 import Teams from './pages/Teams';
 import Drivers from './pages/Drivers';
@@ -34,14 +35,17 @@ function App() {
         <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Dashboard - Con Navbar */}
+        {/* Dashboard - Con Navbar y Footer */}
         <Route
           path="/dashboard/*"
           element={
-            <>
+            <div className="flex flex-col min-h-screen">
               <Navbar setView={setView} />
-              <div>{renderView()}</div>
-            </>
+              <main className="flex-1">
+                {renderView()}
+              </main>
+              <Footer />
+            </div>
           }
         />
 
