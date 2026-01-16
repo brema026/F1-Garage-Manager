@@ -1,6 +1,8 @@
 const authService = require('../services/authService'); // Import the auth service
 const logger = require('../config/logger'); // Import logger for logging errors
-const { http } = require('winston');
+const { http } = require('winston'); // Import http from winston for logging
+const { getPool } = require('../config/database'); // Import database connection pool
+const sql = require('mssql'); // Import mssql package for SQL Server interaction
 
 const authController = {
     // Handle user registration
@@ -40,6 +42,22 @@ const authController = {
             logger.error(`Login error: ${e.message}`);
             res.status(401).json({ error: 'Invalid email or password' });
         }
+    },
+
+    // Handle user logout
+    async logout(req, res, next) {
+        const sessionId = req.cookies.sessionId; // Get session ID from cookies
+
+        // If session ID exists, delete the session from the database
+        if (sessionId) {
+            const pool = await getPool(); // Get database connection pool
+            await pool.request()
+            .input('id_sesion', sql.VarChar, sessionId)
+            .execute('dbo.sp_cerrar_sesion'); // Execute stored procedure to close session
+        }
+
+        res.clearCookie('sessionId'); // Clear session cookie
+        res.status(200).json({ message: 'Logout successful' }); // Send success response
     }
 };
 

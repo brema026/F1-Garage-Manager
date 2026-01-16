@@ -1,6 +1,9 @@
 const express = require('express'); // Import Express framework
 const router = express.Router(); // Create Express router instance
 const authController = require('../controllers/authController'); // Import auth controller
+const { protect } = require('../middleware/authMiddleware'); // Import auth middleware
+const { log } = require('winston');
+const logger = require('../config/logger');
 
 /**
  * POST /api/auth/register
@@ -28,6 +31,25 @@ router.post('/register', authController.register);
  * @returns {Object} Success success or error message of login
  */
 router.post('/login', authController.login);
+
+/**
+ * POST /api/auth/logout
+ * User logout endpoint
+ * Logs out the authenticated user by clearing the session cookie
+ * 
+ * @route POST /api/auth/logout
+ * @returns {Object} Success or error message of logout
+ */
+router.post('/logout', protect, authController.logout);
+
+// Profile endpoint
+router.get('/profile', protect, (req, res) => {
+    logger.info(`Profile accessed by user: ${req.user.nombre}`);
+    res.json({
+        authenticated: true,
+        user: req.user 
+    });
+});
 
 // Export router for use in main app.js
 module.exports = router;

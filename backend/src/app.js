@@ -5,6 +5,8 @@ const bodyParser = require('body-parser'); // Import body parser for request par
 const { connectDB } = require('./config/database'); // Import database connection function
 const logger = require('./config/logger'); // Import Winston logger
 
+const cookieParser = require('cookie-parser'); // Import cookie parser middleware
+
 const healthRoutes = require('./routes/health'); // Import health check routes
 const authRoutes = require('./routes/auth'); // Import authentication routes
 
@@ -26,6 +28,9 @@ app.use(bodyParser.urlencoded({ extended: true })); // Parse URL-encoded request
 
 // Establish database connection
 connectDB();
+
+// Cookie parser middleware
+app.use(cookieParser());
 
 // Root route
 app.get('/', (req, res) => {
