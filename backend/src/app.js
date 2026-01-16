@@ -6,6 +6,7 @@ const { connectDB } = require('./config/database'); // Import database connectio
 const logger = require('./config/logger'); // Import Winston logger
 
 const healthRoutes = require('./routes/health'); // Import health check routes
+const authRoutes = require('./routes/auth'); // Import authentication routes
 
 const app = express(); // Initialize Express application
 
@@ -37,6 +38,7 @@ app.get('/', (req, res) => {
 
 // Register routes
 app.use('/api', healthRoutes);
+app.use('/api/auth', authRoutes);
 
 // Error handling middleware - catches errors from routes and middlewares
 app.use((err, req, res, next) => {
