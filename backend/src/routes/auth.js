@@ -17,5 +17,17 @@ const authController = require('../controllers/authController'); // Import auth 
  */
 router.post('/register', authController.register);
 
+/**
+ * POST /api/auth/login
+ * User login endpoint
+ * Authenticates a user with provided email and password
+ * 
+ * @route POST /api/auth/login
+ * @param {string} email - User's email
+ * @param {string} password - User's password
+ * @returns {Object} Success success or error message of login
+ */
+router.post('/login', authController.login);
+
 // Export router for use in main app.js
 module.exports = router;

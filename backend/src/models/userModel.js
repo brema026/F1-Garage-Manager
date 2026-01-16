@@ -16,6 +16,16 @@ const userModel = {
         .input('id_equipo', sql.Int, userData.id_equipo)
 
         .execute('sp_registrar_usuario'); // Stored procedure to register user
+    },
+
+    // Get user by email for login validation
+    async getByEmail(email) {
+        const pool = await getPool(); // Get database connection pool
+        return pool.request() // Create a new request
+
+        .input('email', sql.NVarChar, email) // Input parameter for the stored procedure
+
+        .execute('dbo.sp_validar_login'); // Stored procedure to get user by email
     }
 }
 
