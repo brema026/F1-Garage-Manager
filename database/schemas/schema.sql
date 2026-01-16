@@ -16,6 +16,7 @@ IF OBJECT_ID('dbo.conductor', 'U') IS NOT NULL DROP TABLE dbo.conductor;
 IF OBJECT_ID('dbo.aporte', 'U') IS NOT NULL DROP TABLE dbo.aporte;
 IF OBJECT_ID('dbo.patrocinador', 'U') IS NOT NULL DROP TABLE dbo.patrocinador;
 
+IF OBJECT_ID('dbo.sesion', 'U') IS NOT NULL DROP TABLE dbo.sesion;
 IF OBJECT_ID('dbo.usuario', 'U') IS NOT NULL DROP TABLE dbo.usuario;
 IF OBJECT_ID('dbo.carro', 'U') IS NOT NULL DROP TABLE dbo.carro;
 IF OBJECT_ID('dbo.pieza', 'U') IS NOT NULL DROP TABLE dbo.pieza;
@@ -50,6 +51,21 @@ CREATE TABLE dbo.usuario (
     -- Si es Engineer, debe tener equipo asignado (deja Admin/Driver opcional)
     CONSTRAINT ck_usuario_engineer_equipo CHECK ((rol <> 'Engineer') OR (id_equipo IS NOT NULL))
 );
+GO
+
+CREATE TABLE dbo.sesion (
+    id_sesion        NVARCHAR(450) NOT NULL, 
+    id_usuario       INT NOT NULL,
+    expira           DATETIME2 NOT NULL,
+    datos_sesion     NVARCHAR(MAX) CONSTRAINT ck_sesion_json CHECK (ISJSON(datos_sesion) = 1), 
+    creado_en        DATETIME2 NOT NULL CONSTRAINT df_sesion_creado DEFAULT (SYSUTCDATETIME()),
+    
+    CONSTRAINT pk_sesion PRIMARY KEY (id_sesion),
+    CONSTRAINT fk_sesion_usuario FOREIGN KEY (id_usuario) REFERENCES dbo.usuario(id_usuario) ON DELETE CASCADE
+);
+GO
+
+CREATE INDEX idx_sesion_expira ON dbo.sesion(expira);
 GO
 
 CREATE TABLE dbo.patrocinador (

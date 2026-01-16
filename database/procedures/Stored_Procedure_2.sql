@@ -1,4 +1,4 @@
-CREATE OR ALTER PROCEDURE dbo.sp_compra_pieza_equipo
+CREATE OR ALTER PROCEDURE dbo.sp_presupuesto_equipo
     @id_equipo INT,
     @id_pieza  INT,
     @cantidad  INT
@@ -67,6 +67,6 @@ BEGIN
         VALUES (@id_equipo, @id_pieza, @cantidad);
     END;
 
-    SELECT 'Compra registrada (versión preliminar)' AS resultado;
+    SELECT 'Compra registrada (versiï¿½n preliminar)' AS resultado;
 END;
 GO
