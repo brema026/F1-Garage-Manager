@@ -46,18 +46,34 @@ const authController = {
 
     // Handle user logout
     async logout(req, res, next) {
-        const sessionId = req.cookies.sessionId; // Get session ID from cookies
+        try {
+            const sessionId = req.cookies.sessionId; // Get session ID from cookies
 
-        // If session ID exists, delete the session from the database
-        if (sessionId) {
-            const pool = await getPool(); // Get database connection pool
-            await pool.request()
-            .input('id_sesion', sql.VarChar, sessionId)
-            .execute('dbo.sp_cerrar_sesion'); // Execute stored procedure to close session
+            // If session ID exists, delete the session from the database
+            if (sessionId) {
+                const pool = await getPool(); // Get database connection pool
+                await pool.request()
+                .input('id_sesion', sql.NVarChar, sessionId)
+                .execute('dbo.sp_cerrar_sesion'); // Execute stored procedure to close session
+
+                logger.info(`User logged out, session closed: ${sessionId}`); // Log successful logout
+            }
+
+            // Clear the session cookie
+            res.clearCookie('sessionId'), {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'Lax'
+            }; 
+            
+            // Clear session cookie
+            res.status(200).json({ message: 'Logout successful' }); // Send success response
         }
 
-        res.clearCookie('sessionId'); // Clear session cookie
-        res.status(200).json({ message: 'Logout successful' }); // Send success response
+        catch (e) {
+            logger.error(`Logout error: ${e.message}`);
+            res.status(500).json({ error: 'Error logging out user' });
+        }
     }
 };
 
