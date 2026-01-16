@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -10,10 +10,33 @@ import Sponsors from './pages/Sponsors';
 import Parts from './pages/Parts';
 import Inventory from './pages/Inventory';
 import CarSetup from './pages/CarSetup';
+import api from './api/axios';
 
 function App() {
-  const [view, setView] = useState('equipos');
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Cambiar después con auth real
+  const [view, setView] = useState('teams');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Check authentication status on app load
+  useEffect(() => {
+    const verifySession = async () => {
+      try {
+        const response = await api.get('/auth/check-auth');
+        
+        if (response.data.authenticated) {
+          setIsLoggedIn(true);
+        }
+
+      } catch (e) {
+        setIsLoggedIn(false);
+
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifySession();
+  }, []);
 
   const renderView = () => {
     switch (view) {
@@ -27,29 +50,46 @@ function App() {
     }
   };
 
+  // Show loading spinner while verifying session
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
     <Router>
       <Routes>
-        {/* Login y Register */}
-        <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
+        {/* Public Routes */}
+        <Route 
+          path="/login" 
+          element={!isLoggedIn ? <Login setIsLoggedIn={setIsLoggedIn} /> : <Navigate to="/dashboard" />} 
+        />
         <Route path="/register" element={<Register />} />
 
-        {/* Dashboard - Con Navbar y Footer */}
+        {/* Protected Dashboard Route */}
         <Route
           path="/dashboard/*"
           element={
-            <div className="flex flex-col min-h-screen">
-              <Navbar setView={setView} />
-              <main className="flex-1">
-                {renderView()}
-              </main>
-              <Footer />
-            </div>
+            isLoggedIn ? (
+              <div className="flex flex-col min-h-screen">
+                {/* Pasamos setIsLoggedIn al Navbar para el logout */}
+                <Navbar setView={setView} setIsLoggedIn={setIsLoggedIn} />
+                <main className="flex-1">
+                  {renderView()}
+                </main>
+                <Footer />
+              </div>
+            ) : (
+              <Navigate to="/login" replace />
+            )
           }
         />
 
-        {/* Default redirect a login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        {/* Default redirect */}
+        <Route path="/" element={<Navigate to={isLoggedIn ? "/dashboard" : "/login"} replace />} />
       </Routes>
     </Router>
   );

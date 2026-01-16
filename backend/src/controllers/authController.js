@@ -3,6 +3,7 @@ const logger = require('../config/logger'); // Import logger for logging errors
 const { http } = require('winston'); // Import http from winston for logging
 const { getPool } = require('../config/database'); // Import database connection pool
 const sql = require('mssql'); // Import mssql package for SQL Server interaction
+const { checkout } = require('../routes/auth');
 
 const authController = {
     // Handle user registration
@@ -74,6 +75,11 @@ const authController = {
             logger.error(`Logout error: ${e.message}`);
             res.status(500).json({ error: 'Error logging out user' });
         }
+    },
+
+    // Check authentication status
+    async checkAuth(req, res, next) {
+        res.status(200).json({ authenticated: true, user: req.user });
     }
 };
 

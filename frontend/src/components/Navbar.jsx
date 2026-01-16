@@ -1,8 +1,12 @@
 import React, { useState } from "react";
 import Logo from '../assets/logo/logo.png';
+import { useNavigate } from "react-router-dom";
+import api from "../api/axios";
+import { set } from "mongoose";
 
-function Navbar({ setView }) {
+function Navbar({ setView, setIsLoggedIn }) {
   // State management
+  const navigate = useNavigate();
   const [activeView, setActiveView] = useState("teams");
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -23,6 +27,21 @@ function Navbar({ setView }) {
     { id: "inventory", label: "Inventario" },
     { id: "setup", label: "Armado" },
   ];
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout');
+      setIsLoggedIn(false);
+      navigate('/login');
+    }
+
+    catch (e) {
+      console.error('Error during logout:', e);
+      setIsLoggedIn(false);
+      navigate('/login');
+    }
+  };
 
   return (
     <nav className="relative">
@@ -113,8 +132,8 @@ function Navbar({ setView }) {
                   <div className="h-px bg-gradient-to-r from-transparent via-slate-700/20 to-transparent"></div>
 
                   {/* Log out Option */}
-                  <div className="py-2">
-                    <button className="w-full px-6 py-3 text-left text-xs font-medium text-red-500/90 hover:text-red-400 hover:bg-red-950/20 transition-all duration-200 uppercase tracking-widest">
+                  <div className="py-2 ">
+                    <button className="w-full px-6 py-3 text-left text-xs font-medium text-red-500/90 hover:text-red-400 hover:bg-red-950/20 transition-all duration-200 uppercase tracking-widest" onClick={handleLogout}>
                       Cerrar Sesión
                     </button>
                   </div>
@@ -212,7 +231,7 @@ function Navbar({ setView }) {
                   <div className="h-px bg-gradient-to-r from-transparent via-slate-700/20 to-transparent"></div>
 
                   {/* Cerrar Sesión */}
-                  <div className="py-2">
+                  <div className="py-2" onClick={handleLogout}>
                     <button className="w-full px-6 py-3 text-left text-xs font-medium text-red-500/90 hover:text-red-400 hover:bg-red-950/20 transition-all duration-200 uppercase tracking-widest">
                       Cerrar Sesión
                     </button>
