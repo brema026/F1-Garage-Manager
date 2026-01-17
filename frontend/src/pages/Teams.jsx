@@ -1,49 +1,158 @@
-import { useState } from 'react';
-import { TEAMS } from '../data/TeamsData';
+import { useEffect, useState } from 'react';
+// import { TEAMS } from '../data/TeamsData';
 import { FiEdit, FiPlus, FiX, FiChevronRight } from 'react-icons/fi';
+import api from '../api/axios';
 
+// Teams Page Component
 export function Teams( { user } ) {
-  const [selectedTeam, setSelectedTeam] = useState(TEAMS && TEAMS.length > 0 ? TEAMS[0] : null);
-  const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState('create');
-  const [formData, setFormData] = useState({ nombre: '' });
+  const [teams, setTeams] = useState([]); // Lista de equipos
+  const [loading, setLoading] = useState(true); // Estado de carga
+  const [selectedTeam, setSelectedTeam] = useState(null); // Equipo seleccionado
+  const [showModal, setShowModal] = useState(false); // Estado del modal
+  const [modalMode, setModalMode] = useState('create'); // 'create' o 'edit'
+  const [formData, setFormData] = useState({ nombre: '' }); // Datos del formulario
+  const [submitting, setSubmitting] = useState(false); // Estado de envío del formulario
+  const [engineers, setEngineers] = useState([]); // Lista de ingenieros
+  const [showAssignModal, setShowAssignModal] = useState(false); // Estado del modal de asignación 
+  const [selectedEngineer, setSelectedEngineer] = useState(null); // Ingeniero seleccionado
 
-  const hasTeams = TEAMS && TEAMS.length > 0;
+  const userRole = user?.rol?.toLowerCase(); // Rol del usuario
+  const userTeamId = Number(user?.id_equipo); // ID del equipo del usuario
 
+  // Filtrar equipos según rol
+  const filteredTeams = userRole === 'admin' 
+    ? teams.filter(t => Number(t.id_equipo) !== 0) 
+    : teams.filter(t => Number(t.id_equipo) === userTeamId && Number(t.id_equipo) !== 0);
+
+  const hasTeams = filteredTeams.length > 0; // Verificar si hay equipos disponibles
+
+  // Cargar equipos desde la API
+  const fetchTeams = async () => {
+    try {
+      const response = await api.get('/teams');
+      const data = response.data;
+      setTeams(data);
+
+      if (data && data.length > 0) {
+        if (userRole === 'admin') {
+          // Si ya hay un seleccionado, lo mantenemos o buscamos la versión actualizada
+          const firstValidTeam = data.find(t => Number(t.id_equipo) !== 0);
+          setSelectedTeam(prev => data.find(t => t.id_equipo === prev?.id_equipo) || firstValidTeam);
+        } else {
+          const myTeam = data.find(t => Number(t.id_equipo) === userTeamId);
+          setSelectedTeam(myTeam || null);
+        }
+      }
+    } catch (error) {
+      console.error("Error cargando equipos:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Cargar equipos
+  useEffect(() => {
+    if (userRole !== 'driver') {
+      fetchTeams();
+    }
+  }, [userRole, userTeamId]);
+
+  // Cargar ingenieros
+  const fetchEngineers = async () => {
+    try {
+        const response = await api.get('/users/engineers');
+        setEngineers(response.data);
+    } catch (error) {
+        console.error("Error cargando ingenieros:", error);
+    }
+  };
+
+  // Cargar ingenieros solo para Admin
+  useEffect(() => {
+    if (userRole === 'admin') {
+        fetchTeams();
+        fetchEngineers(); // <--- Nueva llamada
+    } else if (userRole !== 'driver') {
+        fetchTeams();
+    }
+  }, [userRole, userTeamId]);
+
+  // Asignar equipo a ingeniero
+  const handleAssignTeam = async (teamId) => {
+    try {
+        await api.put(`/users/${selectedEngineer.id_usuario}/assign-team`, { 
+            id_equipo: teamId 
+        });
+        
+        // Refrescar datos y cerrar modal
+        await fetchEngineers();
+        await fetchTeams(); 
+        setShowAssignModal(false);
+        setSelectedEngineer(null);
+    } catch (error) {
+        alert("Error al asignar equipo");
+    }
+  };
+
+  // Crear nuevo equipo
   const handleCreateTeam = () => {
     setModalMode('create');
     setFormData({ nombre: '' });
     setShowModal(true);
   };
 
+  // Editar equipo
   const handleEditTeam = () => {
     setModalMode('edit');
-    setFormData({ nombre: selectedTeam.nombre });
+    setFormData({ nombre: selectedTeam?.nombre || '' });
     setShowModal(true);
   };
 
+  // Cerrar modal
   const handleCloseModal = () => {
     setShowModal(false);
     setFormData({ nombre: '' });
   };
 
-  const handleSubmit = (e) => {
+  // Formulario submit
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(modalMode === 'create' ? 'Crear equipo:' : 'Editar equipo:', formData);
-    handleCloseModal();
+    setSubmitting(true);
+
+    try {
+      if (modalMode === 'create') {
+        // POST /api/teams
+        const response = await api.post('/teams', { nombre: formData.nombre });
+        // Si el admin crea el primer equipo, seleccionarlo automáticamente
+        if (!selectedTeam) setSelectedTeam(response.data);
+      } else {
+        // PUT /api/teams/:id
+        await api.put(`/teams/${selectedTeam.id_equipo}`, { nombre: formData.nombre });
+      }
+
+      // Refrescar la lista de equipos desde el servidor para ver los cambios
+      await fetchTeams();
+      handleCloseModal();
+    } catch (error) {
+      console.error("Error al procesar equipo:", error);
+      alert(error.response?.data?.error || "Error en el servidor");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const userRole = user.rol?.toLowerCase();
-  const userTeamId = Number(user?.id_equipo);
-
-  const showTeams = userRole === 'admin'
-    ? TEAMS
-    : TEAMS.filter(team => team.id_equipo === userTeamId);
-
-  const [selectedTeam1, setSelectedTeam1] = useState(showTeams.length > 0 ? showTeams[0] : null);
-
-  if (userRole == 'driver') {
+  // No mostrar nada a conductores
+  if (userRole === 'driver') {
     return null;
+  }
+
+  // Show loading spinner while verifying session
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
   // Engineer without team assigned
@@ -74,7 +183,7 @@ export function Teams( { user } ) {
       </div>
     );
   }
-
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#0f1419] to-[#050812] p-4 md:p-8">
       {/* Header */}
@@ -154,206 +263,247 @@ export function Teams( { user } ) {
             <div className="lg:col-span-1">
               <div className="sticky top-8 space-y-4">
                 {/* Botón crear */}
-                <button
-                  onClick={handleCreateTeam}
-                  className="w-full bg-gradient-to-r from-primary to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg shadow-primary/30 hover:shadow-primary/50 flex items-center justify-center gap-2 md:text-sm"
-                >
-                  <FiPlus className="text-lg" />
-                  NUEVO EQUIPO
-                </button>
+                {userRole === 'admin' && (
+                  <button
+                    onClick={handleCreateTeam}
+                    className="w-full bg-gradient-to-r from-primary to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg shadow-primary/30 hover:shadow-primary/50 flex items-center justify-center gap-2 md:text-sm"
+                  >
+                    <FiPlus className="text-lg" />
+                    NUEVO EQUIPO
+                  </button>
+                )}
 
                 {/* Lista de equipos */}
                 <div className="bg-[#0f1419]/80 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
                   <div className="p-4 border-b border-light/5">
-                    <h2 className="text-sm font-bold text-light/70 uppercase tracking-wider">EQUIPOS ({TEAMS.length})</h2>
+                    <h2 className="text-sm font-bold text-light/70 uppercase tracking-wider">EQUIPOS ({filteredTeams.length})</h2>
                   </div>
 
                   <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto px-3 py-3 custom-scrollbar">
-                    {TEAMS.map((team) => (
+                    {filteredTeams.map((team) => (
                       <button
                         key={team.id_equipo}
                         onClick={() => setSelectedTeam(team)}
                         className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 group ${
-                          selectedTeam.id_equipo === team.id_equipo
+                          selectedTeam?.id_equipo === team.id_equipo
                             ? 'bg-primary/20 border border-primary shadow-lg shadow-primary/20'
                             : 'bg-[#1a1f3a]/50 border border-light/5 hover:bg-[#1a1f3a] hover:border-primary/30'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-bold text-sm md:text-base text-white truncate">{team.nombre}</span>
-                          <FiChevronRight className={`text-primary transition-transform ${selectedTeam.id_equipo === team.id_equipo ? 'translate-x-1' : ''}`} />
+                          <FiChevronRight className={`text-primary transition-transform ${selectedTeam?.id_equipo === team.id_equipo ? 'translate-x-1' : ''}`} />
                         </div>
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-light/50">{team.conductores.length} pilotos</span>
-                          <span className="text-accent font-bold">${(team.presupuesto_total / 1000000).toFixed(1)}M</span>
+                          <span className="text-light/50">{team.conductores?.length || 0} pilotos</span>
+                          <span className="text-accent font-bold">${((team.presupuesto_total || 0) / 1000000).toFixed(1)}M</span>
                         </div>
                       </button>
                     ))}
                   </div>
                 </div>
+
+                {/* Lista de Ingenieros (Solo Admin) */}
+                {userRole === 'admin' && (
+                  <div className="bg-[#0f1419]/80 border border-light/5 backdrop-blur rounded-2xl overflow-hidden mt-6">
+                    <div className="p-4 border-b border-light/5">
+                      <h2 className="text-sm font-bold text-light/70 uppercase tracking-wider">INGENIEROS ({engineers.length})</h2>
+                    </div>
+
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto px-3 py-3 custom-scrollbar">
+                      {engineers.map((eng) => (
+                        <button
+                          key={eng.id_usuario}
+                          onClick={() => {
+                            setSelectedEngineer(eng);
+                            setShowAssignModal(true);
+                          }}
+                          className="w-full text-left px-4 py-3 rounded-xl transition-all duration-300 bg-[#1a1f3a]/30 border border-light/5 hover:border-primary/50 group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="truncate pr-2">
+                              <span className="font-bold text-sm text-white block truncate">{eng.nombre}</span>
+                              <span className="text-[10px] text-light/40 uppercase">
+                                {eng.id_equipo ? `ID Equipo: ${eng.id_equipo}` : 'SIN EQUIPO'}
+                              </span>
+                            </div>
+                            <div className={`flex-shrink-0 w-2 h-2 rounded-full ${eng.id_equipo ? 'bg-green-500' : 'bg-red-600 animate-pulse'}`}></div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
-              
               {/* Hero Card */}
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-[#0f1419] to-transparent border border-primary/20 p-8">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-0"></div>
-                
-                <div className="relative z-10">
-                  <div className="flex flex-col md:flex-row justify-between md:items-start gap-4 mb-8">
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-3 h-3 bg-primary rounded-full"></div>
-                        <span className="text-xs font-bold text-primary uppercase tracking-widest">EQUIPO ACTUAL</span>
+              {selectedTeam && (
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-[#0f1419] to-transparent border border-primary/20 p-8">
+                  <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-0"></div>
+                  
+                  <div className="relative z-10">
+                    <div className="flex flex-col md:flex-row justify-between md:items-start gap-4 mb-8">
+                      <div>
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-3 h-3 bg-primary rounded-full"></div>
+                          <span className="text-xs font-bold text-primary uppercase tracking-widest">EQUIPO ACTUAL</span>
+                        </div>
+                        <h2 className="text-3xl md:text-4xl font-black text-white">{selectedTeam.nombre}</h2>
                       </div>
-                      <h2 className="text-3xl md:text-4xl font-black text-white">{selectedTeam.nombre}</h2>
+                      {userRole === 'admin' && (
+                        <button
+                          onClick={handleEditTeam}
+                          className="flex items-center gap-2 bg-primary/20 hover:bg-primary/40 border border-primary/40 text-primary px-4 py-2 rounded-lg transition-all font-bold text-sm md:text-base"
+                        >
+                          <FiEdit />
+                          EDITAR
+                        </button>
+                      )}  
                     </div>
-                    <button
-                      onClick={handleEditTeam}
-                      className="flex items-center gap-2 bg-primary/20 hover:bg-primary/40 border border-primary/40 text-primary px-4 py-2 rounded-lg transition-all font-bold text-sm md:text-base"
-                    >
-                      <FiEdit />
-                      EDITAR
-                    </button>
-                  </div>
 
-                  {/* Stats */}
-                  <div className="grid grid-cols-3 gap-3 md:gap-4">
-                    <div className="bg-[#1a1f3a]/50 border border-light/10 rounded-xl p-4 backdrop-blur">
-                      <div className="text-xs text-light/50 mb-2 uppercase font-bold tracking-wider">Presupuesto</div>
-                      <div className="text-2xl md:text-3xl font-black text-accent">${(selectedTeam.presupuesto_total / 1000000).toFixed(2)}M</div>
-                    </div>
-                    <div className="bg-[#1a1f3a]/50 border border-light/10 rounded-xl p-4 backdrop-blur">
-                      <div className="text-xs text-light/50 mb-2 uppercase font-bold tracking-wider">Pilotos</div>
-                      <div className="text-2xl md:text-3xl font-black text-blue-400">{selectedTeam.conductores.length}</div>
-                    </div>
-                    <div className="bg-[#1a1f3a]/50 border border-light/10 rounded-xl p-4 backdrop-blur">
-                      <div className="text-xs text-light/50 mb-2 uppercase font-bold tracking-wider">Carros</div>
-                      <div className="text-2xl md:text-3xl font-black text-green-400">{selectedTeam.carros.length}</div>
+                    {/* Stats */}
+                    <div className="grid grid-cols-3 gap-3 md:gap-4">
+                      <div className="bg-[#1a1f3a]/50 border border-light/10 rounded-xl p-4 backdrop-blur">
+                        <div className="text-xs text-light/50 mb-2 uppercase font-bold tracking-wider">Presupuesto</div>
+                        <div className="text-2xl md:text-3xl font-black text-accent">${((selectedTeam.presupuesto_total || 0) / 1000000).toFixed(2)}M</div>
+                      </div>
+                      <div className="bg-[#1a1f3a]/50 border border-light/10 rounded-xl p-4 backdrop-blur">
+                        <div className="text-xs text-light/50 mb-2 uppercase font-bold tracking-wider">Pilotos</div>
+                        <div className="text-2xl md:text-3xl font-black text-blue-400">{selectedTeam.conductores?.length || 0}</div>
+                      </div>
+                      <div className="bg-[#1a1f3a]/50 border border-light/10 rounded-xl p-4 backdrop-blur">
+                        <div className="text-xs text-light/50 mb-2 uppercase font-bold tracking-wider">Carros</div>
+                        <div className="text-2xl md:text-3xl font-black text-green-400">{selectedTeam.carros?.length || 0}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Grid Pilotos y Patrocinadores */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                {/* Pilotos */}
-                <div className="bg-[#0f1419]/50 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
-                  <div className="border-b border-light/5 px-6 py-4">
-                    <h3 className="text-sm font-bold text-light/70 uppercase tracking-wider flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-blue-400"></span>
-                      Pilotos
-                    </h3>
-                  </div>
-                  <div className="p-4 space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
-                    {selectedTeam.conductores.map((conductor) => (
-                      <div key={conductor.id_conductor} className="group">
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-[#1a1f3a]/40 border border-light/5 hover:border-blue-400/30 transition-all">
-                          <div className="flex-1">
-                            <div className="font-bold text-white text-sm md:text-base">{conductor.nombre}</div>
-                            <div className="text-xs text-light/50 mt-1">Habilidad</div>
+              {selectedTeam && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
+                  {/* Pilotos */}
+                  <div className="bg-[#0f1419]/50 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
+                    <div className="border-b border-light/5 px-6 py-4">
+                      <h3 className="text-sm font-bold text-light/70 uppercase tracking-wider flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                        Pilotos
+                      </h3>
+                    </div>
+                    <div className="p-4 space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
+                      {selectedTeam.conductores?.map((conductor) => (
+                        <div key={conductor.id_conductor} className="group">
+                          <div className="flex items-center justify-between p-3 rounded-lg bg-[#1a1f3a]/40 border border-light/5 hover:border-blue-400/30 transition-all">
+                            <div className="flex-1">
+                              <div className="font-bold text-white text-sm md:text-base">{conductor.nombre}</div>
+                              <div className="text-xs text-light/50 mt-1">Habilidad</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg md:text-xl font-black text-blue-400">{conductor.habilidad_h}</div>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-lg md:text-xl font-black text-blue-400">{conductor.habilidad_h}</div>
+                          <div className="mt-1 w-full h-1 bg-[#1a1f3a] rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-blue-500 to-blue-400"
+                              style={{ width: `${(conductor.habilidad_h / 100) * 100}%` }}
+                            />
                           </div>
                         </div>
-                        <div className="mt-1 w-full h-1 bg-[#1a1f3a] rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-blue-500 to-blue-400"
-                            style={{ width: `${(conductor.habilidad_h / 100) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                {/* Patrocinadores */}
-                <div className="bg-[#0f1419]/50 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
-                  <div className="border-b border-light/5 px-6 py-4">
-                    <h3 className="text-sm font-bold text-light/70 uppercase tracking-wider flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-accent"></span>
-                      Patrocinadores
-                    </h3>
-                  </div>
-                  <div className="p-4 space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
-                    {selectedTeam.aportes.map((aporte) => (
-                      <div key={aporte.id_aporte} className="p-3 rounded-lg bg-[#1a1f3a]/40 border border-light/5 hover:border-accent/30 transition-all">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1">
-                            <div className="font-bold text-white text-sm md:text-base">{aporte.nombre_patrocinador}</div>
-                            <div className="text-xs text-light/50 mt-1">{aporte.descripcion}</div>
+                  {/* Patrocinadores */}
+                  <div className="bg-[#0f1419]/50 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
+                    <div className="border-b border-light/5 px-6 py-4">
+                      <h3 className="text-sm font-bold text-light/70 uppercase tracking-wider flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-accent"></span>
+                        Patrocinadores
+                      </h3>
+                    </div>
+                    <div className="p-4 space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
+                      {selectedTeam.aportes?.map((aporte) => (
+                        <div key={aporte.id_aporte} className="p-3 rounded-lg bg-[#1a1f3a]/40 border border-light/5 hover:border-accent/30 transition-all">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <div className="font-bold text-white text-sm md:text-base">{aporte.nombre_patrocinador}</div>
+                              <div className="text-xs text-light/50 mt-1">{aporte.descripcion}</div>
+                            </div>
+                            <div className="text-accent font-black text-sm md:text-base ml-2">${((aporte.monto || 0) / 1000).toFixed(0)}k</div>
                           </div>
-                          <div className="text-accent font-black text-sm md:text-base ml-2">${(aporte.monto / 1000).toFixed(0)}k</div>
+                          <div className="mt-2 w-full h-1 bg-[#1a1f3a] rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-accent to-yellow-500"
+                              style={{ width: `${((aporte.monto || 0) / 800000) * 100}%` }}
+                            />
+                          </div>
                         </div>
-                        <div className="mt-2 w-full h-1 bg-[#1a1f3a] rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-accent to-yellow-500"
-                            style={{ width: `${(aporte.monto / 800000) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Carros */}
-              <div className="bg-[#0f1419]/50 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
-                <div className="border-b border-light/5 px-6 py-4">
-                  <h3 className="text-sm font-bold text-light/70 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-primary"></span>
-                    Carros en Configuración
-                  </h3>
-                </div>
-                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-80 overflow-y-auto custom-scrollbar">
-                  {selectedTeam.carros.map((carro) => (
-                    <div
-                      key={carro.id_carro}
-                      className="p-5 rounded-xl bg-[#1a1f3a]/40 border border-light/5 hover:border-primary/30 transition-all group cursor-pointer"
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <div className="text-sm text-light/50 mb-1">CARRO</div>
-                          <div className="text-lg md:text-2xl font-black text-white">{carro.nombre}</div>
-                        </div>
-                        <div className={`px-3 py-1 rounded-lg text-xs font-bold ${
-                          carro.finalizado
-                            ? 'bg-green-500/20 text-green-400'
-                            : 'bg-yellow-500/20 text-yellow-400'
-                        }`}>
-                          {carro.finalizado ? '✓ LISTO' : 'EN PROGRESO'}
-                        </div>
-                      </div>
-
-                      {carro.finalizado && (
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-3 gap-2">
-                            <div className="text-center p-2 rounded bg-yellow-500/10 border border-yellow-500/30">
-                              <div className="text-xs text-yellow-400 uppercase font-bold">P</div>
-                              <div className="text-lg font-black text-yellow-400">{carro.stats.p}</div>
-                            </div>
-                            <div className="text-center p-2 rounded bg-green-500/10 border border-green-500/30">
-                              <div className="text-xs text-green-400 uppercase font-bold">A</div>
-                              <div className="text-lg font-black text-green-400">{carro.stats.a}</div>
-                            </div>
-                            <div className="text-center p-2 rounded bg-blue-500/10 border border-blue-500/30">
-                              <div className="text-xs text-blue-400 uppercase font-bold">M</div>
-                              <div className="text-lg font-black text-blue-400">{carro.stats.m}</div>
-                            </div>
+              {selectedTeam && (
+                <div className="bg-[#0f1419]/50 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
+                  <div className="border-b border-light/5 px-6 py-4">
+                    <h3 className="text-sm font-bold text-light/70 uppercase tracking-wider flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-primary"></span>
+                      Carros en Configuración
+                    </h3>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-80 overflow-y-auto custom-scrollbar">
+                    {selectedTeam.carros?.map((carro) => (
+                      <div
+                        key={carro.id_carro}
+                        className="p-5 rounded-xl bg-[#1a1f3a]/40 border border-light/5 hover:border-primary/30 transition-all group cursor-pointer"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <div className="text-sm text-light/50 mb-1">CARRO</div>
+                            <div className="text-lg md:text-2xl font-black text-white">{carro.nombre}</div>
                           </div>
-                          <button className="w-full text-xs font-bold text-primary hover:text-red-600 py-2 transition-colors">
-                            VER SETUP →
-                          </button>
+                          <div className={`px-3 py-1 rounded-lg text-xs font-bold ${
+                            carro.finalizado
+                              ? 'bg-green-500/20 text-green-400'
+                              : 'bg-yellow-500/20 text-yellow-400'
+                          }`}>
+                            {carro.finalizado ? '✓ LISTO' : 'EN PROGRESO'}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  ))}
+
+                        {carro.finalizado && (
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="text-center p-2 rounded bg-yellow-500/10 border border-yellow-500/30">
+                                <div className="text-xs text-yellow-400 uppercase font-bold">P</div>
+                                <div className="text-lg font-black text-yellow-400">{carro.stats?.p}</div>
+                              </div>
+                              <div className="text-center p-2 rounded bg-green-500/10 border border-green-500/30">
+                                <div className="text-xs text-green-400 uppercase font-bold">A</div>
+                                <div className="text-lg font-black text-green-400">{carro.stats?.a}</div>
+                              </div>
+                              <div className="text-center p-2 rounded bg-blue-500/10 border border-blue-500/30">
+                                <div className="text-xs text-blue-400 uppercase font-bold">M</div>
+                                <div className="text-lg font-black text-blue-400">{carro.stats?.m}</div>
+                              </div>
+                            </div>
+                            <button className="w-full text-xs font-bold text-primary hover:text-red-600 py-2 transition-colors">
+                              VER SETUP →
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </>
@@ -406,6 +556,91 @@ export function Teams( { user } ) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Asignar Equipo a Ingeniero */}
+      {showAssignModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[#0f1419] border border-light/10 rounded-2xl p-6 md:p-8 max-w-md w-full">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight">
+                Vincular Equipo
+              </h3>
+              <button
+                onClick={() => setShowAssignModal(false)}
+                className="text-light/50 hover:text-white transition-colors"
+              >
+                <FiX size={24} />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-xs font-bold text-light/70 uppercase tracking-wider mb-2">
+                Seleccionar Escudería para: <span className="text-primary">{selectedEngineer?.nombre}</span>
+              </label>
+            </div>
+
+            {/* Lista de Equipos Reales (Filtrada y Ordenada) */}
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+              {teams
+                .filter(team => Number(team.id_equipo) !== 0)
+                .sort((a, b) => {
+                  if (a.id_equipo === selectedEngineer?.id_equipo) return -1;
+                  if (b.id_equipo === selectedEngineer?.id_equipo) return 1;
+                  return 0;
+                })
+                .map((team) => {
+                  const isCurrentTeam = team.id_equipo === selectedEngineer?.id_equipo;
+
+                  return (
+                    <button
+                      key={team.id_equipo}
+                      onClick={() => handleAssignTeam(team.id_equipo)}
+                      className={`w-full px-4 py-3.5 rounded-lg border transition-all flex items-center justify-between group ${
+                        isCurrentTeam
+                          ? 'bg-primary/10 border-primary shadow-lg shadow-primary/5'
+                          : 'bg-[#1a1f3a]/50 border-light/10 hover:border-primary/40'
+                      }`}
+                    >
+                      <span className={`text-sm font-bold uppercase tracking-wide ${isCurrentTeam ? 'text-white' : 'text-light/80'}`}>
+                        {team.nombre}
+                      </span>
+                      {isCurrentTeam ? (
+                        <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(225,6,0,0.8)]"></div>
+                      ) : (
+                        <FiChevronRight className="text-light/20 group-hover:text-primary transition-colors" />
+                      )}
+                    </button>
+                  );
+                })}
+            </div>
+
+            {/* Sección de Acciones de Control */}
+            <div className="mt-6 pt-6 border-t border-light/10 space-y-3">
+              
+              {/* Botón de Desasignar (Solo si tiene un equipo actualmente) */}
+              {selectedEngineer?.id_equipo !== 0 && (
+                <button
+                  onClick={() => handleAssignTeam(0)}
+                  className="w-full py-3 px-4 rounded-lg bg-red-600/10 border border-red-600/20 text-red-500 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                >
+                  <FiX className="text-sm" />
+                  Desasignar Equipo Actual
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowAssignModal(false)}
+                className="w-full py-3 px-4 rounded-lg border border-light/10 text-white font-bold hover:bg-[#1a1f3a] transition-all uppercase text-sm tracking-widest"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         </div>
       )}

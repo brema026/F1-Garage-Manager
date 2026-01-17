@@ -9,6 +9,8 @@ const cookieParser = require('cookie-parser'); // Import cookie parser middlewar
 
 const healthRoutes = require('./routes/health'); // Import health check routes
 const authRoutes = require('./routes/auth'); // Import authentication routes
+const teamRoutes = require('./routes/team'); // Import team routes
+const userRoutes = require('./routes/user'); // Import user routes
 
 const app = express(); // Initialize Express application
 
@@ -44,6 +46,8 @@ app.get('/', (req, res) => {
 // Register routes
 app.use('/api', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/teams', teamRoutes);
+app.use('/api/users', userRoutes);
 
 // Error handling middleware - catches errors from routes and middlewares
 app.use((err, req, res, next) => {

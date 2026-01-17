@@ -26,6 +26,23 @@ const userModel = {
         .input('email', sql.NVarChar, email) // Input parameter for the stored procedure
 
         .execute('dbo.sp_validar_login'); // Stored procedure to get user by email
+    },
+
+    // Get users by their role
+    async getUsersByRole(rol) {
+        const pool = await getPool();
+        return pool.request()
+            .input('rol', sql.NVarChar, rol)
+            .execute('dbo.sp_listar_usuarios_por_rol');
+    },
+
+    // Assign a team to a user
+    async assignTeam(id_usuario, id_equipo) {
+        const pool = await getPool();
+        return pool.request()
+            .input('id_usuario', sql.Int, id_usuario)
+            .input('id_equipo', sql.Int, id_equipo)
+            .execute('dbo.sp_asignar_equipo_usuario');
     }
 }
 
