@@ -36,6 +36,9 @@ CREATE TABLE dbo.equipo (
 );
 GO
 
+INSERT INTO dbo.equipo (id_equipo, nombre) 
+VALUES (0, 'SIN EQUIPO / PENDIENTE');
+
 CREATE TABLE dbo.usuario (
     id_usuario       INT IDENTITY(1,1) NOT NULL,
     nombre           NVARCHAR(120) NOT NULL,

@@ -16,6 +16,7 @@ function App() {
   const [view, setView] = useState('teams');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
   // Check authentication status on app load
   useEffect(() => {
@@ -25,6 +26,7 @@ function App() {
         
         if (response.data.authenticated) {
           setIsLoggedIn(true);
+          setUser(response.data.user);
         }
 
       } catch (e) {
@@ -39,13 +41,22 @@ function App() {
   }, []);
 
   const renderView = () => {
+    if (!user) return null;
+
+    const role = user.rol?.toLowerCase();
+
+    if (role === 'driver') {
+      return <div className="p-10 text-white text-center">Perfil del Conductor (Próximamente)</div>;
+    }
+
     switch (view) {
-      case 'drivers': return <Drivers />;
-      case 'sponsors': return <Sponsors />;
-      case 'parts': return <Parts />;
-      case 'teams': return <Teams setView={setView} />;
-      case 'inventory': return <Inventory setView={setView} />;
-      case 'setup': return <CarSetup setView={setView} />;
+      case 'teams': return <Teams setView={setView} user={user} />; // Pasamos el user para filtrar equipo
+      case 'drivers': 
+        return role === 'admin' ? <Drivers /> : <Navigate to="/dashboard" />;
+      case 'sponsors': return <Sponsors user={user}/>;
+      case 'parts': return <Parts user={user}/>;
+      case 'inventory': return <Inventory setView={setView} user={user}/>;
+      case 'setup': return <CarSetup setView={setView} user={user}/>;
       default: return <Teams />;
     }
   };
@@ -65,7 +76,7 @@ function App() {
         {/* Public Routes */}
         <Route 
           path="/login" 
-          element={!isLoggedIn ? <Login setIsLoggedIn={setIsLoggedIn} /> : <Navigate to="/dashboard" />} 
+          element={!isLoggedIn ? <Login setIsLoggedIn={setIsLoggedIn} setUser={setUser} /> : <Navigate to="/dashboard" />} 
         />
         <Route path="/register" element={<Register />} />
 
@@ -76,7 +87,7 @@ function App() {
             isLoggedIn ? (
               <div className="flex flex-col min-h-screen">
                 {/* Pasamos setIsLoggedIn al Navbar para el logout */}
-                <Navbar setView={setView} setIsLoggedIn={setIsLoggedIn} />
+                <Navbar setView={setView} setIsLoggedIn={setIsLoggedIn} user={user} />
                 <main className="flex-1">
                   {renderView()}
                 </main>

@@ -3,7 +3,8 @@ import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai'
 import { FaGoogle, FaApple, FaFacebook } from 'react-icons/fa'
 import FullLogo from '../../assets/logo/full-logo-white.png';
 import api from '../../api/axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { set } from 'mongoose';
 
 /**
  * Login Form Component
@@ -12,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
  * @component
  * @returns {JSX.Element} Login form container
  */
-export function LoginForm( { setIsLoggedIn } ) {
+export function LoginForm( { setIsLoggedIn, setUser } ) {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
 
@@ -37,9 +38,16 @@ export function LoginForm( { setIsLoggedIn } ) {
 
     try {
       const response = await api.post('/auth/login', credentials);
-      alert("Inicio de sesión exitoso");
-      setIsLoggedIn(true);
-      navigate('/dashboard');
+
+      if (response.data.user) {
+        setUser(response.data.user);
+        setIsLoggedIn(true);
+      }
+
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 100);
+      
     } catch (e) {
       console.error("Error during login:", e);
       alert("Error al iniciar sesión. Por favor, verifique sus credenciales.");

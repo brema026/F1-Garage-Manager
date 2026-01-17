@@ -18,7 +18,7 @@ export function RegisterForm() {
         rol: '',
         password: '',
         confirmPassword: '',
-        id_equipo: '1' // Default team ID for now
+        id_equipo: '0' // Default team ID for no team
     });
 
     const handleChange = (e) => {
