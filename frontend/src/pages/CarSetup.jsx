@@ -29,7 +29,7 @@ const ALL_PARTS = [
   ...CAJA_CAMBIOS_PARTS
 ];
 
-export function CarSetup() {
+export function CarSetup( { user } ) {
   const [selectedEquipoId, setSelectedEquipoId] = useState(EQUIPOS[0]?.id_equipo || null);
   const [selectedCarId, setSelectedCarId] = useState(null);
   const [carSetups, setCarSetups] = useState({});
@@ -114,6 +114,38 @@ export function CarSetup() {
       });
     }
   };
+
+  const userRole = user.rol?.toLowerCase();
+  const hasNoTeam = !user?.id_equipo || String(user?.id_equipo) === "0";
+  
+  // Engineer without team assigned
+  if (hasNoTeam && userRole === 'engineer') {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center p-6">
+        <div className="bg-slate-900/60 border border-red-500/20 p-10 rounded-3xl text-center backdrop-blur-2xl max-w-lg shadow-2xl">
+          <div className="flex justify-center mb-6">
+            <div className="p-4 bg-red-500/10 rounded-full">
+              <svg className="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 15c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+          </div>
+
+          <h2 className="text-white text-2xl font-bold mb-4 tracking-tight">VINCULACIÓN PENDIENTE</h2>
+          
+          <p className="text-slate-400 leading-relaxed">
+            Actualmente no tienes un equipo asignado en el sistema. Para comenzar a gestionar inventarios y telemetría.
+          </p>
+
+          <div className="mt-8 pt-6 border-t border-slate-800">
+            <p className="text-xs text-slate-500 uppercase tracking-widest">
+              Estado: Esperando asignación de equipo
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const getDriversForTeam = () => {
     return DRIVERS.filter((d) => d.equipo_id === selectedEquipoId);

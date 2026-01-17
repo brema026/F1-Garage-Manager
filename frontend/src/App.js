@@ -11,6 +11,7 @@ import Parts from './pages/Parts';
 import Inventory from './pages/Inventory';
 import CarSetup from './pages/CarSetup';
 import api from './api/axios';
+import { DriverWelcome } from './components/DriverWelcome';
 
 function App() {
   const [view, setView] = useState('teams');
@@ -46,7 +47,7 @@ function App() {
     const role = user.rol?.toLowerCase();
 
     if (role === 'driver') {
-      return <div className="p-10 text-white text-center">Perfil del Conductor (Próximamente)</div>;
+      return <DriverWelcome user={user} setView={setView} />;
     }
 
     switch (view) {

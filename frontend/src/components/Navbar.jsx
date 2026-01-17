@@ -170,11 +170,11 @@ function Navbar({ setView, setIsLoggedIn, user }) {
         </div>
 
         {/* Desktop Layout */}
-        <div className="hidden lg:flex items-center justify-between gap-4">
+        <div className="hidden lg:grid grid-cols-3 items-center px-4">
           
           {/* Logo */}
           <div className="flex justify-start">
-            <div className="flex-shrink-0 group cursor-pointer lg:flex-1" onClick={() => window.location.reload()}>
+            <div className="flex-shrink-0 group cursor-pointer" onClick={() => window.location.reload()}>
               <img 
                 src={Logo} 
                 alt="F1 Garage Manager" 

@@ -36,8 +36,10 @@ CREATE TABLE dbo.equipo (
 );
 GO
 
+SET IDENTITY_INSERT dbo.equipo ON;
 INSERT INTO dbo.equipo (id_equipo, nombre) 
 VALUES (0, 'SIN EQUIPO / PENDIENTE');
+SET IDENTITY_INSERT dbo.equipo OFF;
 
 CREATE TABLE dbo.usuario (
     id_usuario       INT IDENTITY(1,1) NOT NULL,
