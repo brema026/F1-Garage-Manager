@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import Logo from '../assets/logo/logo.png';
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
-import { set } from "mongoose";
+
 
 function Navbar({ setView, setIsLoggedIn, user }) {
   // State management
