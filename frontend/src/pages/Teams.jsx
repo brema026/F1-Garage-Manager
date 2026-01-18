@@ -580,7 +580,7 @@ export function Teams( { user } ) {
 
             <div className="mb-4">
               <label className="block text-xs font-bold text-light/70 uppercase tracking-wider mb-2">
-                Seleccionar Escudería para: <span className="text-primary">{selectedEngineer?.nombre}</span>
+                Seleccionar Equipo para: <span className="text-primary">{selectedEngineer?.nombre}</span>
               </label>
             </div>
 

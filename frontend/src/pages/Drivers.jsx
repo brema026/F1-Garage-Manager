@@ -1,38 +1,137 @@
-import { useState } from 'react';
-import { DRIVERS } from '../data/DriversData';
+import { useState, useEffect } from 'react';
+// import { DRIVERS } from '../data/DriversData';
 import { FiEdit, FiPlus, FiX, FiChevronRight } from 'react-icons/fi';
 import { HABILIDAD_COLORES, getHabilidadColor, getHabilidadLabel, formatCurrency, calculateTotalAportes, calculateTotalByTeam, getTotalItems, getCategoriesCount, formatDate, getPartsByCategory, getPartById, calculateCarStats, isCarComplete } from '../utils/helpers';
+import api from '../api/axios';
 
+// Drivers Page Component
 export function Drivers() {
-  const [selectedDriver, setSelectedDriver] = useState(DRIVERS && DRIVERS.length > 0 ? DRIVERS[0] : null);
-  const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState('create');
-  const [formData, setFormData] = useState({ nombre: '', habilidad_h: 80 });
+  const [drivers, setDrivers] = useState([]); // Lista de drivers desde la API
+  const [selectedDriver, setSelectedDriver] = useState(null); // Driver seleccionado
+  const [showModal, setShowModal] = useState(false); // Estado del modal
+  const [modalMode, setModalMode] = useState('create'); // 'create' o 'edit'
+  const [formData, setFormData] = useState({ nombre: '', habilidad_h: 50 }); // Datos del formulario
+  const [loading, setLoading] = useState(true); // Estado de carga
+  const [teams, setTeams] = useState([]); // Lista de equipos desde la API
+  const hasDrivers = drivers && drivers.length > 0; // Verificar si hay drivers
 
-  const hasDrivers = DRIVERS && DRIVERS.length > 0;
+  // Cargar drivers y equipos desde la API
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [driversRes, teamsRes] = await Promise.all([
+        api.get('/users/drivers'),
+        api.get('/teams')
+      ]);
 
+      const teamsData = teamsRes.data;
+      setTeams(teamsData);
+
+      const dataTransformada = driversRes.data.map(driver => {
+        const equipoEncontrado = teamsData.find(t => t.id_equipo === driver.id_equipo);
+        
+        return {
+          ...driver,
+          equipo_nombre: equipoEncontrado ? equipoEncontrado.nombre : 'Sin Equipo'
+        };
+      });
+
+      setDrivers(dataTransformada);
+
+      if (dataTransformada.length > 0 && !selectedDriver) {
+        setSelectedDriver(dataTransformada[0]);
+      }
+      
+    } catch (error) {
+      console.error("Error al cargar datos:", error);
+
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Manejo del modal
   const handleCreateDriver = () => {
     setModalMode('create');
     setFormData({ nombre: '', habilidad_h: 80 });
     setShowModal(true);
   };
 
+  // Editar driver
   const handleEditDriver = () => {
+    if (!selectedDriver) return;
+    
     setModalMode('edit');
-    setFormData({ nombre: selectedDriver.nombre, habilidad_h: selectedDriver.habilidad_h });
+    setFormData({ 
+      nombre: selectedDriver.nombre, 
+      habilidad_h: selectedDriver.habilidad_h,
+      id_equipo: selectedDriver.id_equipo !== null ? Number(selectedDriver.id_equipo) : 0,
+      id_usuario: selectedDriver.id_usuario 
+    });
     setShowModal(true);
   };
 
+  // Cerrar modal
   const handleCloseModal = () => {
     setShowModal(false);
     setFormData({ nombre: '', habilidad_h: 80 });
   };
 
-  const handleSubmit = (e) => {
+  // Enviar formulario (crear o editar)
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(modalMode === 'create' ? 'Crear driver:' : 'Editar driver:', formData);
-    handleCloseModal();
+
+    try {
+      setLoading(true);
+      if (modalMode === 'create') {
+        await api.post('/users/drivers', {
+          nombre: formData.nombre,
+          id_equipo: formData.id_equipo,
+          habilidad: formData.habilidad_h
+        });
+
+      } else {
+        await api.patch(`/users/drivers/${selectedDriver.id_driver}/skill`, {
+          habilidad: formData.habilidad_h
+        });
+
+        await api.put(`/users/${selectedDriver.id_usuario}/assign-team`, {
+          id_equipo: formData.id_equipo,
+          id_conductor: selectedDriver.id_driver // Este es el id_conductor de la DB
+        });
+      }
+
+      setSelectedDriver(prev => ({
+        ...prev,
+        habilidad_h: formData.habilidad_h,
+        id_equipo: formData.id_equipo,
+      }));
+
+      await fetchData();
+      handleCloseModal();
+
+    } catch (error) {
+      console.error("Error:", error);
+      const errorMsg = error.response?.data?.error || "Error al procesar la solicitud";
+      alert(errorMsg);
+
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Show loading spinner while verifying session
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#0f1419] to-[#050812] p-4 md:p-8">
@@ -124,11 +223,11 @@ export function Drivers() {
                 {/* Lista de drivers */}
                 <div className="bg-[#0f1419]/80 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
                   <div className="p-4 border-b border-light/5">
-                    <h2 className="text-sm font-bold text-light/70 uppercase tracking-wider">DRIVERS ({DRIVERS.length})</h2>
+                    <h2 className="text-sm font-bold text-light/70 uppercase tracking-wider">DRIVERS ({drivers.length})</h2>
                   </div>
 
                   <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto px-3 py-3 custom-scrollbar">
-                    {DRIVERS.map((driver) => (
+                    {drivers.map((driver) => (
                       <button
                         key={driver.id_driver}
                         onClick={() => setSelectedDriver(driver)}
@@ -239,15 +338,15 @@ export function Drivers() {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     <div className="p-4 rounded-lg bg-[#1a1f3a]/40 border border-light/5 text-center">
                       <div className="text-xs text-light/50 mb-2 uppercase font-bold">Carreras</div>
-                      <div className="text-2xl font-black text-accent">{selectedDriver.estadisticas.carreras}</div>
+                      <div className="text-2xl font-black text-accent"></div>
                     </div>
                     <div className="p-4 rounded-lg bg-[#1a1f3a]/40 border border-light/5 text-center">
                       <div className="text-xs text-light/50 mb-2 uppercase font-bold">Victorias</div>
-                      <div className="text-2xl font-black text-green-400">{selectedDriver.estadisticas.victorias}</div>
+                      <div className="text-2xl font-black text-green-400">{}</div>
                     </div>
                     <div className="p-4 rounded-lg bg-[#1a1f3a]/40 border border-light/5 text-center">
                       <div className="text-xs text-light/50 mb-2 uppercase font-bold">Podios</div>
-                      <div className="text-2xl font-black text-yellow-400">{selectedDriver.estadisticas.podios}</div>
+                      <div className="text-2xl font-black text-yellow-400">{}</div>
                     </div>
                   </div>
 
@@ -255,15 +354,15 @@ export function Drivers() {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     <div className="p-4 rounded-lg bg-[#1a1f3a]/40 border border-light/5 text-center">
                       <div className="text-xs text-light/50 mb-2 uppercase font-bold">Pole Positions</div>
-                      <div className="text-2xl font-black text-blue-400">{selectedDriver.estadisticas.pole_positions}</div>
+                      <div className="text-2xl font-black text-blue-400">{}</div>
                     </div>
                     <div className="p-4 rounded-lg bg-[#1a1f3a]/40 border border-light/5 text-center">
                       <div className="text-xs text-light/50 mb-2 uppercase font-bold">Vueltas Rápidas</div>
-                      <div className="text-2xl font-black text-purple-400">{selectedDriver.estadisticas.vueltas_rapidas}</div>
+                      <div className="text-2xl font-black text-purple-400">{}</div>
                     </div>
                     <div className="p-4 rounded-lg bg-[#1a1f3a]/40 border border-light/5 text-center">
                       <div className="text-xs text-light/50 mb-2 uppercase font-bold">Campeonatos</div>
-                      <div className="text-2xl font-black text-red-400">{selectedDriver.estadisticas.campeonatos}</div>
+                      <div className="text-2xl font-black text-red-400">{}</div>
                     </div>
                   </div>
 
@@ -272,13 +371,13 @@ export function Drivers() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-4 rounded-lg bg-[#1a1f3a]/40 border border-light/5">
                         <div className="text-xs text-light/50 mb-2 uppercase font-bold">Promedio Puntos</div>
-                        <div className="text-2xl font-black text-accent">{selectedDriver.estadisticas.promedio_puntos}</div>
+                        <div className="text-2xl font-black text-accent">{}</div>
                         <div className="text-xs text-light/50 mt-1">por carrera</div>
                       </div>
                       <div className="p-4 rounded-lg bg-[#1a1f3a]/40 border border-light/5">
                         <div className="text-xs text-light/50 mb-2 uppercase font-bold">Tasa de Podios</div>
                         <div className="text-2xl font-black text-green-400">
-                          {((selectedDriver.estadisticas.podios / selectedDriver.estadisticas.carreras) * 100).toFixed(1)}%
+                          %
                         </div>
                         <div className="text-xs text-light/50 mt-1">de carreras</div>
                       </div>
@@ -314,9 +413,12 @@ export function Drivers() {
                 </label>
                 <input
                   type="text"
+                  readOnly={modalMode === 'edit'}
                   value={formData.nombre}
                   onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white placeholder-light/30 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                  className={`w-full px-4 py-3 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white placeholder-light/30 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all ${
+                    modalMode === 'edit' ? 'opacity-60 cursor-not-allowed border-transparent shadow-none text-white/40 select-none' : ''
+                  }`}
                   placeholder="Ej: Lewis Hamilton"
                   required
                 />
@@ -342,6 +444,64 @@ export function Drivers() {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-light/70 uppercase tracking-wider mb-3">
+                  Configuración de Equipo
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, id_equipo: 0 })}
+                  className={`w-full px-4 py-3.5 rounded-lg border transition-all flex items-center justify-between group mb-4 ${
+                    Number(formData.id_equipo) === 0
+                      ? 'bg-primary/10 border-primary shadow-lg shadow-primary/5'
+                      : 'bg-[#1a1f3a]/50 border-light/10 hover:border-primary/40'
+                  }`}
+                >
+                  <span className={`text-sm font-bold uppercase tracking-wide ${Number(formData.id_equipo) === 0 ? 'text-white' : 'text-light/80'}`}>
+                    Sin equipo asignado
+                  </span>
+                  {Number(formData.id_equipo) === 0 ? (
+                    <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(225,6,0,0.8)]"></div>
+                  ) : (
+                    <FiChevronRight className="text-light/20 group-hover:text-primary transition-colors" />
+                  )}
+                </button>
+
+                <div className="h-px bg-light/5 w-full mb-4"></div>
+
+                {/* LISTA DE EQUIPOS */}
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                  {teams
+                    .filter(team => Number(team.id_equipo) !== 0)
+                    .map((team) => {
+                      const isCurrentTeamSelection = Number(team.id_equipo) === Number(formData.id_equipo);
+
+                      return (
+                        <button
+                          key={team.id_equipo}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, id_equipo: Number(team.id_equipo) })}
+                          className={`w-full px-4 py-3.5 rounded-lg border transition-all flex items-center justify-between group ${
+                            isCurrentTeamSelection
+                              ? 'bg-primary/10 border-primary shadow-lg shadow-primary/5'
+                              : 'bg-[#1a1f3a]/50 border-light/10 hover:border-primary/40'
+                          }`}
+                        >
+                          <span className={`text-sm font-bold uppercase tracking-wide ${isCurrentTeamSelection ? 'text-white' : 'text-light/80'}`}>
+                            {team.nombre}
+                          </span>
+                          {isCurrentTeamSelection ? (
+                            <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(225,6,0,0.8)]"></div>
+                          ) : (
+                            <FiChevronRight className="text-light/20 group-hover:text-primary transition-colors" />
+                          )}
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
@@ -352,9 +512,10 @@ export function Drivers() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 px-4 rounded-lg bg-gradient-to-r from-primary to-red-700 text-white font-bold hover:from-red-600 hover:to-red-800 transition-all"
+                  disabled={loading}
+                  className="flex-1 py-3 px-4 rounded-lg bg-gradient-to-r from-primary to-red-700 text-white font-bold hover:from-red-600 hover:to-red-800 transition-all disabled:opacity-50"
                 >
-                  {modalMode === 'create' ? 'CREAR' : 'GUARDAR'}
+                  {loading ? '...' : (modalMode === 'create' ? 'CREAR' : 'GUARDAR')}
                 </button>
               </div>
             </form>

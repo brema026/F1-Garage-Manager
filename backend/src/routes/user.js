@@ -32,5 +32,26 @@ router.get('/drivers', protect, userController.getDrivers);
  */
 router.put('/:id_usuario/assign-team', protect, userController.assignTeam);
 
+/**
+ * PATCH /api/users/:id_usuario/skill
+ * Update driver's skill endpoint
+ * 
+ * @route PATCH /api/users/drivers/:id_conductor/skill
+ * @param {number} id_conductor - ID of the driver to update skill
+ * @body {number} habilidad - New skill level
+ * @returns {Object} Success message
+ */
+router.patch('/drivers/:id_conductor/skill', protect, userController.updateSkill);
+
+/**
+ * POST /api/users/drivers
+ * Create a new driver endpoint (Admin only)
+ * 
+ * @route POST /api/users/drivers
+ * @body {string} nombre - Name of the driver
+ * @returns {Object} Success message with new driver ID
+ */
+router.post('/drivers', protect, userController.createDriver);
+
 // Export router for use in main app.js
 module.exports = router;

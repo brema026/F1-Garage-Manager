@@ -97,11 +97,13 @@ CREATE TABLE dbo.aporte (
 GO
 
 CREATE TABLE dbo.conductor (
-    id_conductor     INT IDENTITY(1,1) NOT NULL,
-    id_equipo        INT NOT NULL,
-    nombre           NVARCHAR(120) NOT NULL,
-    habilidad_h      INT NOT NULL,
+    id_conductor INT IDENTITY(1,1) NOT NULL,
+    id_usuario   INT NULL,           
+    id_equipo    INT NOT NULL DEFAULT 0,
+    nombre       NVARCHAR(120) NOT NULL,
+    habilidad_h  INT NOT NULL DEFAULT 50,
     CONSTRAINT pk_conductor PRIMARY KEY (id_conductor),
+    CONSTRAINT fk_conductor_usuario FOREIGN KEY (id_usuario) REFERENCES dbo.usuario(id_usuario) ON DELETE CASCADE,
     CONSTRAINT fk_conductor_equipo FOREIGN KEY (id_equipo) REFERENCES dbo.equipo(id_equipo),
     CONSTRAINT ck_conductor_habilidad CHECK (habilidad_h BETWEEN 0 AND 100)
 );
