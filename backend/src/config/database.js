@@ -10,8 +10,8 @@ const config = {
     authentication: {
         type: 'default',
         options: {
-            userName: process.env.DB_USER || 'sa', // Username
-            password: process.env.DB_PASSWORD || '' // Password
+            userName: process.env.DB_USER || 'f1_app_user', // Username
+            password: process.env.DB_PASSWORD || 'F1Garage!2025' // Password
         }
     },
     
