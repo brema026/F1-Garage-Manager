@@ -4,7 +4,6 @@ import { FaGoogle, FaApple, FaFacebook } from 'react-icons/fa'
 import FullLogo from '../../assets/logo/full-logo-white.png';
 import api from '../../api/axios';
 import { useNavigate, Link } from 'react-router-dom';
-import { set } from 'mongoose';
 
 /**
  * Login Form Component

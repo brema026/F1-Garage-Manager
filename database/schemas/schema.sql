@@ -22,6 +22,7 @@ IF OBJECT_ID('dbo.carro', 'U') IS NOT NULL DROP TABLE dbo.carro;
 IF OBJECT_ID('dbo.pieza', 'U') IS NOT NULL DROP TABLE dbo.pieza;
 IF OBJECT_ID('dbo.part_category', 'U') IS NOT NULL DROP TABLE dbo.part_category;
 IF OBJECT_ID('dbo.equipo', 'U') IS NOT NULL DROP TABLE dbo.equipo;
+IF OBJECT_ID('dbo.compra_equipo' , 'U') IS NOT NULL DROP TABLE dbo.compra_equipo;
 GO
 
 /* =========================
@@ -257,4 +258,23 @@ CREATE TABLE dbo.resultado_simulacion (
     CONSTRAINT ck_resultado_tiempo CHECK (tiempo_segundos >= 0)
 );
 
+/* =========================
+   historial de compras (AUDITORÍA)
+   ========================= */
+
+CREATE TABLE dbo.compra_equipo (
+    id_compra       INT IDENTITY(1,1) NOT NULL,
+    id_equipo       INT NOT NULL,
+    id_pieza        INT NOT NULL,
+    cantidad        INT NOT NULL,
+    precio_unit     DECIMAL(12,2) NOT NULL,
+    total           DECIMAL(12,2) NOT NULL,
+    fecha_compra    DATETIME2 NOT NULL CONSTRAINT df_compra_fecha DEFAULT (SYSUTCDATETIME()),
+
+    CONSTRAINT pk_compra_equipo PRIMARY KEY (id_compra),
+    CONSTRAINT fk_compra_equipo_equipo FOREIGN KEY (id_equipo) REFERENCES dbo.equipo(id_equipo),
+    CONSTRAINT fk_compra_equipo_pieza  FOREIGN KEY (id_pieza)  REFERENCES dbo.pieza(id_pieza),
+    CONSTRAINT ck_compra_cantidad CHECK (cantidad > 0),
+    CONSTRAINT ck_compra_total CHECK (total >= 0)
+);
 GO

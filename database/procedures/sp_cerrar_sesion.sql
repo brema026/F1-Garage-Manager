@@ -1,7 +1,7 @@
 USE f1_garage_tec;
 GO
 
-CREATE PROCEDURE dbo.sp_cerrar_sesion
+CREATE OR ALTER PROCEDURE dbo.sp_cerrar_sesion
     @id_sesion NVARCHAR(255)
 AS
 BEGIN
