@@ -6,10 +6,17 @@ const teamModel = {
     // Get all teams, with access control based on user role
     async getAllTeams(id_usuario, rol) {
         const pool = await getPool();
-        return pool.request()
+        const result = await pool.request()
             .input('id_usuario', sql.Int, id_usuario)
             .input('rol', sql.NVarChar, rol)
             .execute('dbo.sp_listar_equipos');
+
+        const equiposProcesados = result.recordset.map(team => ({
+            ...team,
+            conductores: team.conductores_datos ? JSON.parse(team.conductores_datos) : []
+        }));
+
+        return { recordset: equiposProcesados };
     },
 
     // Create a new team

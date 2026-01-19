@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Logo from '../assets/logo/logo.png';
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
@@ -10,6 +10,24 @@ function Navbar({ setView, setIsLoggedIn, user }) {
   const [activeView, setActiveView] = useState("teams");
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const profileRef = useRef(null);
+  const mobileMenuRef = useRef(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileOpen && profileRef.current && !profileRef.current.contains(event.target)) {
+        setProfileOpen(false);
+      }
+
+      if (mobileMenuOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [profileOpen, mobileMenuOpen]);
 
   // Handle navigation click
   const handleNavClick = (view) => {
@@ -91,7 +109,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
           <div className="flex items-center gap-4">
             
             {/* Menu Button */}
-            <div className="relative">
+            <div className="relative" ref={mobileMenuRef}>
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-900/20 hover:bg-slate-900/30 transition-all duration-300 group border border-slate-700/30"
@@ -123,7 +141,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
             </div>
 
             {/* Profile Dropdown Button - Mobile */}
-            <div className="relative">
+            <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setProfileOpen(!profileOpen)}
                 className="flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all duration-300 group hover:bg-slate-900/30 active:bg-slate-900/50 border border-slate-700/30"
@@ -231,7 +249,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
           <div className="flex items-center gap-6 justify-end">
 
             {/* Profile Dropdown - Desktop */}
-            <div className="relative">
+            <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setProfileOpen(!profileOpen)}
                 className="flex items-center gap-3 px-6 py-2.5 rounded-lg transition-all duration-300 group hover:bg-slate-900/30 active:bg-slate-900/50"
