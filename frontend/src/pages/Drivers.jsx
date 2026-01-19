@@ -84,41 +84,43 @@ export function Drivers() {
   // Enviar formulario (crear o editar)
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       setLoading(true);
+
       if (modalMode === 'create') {
         await api.post('/users/drivers', {
           nombre: formData.nombre,
           id_equipo: formData.id_equipo,
           habilidad: formData.habilidad_h
         });
-
+        
       } else {
+
         await api.patch(`/users/drivers/${selectedDriver.id_driver}/skill`, {
           habilidad: formData.habilidad_h
         });
 
         await api.put(`/users/${selectedDriver.id_usuario}/assign-team`, {
           id_equipo: formData.id_equipo,
-          id_conductor: selectedDriver.id_driver // Este es el id_conductor de la DB
+          id_conductor: selectedDriver.id_driver 
         });
-      }
 
-      setSelectedDriver(prev => ({
-        ...prev,
-        habilidad_h: formData.habilidad_h,
-        id_equipo: formData.id_equipo,
-      }));
+        const equipoInfo = teams.find(t => Number(t.id_equipo) === Number(formData.id_equipo));
+        
+        setSelectedDriver(prev => ({
+          ...prev,
+          habilidad_h: formData.habilidad_h,
+          id_equipo: formData.id_equipo,
+          equipo_nombre: equipoInfo ? equipoInfo.nombre : 'Sin Equipo'
+        }));
+      }
 
       await fetchData();
       handleCloseModal();
 
     } catch (error) {
       console.error("Error:", error);
-      const errorMsg = error.response?.data?.error || "Error al procesar la solicitud";
-      alert(errorMsg);
-
+      alert("Error al procesar la solicitud");
     } finally {
       setLoading(false);
     }
