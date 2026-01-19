@@ -54,5 +54,7 @@ router.get('/profile', protect, (req, res) => {
 // Check authentication status endpoint
 router.get('/check-auth', protect, authController.checkAuth);
 
+router.get('/check', protect, authController.checkAuth);
+
 // Export router for use in main app.js
 module.exports = router;

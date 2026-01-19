@@ -30,7 +30,18 @@ const partModel = {
 
     return pool.request()
       .execute('sp_listar_piezas');
-  }
+  },
+
+  async buyPart(id_equipo, id_pieza, cantidad) {
+  const pool = await getPool(); // OJO: según tu proyecto, usás getPool, no getConnection
+  return pool.request()
+    .input('id_equipo', sql.Int, id_equipo)
+    .input('id_pieza', sql.Int, id_pieza)
+    .input('cantidad', sql.Int, cantidad)
+    .execute('sp_comprar_pieza_equipo');
+}
+
+
 };
 
 module.exports = partModel;

@@ -13,6 +13,7 @@ export function Parts({ user }) {
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('create'); // create | edit (edit = add stock)
   const [categorias, setCategorias] = useState([]);
+  
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -28,6 +29,8 @@ export function Parts({ user }) {
   const hasNoTeam = !user?.id_equipo || String(user?.id_equipo) === '0';
 
   const hasParts = partes.length > 0;
+  const idPieza = selectedPart?.id_pieza ?? selectedPart?.id_parte;
+
 
   useEffect(() => {
   const loadCategorias = async () => {
@@ -173,6 +176,39 @@ export function Parts({ user }) {
     const idx = categoriasSinTodas.findIndex((c) => c === nombreCat);
     return idx >= 0 ? idx + 1 : '';
   };
+
+
+  //Compras
+ const handleBuyClick = async () => {
+  if (!selectedPart) return;
+
+  const idPieza = selectedPart?.id_pieza ?? selectedPart?.id_parte;
+  if (!idPieza) return alert('No se encontró el id de la pieza');
+
+  if (!user?.id_equipo || String(user.id_equipo) === '0') {
+    return alert('No tienes equipo asignado');
+  }
+
+  const cantidadStr = prompt('Cantidad a comprar:', '1');
+  if (!cantidadStr) return;
+
+  const cantidad = parseInt(cantidadStr, 10);
+  if (Number.isNaN(cantidad) || cantidad <= 0) return alert('Cantidad inválida');
+
+  try {
+    await api.post('/parts/buy', {
+      id_equipo: user.id_equipo,
+      id_pieza: idPieza,
+      cantidad
+    });
+
+    alert('Compra realizada');
+    cargarPartes();
+  } catch (error) {
+    alert(error.response?.data?.error || 'Error en la compra');
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#0f1419] to-[#050812] p-4 md:p-8">
@@ -386,7 +422,7 @@ export function Parts({ user }) {
 
               {/* Acciones (no implementadas todavía) */}
               <div className="flex gap-3">
-                <button className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-gradient-to-r from-primary to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold transition-all shadow-lg shadow-primary/30 hover:shadow-primary/50">
+                <button onClick={handleBuyClick} className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-gradient-to-r from-primary to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold transition-all shadow-lg shadow-primary/30 hover:shadow-primary/50">
                   <FiPlus />
                   COMPRAR
                 </button>

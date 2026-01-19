@@ -82,7 +82,31 @@ const partController = {
             logger.error(`Error fetching parts: ${e.message}`);
             res.status(500).json({ error: 'Error fetching parts' });
         }
+    },
+
+    // Comprar pieza (Engineer)
+    async buyPart(req, res) {
+    try {
+        // Engineer o Admin pueden comprar (si tu profe lo permite)
+        const { id_equipo, id_pieza, cantidad } = req.body;
+
+        if (!id_equipo || !id_pieza || !cantidad) {
+        return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        // seguridad: evitar que un user compre para otro equipo
+        if (String(req.user.id_equipo) !== String(id_equipo) && req.user.rol !== 'Admin') {
+        return res.status(403).json({ error: 'No puedes comprar para otro equipo' });
+        }
+
+        const result = await partModel.buyPart(id_equipo, id_pieza, cantidad);
+        return res.status(200).json(result.recordset?.[0] || { message: 'OK' });
+    } catch (e) {
+        logger.error(`Error buying part: ${e.message}`);
+        res.status(500).json({ error: e.message });
     }
+    }
+
 
 };
 
