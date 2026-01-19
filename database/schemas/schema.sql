@@ -122,6 +122,14 @@ CREATE TABLE dbo.part_category (
 );
 GO
 
+INSERT INTO dbo.part_category (nombre)
+VALUES
+('Unidad de potencia'),
+('Paquete aerodinámico'),
+('Neumáticos'),
+('Suspensión'),
+('Caja de cambios');
+
 CREATE TABLE dbo.pieza (
     id_pieza         INT IDENTITY(1,1) NOT NULL,
     nombre           NVARCHAR(120) NOT NULL,

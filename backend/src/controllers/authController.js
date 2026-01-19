@@ -1,9 +1,7 @@
 const authService = require('../services/authService'); // Import the auth service
 const logger = require('../config/logger'); // Import logger for logging errors
-const { http } = require('winston'); // Import http from winston for logging
 const { getPool } = require('../config/database'); // Import database connection pool
 const sql = require('mssql'); // Import mssql package for SQL Server interaction
-const { checkout } = require('../routes/auth');
 
 const authController = {
     // Handle user registration
@@ -61,11 +59,11 @@ const authController = {
             }
 
             // Clear the session cookie
-            res.clearCookie('sessionId'), {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'Lax'
-            }; 
+            res.clearCookie('sessionId', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Lax'
+            });
             
             // Clear session cookie
             res.status(200).json({ message: 'Logout successful' }); // Send success response
