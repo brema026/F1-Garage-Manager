@@ -5,7 +5,12 @@ const bodyParser = require('body-parser'); // Import body parser for request par
 const { connectDB } = require('./config/database'); // Import database connection function
 const logger = require('./config/logger'); // Import Winston logger
 
+const cookieParser = require('cookie-parser'); // Import cookie parser middleware
+
 const healthRoutes = require('./routes/health'); // Import health check routes
+const authRoutes = require('./routes/auth'); // Import authentication routes
+const teamRoutes = require('./routes/team'); // Import team routes
+const userRoutes = require('./routes/user'); // Import user routes
 
 const app = express(); // Initialize Express application
 
@@ -26,6 +31,9 @@ app.use(bodyParser.urlencoded({ extended: true })); // Parse URL-encoded request
 // Establish database connection
 connectDB();
 
+// Cookie parser middleware
+app.use(cookieParser());
+
 // Root route
 app.get('/', (req, res) => {
   res.json({
@@ -37,6 +45,9 @@ app.get('/', (req, res) => {
 
 // Register routes
 app.use('/api', healthRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/teams', teamRoutes);
+app.use('/api/users', userRoutes);
 
 // Error handling middleware - catches errors from routes and middlewares
 app.use((err, req, res, next) => {

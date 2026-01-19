@@ -2,10 +2,31 @@ import { useState } from "react";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import { FaGoogle, FaApple, FaFacebook } from "react-icons/fa";
 import FullLogo from '../../assets/logo/full-logo-white.png';
+import api from '../../api/axios';
+import { useNavigate } from "react-router-dom";
 
 export function RegisterForm() {
+    const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    // Form data state for registration
+    const [formData, setFormData] = useState({
+        nombre: '',
+        apellido: '',
+        email: '',
+        rol: '',
+        password: '',
+        confirmPassword: '',
+        id_equipo: '0' // Default team ID for no team
+    });
+
+    const handleChange = (e) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value
+        });
+    }
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
@@ -13,6 +34,35 @@ export function RegisterForm() {
 
     const toggleConfirmPasswordVisibility = () => {
         setShowConfirmPassword(!showConfirmPassword);
+    }
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        // Basic validation
+        if (formData.password !== formData.confirmPassword) {
+            alert("Las contraseñas no coinciden");
+            return;
+        }
+
+        try {
+            const dataToSumit = {
+                nombre: `${formData.nombre} ${formData.apellido}`,
+                email: formData.email,
+                password: formData.password,
+                rol: formData.rol,
+                id_equipo: formData.id_equipo
+            };
+
+            const response = await api.post('/auth/register', dataToSumit);
+            alert("Registro exitoso. Ahora puede iniciar sesión.");
+            navigate('/login');
+        }
+
+        catch (e) {
+            console.error("Error during registration:", e);
+            alert("Error durante el registro. Por favor, intente nuevamente.");
+        }
     }
 
     return (
@@ -48,50 +98,70 @@ export function RegisterForm() {
                 </div>
 
                 {/* Register Form */}
-                <form className="space-y-4">
+                <form className="space-y-4" onSubmit={handleSubmit}>
                     {/* First Name and Last Name Row */}
                     <div className="grid grid-cols-2 gap-4">
                         <input 
+                            name="nombre"
+                            value={formData.nombre}
+                            onChange={handleChange}
                             type="text" 
                             placeholder="Nombre"
                             className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary"
+                            required
                         />
                         
                         <input 
+                            name="apellido"
+                            value={formData.apellido}
+                            onChange={handleChange}
                             type="text" 
                             placeholder="Apellido"
                             className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary"
+                            required
                         />
                     </div>
 
                     {/* Email Input */}
                     <div>
-                        <input 
+                        <input
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange} 
                             type="email" 
                             placeholder="Correo electrónico"
                             className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary"
+                            required
                         />
                     </div>
                     
                     {/* User Role Selector */}
                     <div>
                         <select
+                            name="rol"
+                            value={formData.rol}
+                            onChange={handleChange}
                             className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-dark focus:outline-none focus:ring-2 focus:ring-primary"
                             defaultValue=""
+                            required
                         >
                             <option value="" disabled>Seleccione un rol</option>
-                            <option value="conductor">Conductor</option>
-                            <option value="ingeniero">Ingeniero</option>
-                            <option value="administrador">Administrador</option>
+                            <option value="Driver">Conductor</option>
+                            <option value="Engineer">Ingeniero</option>
+                            <option value="Admin">Administrador</option>
                         </select>
                     </div>
 
                     {/* Password Input */}
                     <div className="relative">
                         <input
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
                             type={showPassword ? "text" : "password"}
                             placeholder="Contraseña"
                             className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary pr-12"
+                            required
                         />
                         <button
                             type="button"
@@ -109,9 +179,13 @@ export function RegisterForm() {
                     {/* Confirm Password Input */}
                     <div className="relative">
                         <input
+                            name="confirmPassword"
+                            value={formData.confirmPassword}
+                            onChange={handleChange}
                             type={showConfirmPassword ? "text" : "password"}
                             placeholder="Confirmar contraseña"
                             className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary pr-12"
+                            required
                         />
                         <button
                             type="button"

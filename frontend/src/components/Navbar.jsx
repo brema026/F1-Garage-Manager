@@ -1,8 +1,12 @@
 import React, { useState } from "react";
 import Logo from '../assets/logo/logo.png';
+import { useNavigate } from "react-router-dom";
+import api from "../api/axios";
+import { set } from "mongoose";
 
-function Navbar({ setView }) {
+function Navbar({ setView, setIsLoggedIn, user }) {
   // State management
+  const navigate = useNavigate();
   const [activeView, setActiveView] = useState("teams");
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -14,22 +18,63 @@ function Navbar({ setView }) {
     setMobileMenuOpen(false);
   };
 
+  const role = user?.rol?.toLowerCase();
+
   // Navigation items
   const navItems = [
-    { id: "teams", label: "Equipos" },
-    { id: "drivers", label: "Conductores" },
-    { id: "sponsors", label: "Patrocinadores" },
-    { id: "parts", label: "Partes" },
-    { id: "inventory", label: "Inventario" },
-    { id: "setup", label: "Armado" },
-  ];
+    {
+      id: 'teams',
+      label: 'Equipos',
+      visible: ['admin', 'engineer'].includes(role)
+    },
+    {
+      id: 'drivers',
+      label: 'Conductores',
+      visible: role === 'admin'
+    },
+    {
+      id: 'sponsors',
+      label: 'Patrocinadores',
+      visible: ['admin', 'engineer'].includes(role)
+    },
+    {
+      id: 'parts',
+      label: 'Partes',
+      visible: ['admin', 'engineer'].includes(role)
+    },
+    {
+      id: 'inventory',
+      label: 'Inventario',
+      visible: ['admin', 'engineer'].includes(role)
+    },
+    {
+      id: 'setup',
+      label: 'Armado',
+      visible: ['admin', 'engineer'].includes(role)
+    }
+  ].filter(item => item.visible);
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout');
+      setIsLoggedIn(false);
+      navigate('/login');
+    }
+
+    catch (e) {
+      console.error('Error during logout:', e);
+      setIsLoggedIn(false);
+      navigate('/login');
+    }
+  };
 
   return (
     <nav className="relative">
       {/* Background with glass effect */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-slate-950/30 to-slate-950/20 backdrop-blur-xl"></div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
+      <div className="relative mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
         
         {/* Mobile Layout */}
         <div className="lg:hidden flex flex-col items-center gap-4">
@@ -113,8 +158,8 @@ function Navbar({ setView }) {
                   <div className="h-px bg-gradient-to-r from-transparent via-slate-700/20 to-transparent"></div>
 
                   {/* Log out Option */}
-                  <div className="py-2">
-                    <button className="w-full px-6 py-3 text-left text-xs font-medium text-red-500/90 hover:text-red-400 hover:bg-red-950/20 transition-all duration-200 uppercase tracking-widest">
+                  <div className="py-2 ">
+                    <button className="w-full px-6 py-3 text-left text-xs font-medium text-red-500/90 hover:text-red-400 hover:bg-red-950/20 transition-all duration-200 uppercase tracking-widest" onClick={handleLogout}>
                       Cerrar Sesión
                     </button>
                   </div>
@@ -125,22 +170,33 @@ function Navbar({ setView }) {
         </div>
 
         {/* Desktop Layout */}
-        <div className="hidden lg:flex items-center justify-between gap-4">
+        <div className="hidden lg:grid grid-cols-3 items-center px-4">
           
           {/* Logo */}
-          <div className="flex-shrink-0 group cursor-pointer lg:flex-1" onClick={() => window.location.reload()}>
-            <img 
-              src={Logo} 
-              alt="F1 Garage Manager" 
-              className="h-11 w-auto object-contain transition-all duration-500 group-hover:drop-shadow-[0_0_16px_rgba(239,68,68,0.3)]"
-            />
+          <div className="flex justify-start">
+            <div className="flex-shrink-0 group cursor-pointer" onClick={() => window.location.reload()}>
+              <img 
+                src={Logo} 
+                alt="F1 Garage Manager" 
+                className="h-11 w-auto object-contain transition-all duration-500 group-hover:drop-shadow-[0_0_16px_rgba(239,68,68,0.3)]"
+              />
+            </div>
           </div>
-
-          {/* Divider */}
-          <div className="hidden lg:block absolute left-1/4 top-1/2 -translate-y-1/2 w-px h-12 bg-gradient-to-b from-transparent via-slate-700/20 to-transparent"></div>
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-6 xl:gap-12 flex-1 justify-center">
+
+            {/* Vertical Divider */}
+            <div className="hidden lg:block w-px h-8 bg-gradient-to-b from-transparent via-red-600/60 to-transparent mr-8"></div>
+
+              {role === 'driver' && (
+                <div className="animate-in fade-in zoom-in duration-700">
+                  <span className="text-sm font-light tracking-[0.3em] uppercase text-slate-400">
+                    ¡Bienvenido, <span className="text-white font-bold tracking-normal italic">{user.nombre}</span>!
+                  </span>
+                </div>
+              )}
+
             {navItems.map((item) => (
               <button
                 key={item.id}
@@ -166,13 +222,13 @@ function Navbar({ setView }) {
                 )}
               </button>
             ))}
+            
+            <div className="hidden lg:block w-px h-8 bg-gradient-to-b from-transparent via-red-600/60 to-transparent ml-8"></div>
+
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center gap-6">
-            
-            {/* Red Separator Line */}
-            <div className="hidden lg:block w-px h-8 bg-gradient-to-b from-transparent via-red-600/60 to-transparent"></div>
+          <div className="flex items-center gap-6 justify-end">
 
             {/* Profile Dropdown - Desktop */}
             <div className="relative">
@@ -212,7 +268,7 @@ function Navbar({ setView }) {
                   <div className="h-px bg-gradient-to-r from-transparent via-slate-700/20 to-transparent"></div>
 
                   {/* Cerrar Sesión */}
-                  <div className="py-2">
+                  <div className="py-2" onClick={handleLogout}>
                     <button className="w-full px-6 py-3 text-left text-xs font-medium text-red-500/90 hover:text-red-400 hover:bg-red-950/20 transition-all duration-200 uppercase tracking-widest">
                       Cerrar Sesión
                     </button>

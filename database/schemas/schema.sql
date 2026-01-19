@@ -16,6 +16,7 @@ IF OBJECT_ID('dbo.conductor', 'U') IS NOT NULL DROP TABLE dbo.conductor;
 IF OBJECT_ID('dbo.aporte', 'U') IS NOT NULL DROP TABLE dbo.aporte;
 IF OBJECT_ID('dbo.patrocinador', 'U') IS NOT NULL DROP TABLE dbo.patrocinador;
 
+IF OBJECT_ID('dbo.sesion', 'U') IS NOT NULL DROP TABLE dbo.sesion;
 IF OBJECT_ID('dbo.usuario', 'U') IS NOT NULL DROP TABLE dbo.usuario;
 IF OBJECT_ID('dbo.carro', 'U') IS NOT NULL DROP TABLE dbo.carro;
 IF OBJECT_ID('dbo.pieza', 'U') IS NOT NULL DROP TABLE dbo.pieza;
@@ -35,6 +36,11 @@ CREATE TABLE dbo.equipo (
 );
 GO
 
+SET IDENTITY_INSERT dbo.equipo ON;
+INSERT INTO dbo.equipo (id_equipo, nombre) 
+VALUES (0, 'SIN EQUIPO / PENDIENTE');
+SET IDENTITY_INSERT dbo.equipo OFF;
+
 CREATE TABLE dbo.usuario (
     id_usuario       INT IDENTITY(1,1) NOT NULL,
     nombre           NVARCHAR(120) NOT NULL,
@@ -50,6 +56,21 @@ CREATE TABLE dbo.usuario (
     -- Si es Engineer, debe tener equipo asignado (deja Admin/Driver opcional)
     CONSTRAINT ck_usuario_engineer_equipo CHECK ((rol <> 'Engineer') OR (id_equipo IS NOT NULL))
 );
+GO
+
+CREATE TABLE dbo.sesion (
+    id_sesion        NVARCHAR(450) NOT NULL, 
+    id_usuario       INT NOT NULL,
+    expira           DATETIME2 NOT NULL,
+    datos_sesion     NVARCHAR(MAX) CONSTRAINT ck_sesion_json CHECK (ISJSON(datos_sesion) = 1), 
+    creado_en        DATETIME2 NOT NULL CONSTRAINT df_sesion_creado DEFAULT (SYSUTCDATETIME()),
+    
+    CONSTRAINT pk_sesion PRIMARY KEY (id_sesion),
+    CONSTRAINT fk_sesion_usuario FOREIGN KEY (id_usuario) REFERENCES dbo.usuario(id_usuario) ON DELETE CASCADE
+);
+GO
+
+CREATE INDEX idx_sesion_expira ON dbo.sesion(expira);
 GO
 
 CREATE TABLE dbo.patrocinador (
@@ -76,11 +97,13 @@ CREATE TABLE dbo.aporte (
 GO
 
 CREATE TABLE dbo.conductor (
-    id_conductor     INT IDENTITY(1,1) NOT NULL,
-    id_equipo        INT NOT NULL,
-    nombre           NVARCHAR(120) NOT NULL,
-    habilidad_h      INT NOT NULL,
+    id_conductor INT IDENTITY(1,1) NOT NULL,
+    id_usuario   INT NULL,           
+    id_equipo    INT NOT NULL DEFAULT 0,
+    nombre       NVARCHAR(120) NOT NULL,
+    habilidad_h  INT NOT NULL DEFAULT 50,
     CONSTRAINT pk_conductor PRIMARY KEY (id_conductor),
+    CONSTRAINT fk_conductor_usuario FOREIGN KEY (id_usuario) REFERENCES dbo.usuario(id_usuario) ON DELETE CASCADE,
     CONSTRAINT fk_conductor_equipo FOREIGN KEY (id_equipo) REFERENCES dbo.equipo(id_equipo),
     CONSTRAINT ck_conductor_habilidad CHECK (habilidad_h BETWEEN 0 AND 100)
 );

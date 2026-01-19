@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai'
 import { FaGoogle, FaApple, FaFacebook } from 'react-icons/fa'
 import FullLogo from '../../assets/logo/full-logo-white.png';
+import api from '../../api/axios';
+import { useNavigate, Link } from 'react-router-dom';
+import { set } from 'mongoose';
 
 /**
  * Login Form Component
@@ -10,11 +13,45 @@ import FullLogo from '../../assets/logo/full-logo-white.png';
  * @component
  * @returns {JSX.Element} Login form container
  */
-export function LoginForm() {
+export function LoginForm( { setIsLoggedIn, setUser } ) {
+  const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword)
+  };
+
+  const [credentials, setCredentials] = useState({
+    email: '',
+    password: ''
+  });
+
+  const handleChange = (e) => {
+    setCredentials({
+      ...credentials,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await api.post('/auth/login', credentials);
+
+      if (response.data.user) {
+        setUser(response.data.user);
+        setIsLoggedIn(true);
+      }
+
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 100);
+      
+    } catch (e) {
+      console.error("Error during login:", e);
+      alert("Error al iniciar sesión. Por favor, verifique sus credenciales.");
+    }
   }
 
   return (
@@ -48,22 +85,30 @@ export function LoginForm() {
         </div>
 
         {/* Login Form */}
-        <form className="space-y-4">
+        <form className="space-y-4 " onSubmit={handleSubmit}>
           {/* Email Input */}
           <div>
             <input
+              name="email"
+              value={credentials.email}
+              onChange={handleChange}
               type="email"
               placeholder="Correo electrónico"
               className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary"
+              required
             />
           </div>
 
           {/* Password Input */}
           <div className="relative">
             <input
+              name="password"
+              value={credentials.password}
+              onChange={handleChange}
               type={showPassword ? "text" : "password"}
               placeholder="Contraseña"
               className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary pr-12"
+              required
             />
             <button
               type="button"
