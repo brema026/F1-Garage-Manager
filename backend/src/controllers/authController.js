@@ -78,6 +78,28 @@ const authController = {
     // Check authentication status
     async checkAuth(req, res, next) {
         res.status(200).json({ authenticated: true, user: req.user });
+    },
+
+    // Get profile
+    async getProfile(req, res) {
+        try {
+            const pool = await getPool();
+            const result = await pool.request()
+                .input('id_usuario', sql.Int, req.user.id_usuario)
+                .execute('dbo.sp_obtener_perfil_detallado');
+
+            if (result.recordset.length === 0) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+
+            res.status(200).json({
+                status: 'SUCCESS',
+                user: result.recordset[0]
+            });
+        } catch (e) {
+            logger.error(`Error getting profile: ${e.message}`);
+            res.status(500).json({ error: 'Server error getting profile' });
+        }
     }
 };
 

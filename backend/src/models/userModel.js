@@ -96,6 +96,14 @@ const userModel = {
             FROM dbo.conductor c
             LEFT JOIN dbo.equipo e ON c.id_equipo = e.id_equipo
         `);
+    },
+    
+    // Get user profile
+    async getUserProfileFull(id_usuario) {
+        const pool = await getPool();
+        return pool.request()
+            .input('id_usuario', sql.Int, id_usuario)
+            .execute('dbo.sp_obtener_perfil_usuario');
     }
 }
 
