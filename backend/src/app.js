@@ -1,20 +1,21 @@
-const express = require('express'); // Import Express web framework
-const cors = require('cors'); // Import CORS middleware for cross-origin requests
-const bodyParser = require('body-parser'); // Import body parser for request parsing
+const express = require('express'); 
+const cors = require('cors'); 
+const bodyParser = require('body-parser'); 
 
-const { connectDB } = require('./config/database'); // Import database connection function
-const logger = require('./config/logger'); // Import Winston logger
+const { connectDB } = require('./config/database'); 
+const logger = require('./config/logger'); 
 
-const cookieParser = require('cookie-parser'); // Import cookie parser middleware
+const cookieParser = require('cookie-parser'); 
 
-const healthRoutes = require('./routes/health'); // Import health check routes
-const authRoutes = require('./routes/auth'); // Import authentication routes
-const teamRoutes = require('./routes/team'); // Import team routes
-const userRoutes = require('./routes/user'); // Import user routes
+const healthRoutes = require('./routes/health'); 
+const authRoutes = require('./routes/auth'); 
+const teamRoutes = require('./routes/team'); 
+const userRoutes = require('./routes/user'); 
+const carSetupRoutes = require('./routes/carSetup'); // NUEVA LÍNEA
 
-const app = express(); // Initialize Express application
+const app = express(); 
 
-// Logging middleware - logs every incoming HTTP request
+// Logging middleware
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.url}`);
   next();
@@ -22,11 +23,11 @@ app.use((req, res, next) => {
 
 // Application middlewares
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Allow requests from frontend
-  credentials: true // Allow cookies in cross-origin requests
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000', 
+  credentials: true 
 }));
-app.use(bodyParser.json()); // Parse JSON request bodies
-app.use(bodyParser.urlencoded({ extended: true })); // Parse URL-encoded request bodies
+app.use(bodyParser.json()); 
+app.use(bodyParser.urlencoded({ extended: true })); 
 
 // Establish database connection
 connectDB();
@@ -48,12 +49,12 @@ app.use('/api', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/car-setup', carSetupRoutes); // NUEVA LÍNEA
 
-// Error handling middleware - catches errors from routes and middlewares
+// Error handling middleware
 app.use((err, req, res, next) => {
   logger.error(`Error: ${err.message}`);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Export Express application for use in server.js
 module.exports = app;

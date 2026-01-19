@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   EQUIPOS,
   CARS_BY_TEAM,
@@ -19,6 +19,7 @@ import {
 import { FiCheck, FiChevronDown, FiCheckCircle, FiFlag, FiTrendingUp, FiChevronRight } from 'react-icons/fi';
 import carImage1 from '../assets/f1-car-1.png';
 import carImage2 from '../assets/f1-car-2.png';
+import carSetupService from '../services/carSetupService';
 
 // Combinar todas las partes en un array
 const ALL_PARTS = [
@@ -36,33 +37,77 @@ export function CarSetup( { user } ) {
   const [expandedCategory, setExpandedCategory] = useState('Unidad de Potencia');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const carsForTeam = CARS_BY_TEAM[selectedEquipoId] || [];
   const currentTeam = EQUIPOS.find((e) => e.id_equipo === selectedEquipoId);
 
-  // Inicializar setups del equipo actual
-  useMemo(() => {
-    if (!carSetups[selectedEquipoId] && carsForTeam.length > 0) {
-      const newSetups = {};
-      carsForTeam.forEach((car) => {
-        newSetups[car.id_carro] = carSetups[car.id_carro] || { ...car.setup };
-      });
-      setCarSetups((prev) => ({
-        ...prev,
-        ...newSetups,
-      }));
-    }
+  // Cargar datos desde API cuando cambia el equipo
+  useEffect(() => {
+    const loadTeamData = async () => {
+      if (!selectedEquipoId) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Intentar cargar desde la API
+        const carsData = await carSetupService.getTeamCars(selectedEquipoId);
+        
+        // Inicializar setups con datos de la API
+        const newSetups = {};
+        carsData.forEach((car) => {
+          newSetups[car.id_carro] = {
+            id_potencia: car.id_potencia || null,
+            id_aerodinamica: car.id_aerodinamica || null,
+            id_neumaticos: car.id_neumaticos || null,
+            id_suspension: car.id_suspension || null,
+            id_caja_cambios: car.id_caja_cambios || null,
+            id_conductor: car.id_conductor || null
+          };
+        });
+        
+        setCarSetups(newSetups);
+        
+        if (carsData.length > 0) {
+          setSelectedCarId(carsData[0].id_carro);
+        }
+      } catch (err) {
+        // Si la API falla, usar datos locales
+        console.warn('Usando datos locales:', err);
+        
+        if (!carSetups[selectedEquipoId] && carsForTeam.length > 0) {
+          const newSetups = {};
+          carsForTeam.forEach((car) => {
+            newSetups[car.id_carro] = carSetups[car.id_carro] || { ...car.setup };
+          });
+          setCarSetups((prev) => ({
+            ...prev,
+            ...newSetups,
+          }));
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTeamData();
+  }, [selectedEquipoId]);
+
+  // Inicializar carro seleccionado
+  useEffect(() => {
     if (!selectedCarId && carsForTeam.length > 0) {
       setSelectedCarId(carsForTeam[0].id_carro);
     }
-  }, [selectedEquipoId]);
+  }, [carsForTeam]);
 
   const selectedCar = carsForTeam.find((car) => car.id_carro === selectedCarId);
   const currentSetup = carSetups[selectedCarId] || {};
   const carStats = useMemo(() => calculateCarStats(currentSetup, ALL_PARTS), [currentSetup]);
   const selectedDriver = DRIVERS.find((d) => d.id_conductor === currentSetup.id_conductor);
 
-  // Verificar requerimientos
+  // Verificar requerimientos (5 categorías + conductor)
   const hasPotencia = !!currentSetup.id_potencia;
   const hasAerodinamica = !!currentSetup.id_aerodinamica;
   const hasNeumaticos = !!currentSetup.id_neumaticos;
@@ -97,8 +142,37 @@ export function CarSetup( { user } ) {
     }));
   };
 
-  const handleFinalizeCar = () => {
-    if (allRequirementsMet) {
+  const handleFinalizeCar = async () => {
+    if (!allRequirementsMet) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Instalar todas las partes
+      const categoriasMap = {
+        'Unidad de Potencia': [1, currentSetup.id_potencia],
+        'Paquete Aerodinámico': [2, currentSetup.id_aerodinamica],
+        'Neumáticos': [3, currentSetup.id_neumaticos],
+        'Suspensión': [4, currentSetup.id_suspension],
+        'Caja de Cambios': [5, currentSetup.id_caja_cambios]
+      };
+
+      // Instalar cada parte
+      for (const [categoria, [categoryId, pieceId]] of Object.entries(categoriasMap)) {
+        if (pieceId) {
+          await carSetupService.installPart(selectedCarId, pieceId, categoryId);
+        }
+      }
+
+      // Asignar conductor
+      if (currentSetup.id_conductor) {
+        await carSetupService.assignDriver(selectedCarId, currentSetup.id_conductor);
+      }
+
+      // Finalizar carro
+      await carSetupService.finalizeCar(selectedCarId);
+
       setSuccessMessage(`¡Carro ${selectedCar.numero_carro} de ${currentTeam.nombre} finalizado exitosamente!`);
       setShowSuccessModal(true);
       
@@ -106,12 +180,11 @@ export function CarSetup( { user } ) {
         setShowSuccessModal(false);
       }, 3000);
 
-      console.log('Crear carro:', {
-        equipo: currentTeam.nombre,
-        carro: selectedCar.numero_carro,
-        setup: currentSetup,
-        stats: carStats,
-      });
+    } catch (err) {
+      console.error('Error:', err);
+      setError(err.response?.data?.error || 'Error finalizando el carro');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -539,7 +612,19 @@ export function CarSetup( { user } ) {
               {/* Acciones */}
               {selectedCar && (
                 <div className="space-y-4">
-                  {allRequirementsMet && (
+                  {error && (
+                    <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-start gap-3">
+                      <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 15c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      <div>
+                        <p className="text-sm text-red-300 font-bold">Error</p>
+                        <p className="text-xs text-red-300/70 mt-1">{error}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {allRequirementsMet && !loading && (
                     <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/30 flex items-start gap-3 animate-pulse">
                       <FiCheckCircle className="text-green-400 text-xl flex-shrink-0 mt-0.5" />
                       <div>
@@ -553,15 +638,27 @@ export function CarSetup( { user } ) {
 
                   <button
                     onClick={handleFinalizeCar}
-                    disabled={!allRequirementsMet}
+                    disabled={!allRequirementsMet || loading}
                     className={`w-full py-4 px-6 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 text-lg ${
-                      allRequirementsMet
+                      allRequirementsMet && !loading
                         ? 'bg-gradient-to-r from-green-500 via-green-600 to-emerald-700 hover:from-green-600 hover:via-green-700 hover:to-emerald-800 shadow-lg shadow-green-500/50 hover:shadow-green-500/70 cursor-pointer transform hover:scale-105'
                         : 'bg-[#1a1f3a]/50 border border-light/10 cursor-not-allowed opacity-50'
                     }`}
                   >
-                    <FiCheckCircle className="text-xl" />
-                    {allRequirementsMet ? `CREAR CARRO ${selectedCar?.numero_carro}` : `COMPLETA ARMADO (${completedItems}/6)`}
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Procesando...
+                      </>
+                    ) : (
+                      <>
+                        <FiCheckCircle className="text-xl" />
+                        {`CREAR CARRO ${selectedCar?.numero_carro}` || 'CREAR CARRO'}
+                      </>
+                    )}
                   </button>
                 </div>
               )}
