@@ -15,9 +15,9 @@ BEGIN
     FROM dbo.carro
     WHERE id_equipo = @id_equipo;
 
-    IF @cantidad_carros >= 2
+    IF @cantidad_carros >= 4
     BEGIN
-        RAISERROR('Un equipo no puede tener m�s de 2 carros', 16, 1);
+        RAISERROR('Un equipo no puede tener más de 4 carros', 16, 1);
         RETURN;
     END;
 
