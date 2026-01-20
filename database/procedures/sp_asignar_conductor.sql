@@ -53,12 +53,10 @@ BEGIN
             RETURN;
         END;
 
-        -- Asignar conductor
-        UPDATE dbo.carro
-        SET 
-            id_conductor = @id_conductor,
-            ultima_actualizacion = GETDATE()
-        WHERE id_carro = @id_carro;
+        -- Asignar conductor al setup actual
+        UPDATE dbo.car_setup
+        SET id_conductor = @id_conductor
+        WHERE car_id = @id_carro AND es_actual = 1;
 
         COMMIT TRANSACTION;
 

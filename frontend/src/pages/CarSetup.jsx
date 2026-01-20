@@ -39,6 +39,8 @@ export function CarSetup( { user } ) {
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showCreateCarModal, setShowCreateCarModal] = useState(false);
+  const [newCarName, setNewCarName] = useState('');
 
   const carsForTeam = CARS_BY_TEAM[selectedEquipoId] || [];
   const currentTeam = EQUIPOS.find((e) => e.id_equipo === selectedEquipoId);
@@ -188,6 +190,53 @@ export function CarSetup( { user } ) {
     }
   };
 
+  const handleCreateCar = async () => {
+    if (!newCarName.trim()) {
+      setError('El nombre del carro es requerido');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const result = await carSetupService.createCar(selectedEquipoId, newCarName);
+      
+      // Recargar datos del equipo
+      const carsData = await carSetupService.getTeamCars(selectedEquipoId);
+      
+      const newSetups = {};
+      carsData.forEach((car) => {
+        newSetups[car.id_carro] = {
+          id_potencia: car.id_potencia || null,
+          id_aerodinamica: car.id_aerodinamica || null,
+          id_neumaticos: car.id_neumaticos || null,
+          id_suspension: car.id_suspension || null,
+          id_caja_cambios: car.id_caja_cambios || null,
+          id_conductor: car.id_conductor || null
+        };
+      });
+      
+      setCarSetups(newSetups);
+      setSelectedCarId(result.id_carro || carsData[carsData.length - 1]?.id_carro);
+      
+      setSuccessMessage(`¡Carro "${newCarName}" creado exitosamente!`);
+      setShowSuccessModal(true);
+      setShowCreateCarModal(false);
+      setNewCarName('');
+      
+      setTimeout(() => {
+        setShowSuccessModal(false);
+      }, 3000);
+
+    } catch (err) {
+      console.error('Error:', err);
+      setError(err.response?.data?.error || 'Error creando el carro');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const userRole = user.rol?.toLowerCase();
   const hasNoTeam = !user?.id_equipo || String(user?.id_equipo) === "0";
   
@@ -309,8 +358,14 @@ export function CarSetup( { user } ) {
 
                   <div className="p-3 space-y-2">
                     {carsForTeam.length === 0 ? (
-                      <div className="p-4 text-center">
+                      <div className="p-4 text-center space-y-3">
                         <p className="text-light/50 text-xs font-bold">No hay carros disponibles</p>
+                        <button
+                          onClick={() => setShowCreateCarModal(true)}
+                          className="w-full py-2 px-3 rounded-lg bg-primary/20 border border-primary hover:bg-primary/30 text-primary font-bold text-sm transition-all"
+                        >
+                          + Crear Carro
+                        </button>
                       </div>
                     ) : (
                       carsForTeam.map((car) => {
@@ -676,6 +731,55 @@ export function CarSetup( { user } ) {
               <h3 className="text-2xl font-black text-white mb-2">¡Éxito!</h3>
               <p className="text-light/70 mb-4">{successMessage}</p>
               <div className="text-sm text-green-300 font-bold">Carro guardado exitosamente</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Crear Carro */}
+      {showCreateCarModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/40 rounded-3xl p-8 max-w-md w-full backdrop-blur-xl">
+            <h3 className="text-2xl font-black text-white mb-4">Crear Nuevo Carro</h3>
+            
+            {error && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 mb-4">
+                <p className="text-sm text-red-300">{error}</p>
+              </div>
+            )}
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-light/70 mb-2">Nombre del Carro</label>
+                <input
+                  type="text"
+                  value={newCarName}
+                  onChange={(e) => setNewCarName(e.target.value)}
+                  placeholder="Ej: Carro Principal"
+                  className="w-full px-4 py-3 bg-[#1a1f3a] border border-light/10 rounded-lg text-white placeholder-light/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowCreateCarModal(false);
+                    setNewCarName('');
+                    setError(null);
+                  }}
+                  disabled={loading}
+                  className="flex-1 py-3 px-4 rounded-lg bg-[#1a1f3a] border border-light/10 hover:border-light/30 text-white font-bold transition-all disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleCreateCar}
+                  disabled={loading || !newCarName.trim()}
+                  className="flex-1 py-3 px-4 rounded-lg bg-primary hover:bg-primary/80 text-white font-bold transition-all disabled:opacity-50"
+                >
+                  {loading ? 'Creando...' : 'Crear'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

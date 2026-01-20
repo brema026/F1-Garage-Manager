@@ -4,6 +4,12 @@ const carSetupController = require('../controllers/carSetupController');
 const { protect } = require('../middleware/authMiddleware');
 
 /**
+ * GET /api/car-setup/categories
+ * Obtener categorías disponibles
+ */
+router.get('/categories', protect, carSetupController.getCategories);
+
+/**
  * GET /api/car-setup/team/:teamId/cars
  * Obtener carros de un equipo
  */

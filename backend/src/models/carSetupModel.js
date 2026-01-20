@@ -1,10 +1,10 @@
 const sql = require('mssql');
-const { getConnection } = require('../config/database');
+const { getPool } = require('../config/database');
 
 const carSetupModel = {
     // Obtener carros de un equipo con sus configuraciones
     async getCarsByTeam(teamId) {
-        const pool = await getConnection();
+        const pool = getPool();
         return await pool.request()
             .input('id_equipo', sql.Int, teamId)
             .execute('dbo.sp_carros_equipo');
@@ -12,7 +12,7 @@ const carSetupModel = {
 
     // Obtener inventario del equipo
     async getTeamInventory(teamId) {
-        const pool = await getConnection();
+        const pool = getPool();
         return await pool.request()
             .input('id_equipo', sql.Int, teamId)
             .execute('dbo.sp_inventario_equipo');
@@ -20,7 +20,7 @@ const carSetupModel = {
 
     // Obtener conductores del equipo
     async getTeamDrivers(teamId) {
-        const pool = await getConnection();
+        const pool = getPool();
         return await pool.request()
             .input('id_equipo', sql.Int, teamId)
             .execute('dbo.sp_conductores_equipo');
@@ -28,14 +28,14 @@ const carSetupModel = {
 
     // Obtener categorías disponibles
     async getCategories() {
-        const pool = await getConnection();
+        const pool = getPool();
         return await pool.request()
             .execute('dbo.sp_listar_categorias');
     },
 
     // Crear un nuevo carro
     async createCar(id_equipo, nombre) {
-        const pool = await getConnection();
+        const pool = getPool();
         return await pool.request()
             .input('id_equipo', sql.Int, id_equipo)
             .input('nombre', sql.NVarChar(120), nombre)
@@ -44,7 +44,7 @@ const carSetupModel = {
 
     // Obtener carro por ID
     async getCarById(carId) {
-        const pool = await getConnection();
+        const pool = getPool();
         return await pool.request()
             .input('id_carro', sql.Int, carId)
             .query(`
@@ -57,7 +57,7 @@ const carSetupModel = {
 
     // Instalar o reemplazar parte en carro
     async installPart(carId, piezaId, categoryId) {
-        const pool = await getConnection();
+        const pool = getPool();
         return await pool.request()
             .input('id_carro', sql.Int, carId)
             .input('id_pieza', sql.Int, piezaId)
@@ -65,9 +65,18 @@ const carSetupModel = {
             .execute('dbo.sp_instalar_pieza');
     },
 
+    // Asignar conductor a carro
+    async assignDriver(carId, conductorId) {
+        const pool = getPool();
+        return await pool.request()
+            .input('id_carro', sql.Int, carId)
+            .input('id_conductor', sql.Int, conductorId)
+            .execute('dbo.sp_asignar_conductor');
+    },
+
     // Finalizar carro
     async finalizeCar(carId) {
-        const pool = await getConnection();
+        const pool = getPool();
         return await pool.request()
             .input('id_carro', sql.Int, carId)
             .execute('dbo.sp_finalizar_carro');
@@ -75,7 +84,7 @@ const carSetupModel = {
 
     // Desinstalar parte (eliminar de setup)
     async uninstallPart(carId, categoryId) {
-        const pool = await getConnection();
+        const pool = getPool();
         
         // Primero obtener el setup actual
         const setupResult = await pool.request()

@@ -2,6 +2,12 @@
 import axios from '../api/axios';
 
 const carSetupService = {
+    // Obtener categorías disponibles
+    async getCategories() {
+        const response = await axios.get('/car-setup/categories');
+        return response.data;
+    },
+
     // Obtener carros de un equipo
     async getTeamCars(teamId) {
         const response = await axios.get(`/car-setup/team/${teamId}/cars`);
@@ -21,11 +27,10 @@ const carSetupService = {
     },
 
     // Crear un nuevo carro
-    async createCar(id_equipo, nombre, descripcion) {
+    async createCar(id_equipo, nombre) {
         const response = await axios.post('/car-setup/car', {
             id_equipo,
-            nombre,
-            descripcion
+            nombre
         });
         return response.data;
     },

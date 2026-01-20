@@ -68,7 +68,7 @@ const carSetupController = {
     // Crear un nuevo carro
     async createCar(req, res) {
         try {
-            const { id_equipo, nombre, descripcion } = req.body;
+            const { id_equipo, nombre } = req.body;
 
             // Validar permisos
             if (req.user.rol === 'Engineer' && req.user.id_equipo !== parseInt(id_equipo)) {
@@ -79,7 +79,7 @@ const carSetupController = {
                 return res.status(400).json({ error: 'Equipo y nombre son requeridos' });
             }
 
-            const result = await carSetupModel.createCar(id_equipo, nombre, descripcion);
+            const result = await carSetupModel.createCar(id_equipo, nombre);
             
             if (result.recordset && result.recordset[0]) {
                 logger.info(`Carro creado por ${req.user.nombre}: ${nombre} para equipo ${id_equipo}`);

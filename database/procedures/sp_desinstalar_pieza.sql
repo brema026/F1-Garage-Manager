@@ -1,6 +1,6 @@
 CREATE OR ALTER PROCEDURE dbo.sp_desinstalar_pieza
     @id_carro INT,
-    @categoria NVARCHAR(50)
+    @categoria_id INT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -10,6 +10,7 @@ BEGIN
         DECLARE @id_equipo INT;
         DECLARE @id_pieza INT;
         DECLARE @finalizado BIT;
+        DECLARE @setup_id INT;
 
         -- Obtener información del carro
         SELECT @id_equipo = id_equipo, @finalizado = finalizado
@@ -32,10 +33,22 @@ BEGIN
             RETURN;
         END;
 
+        -- Obtener setup actual
+        SELECT @setup_id = setup_id
+        FROM dbo.car_setup
+        WHERE car_id = @id_carro AND es_actual = 1;
+
+        IF @setup_id IS NULL
+        BEGIN
+            RAISERROR('No se encontró un setup activo para este carro', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
         -- Obtener la pieza instalada en esta categoría
-        SELECT @id_pieza = id_pieza
-        FROM dbo.carro_pieza
-        WHERE id_carro = @id_carro AND categoria = @categoria;
+        SELECT @id_pieza = part_id
+        FROM dbo.car_setup_pieza
+        WHERE setup_id = @setup_id AND category_id = @categoria_id;
 
         -- Validar que hay una pieza instalada
         IF @id_pieza IS NULL
@@ -47,7 +60,7 @@ BEGIN
 
         -- Devolver la pieza al inventario
         UPDATE dbo.inventario_equipo
-        SET cantidad = cantidad + 1
+        SET cantidad = cantidad + 1, last_update = SYSUTCDATETIME()
         WHERE id_equipo = @id_equipo AND id_pieza = @id_pieza;
 
         -- Si no existe en el inventario, crear el registro
@@ -58,20 +71,15 @@ BEGIN
         END;
 
         -- Eliminar la relación
-        DELETE FROM dbo.carro_pieza
-        WHERE id_carro = @id_carro AND categoria = @categoria;
-
-        -- Actualizar fecha de última actualización del carro
-        UPDATE dbo.carro
-        SET ultima_actualizacion = GETDATE()
-        WHERE id_carro = @id_carro;
+        DELETE FROM dbo.car_setup_pieza
+        WHERE setup_id = @setup_id AND category_id = @categoria_id;
 
         COMMIT TRANSACTION;
 
         SELECT 
             'Pieza desinstalada correctamente' AS mensaje,
             @id_carro AS id_carro,
-            @categoria AS categoria;
+            @categoria_id AS categoria_id;
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0

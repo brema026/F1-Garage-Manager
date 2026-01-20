@@ -185,10 +185,12 @@ GO
 CREATE TABLE dbo.car_setup (
     setup_id         INT IDENTITY(1,1) NOT NULL,
     car_id           INT NOT NULL,
+    id_conductor     INT NULL,
     fecha_instalacion DATETIME2 NOT NULL CONSTRAINT df_car_setup_fecha DEFAULT (SYSUTCDATETIME()),
     es_actual        BIT NOT NULL CONSTRAINT df_car_setup_actual DEFAULT (0),
     CONSTRAINT pk_car_setup PRIMARY KEY (setup_id),
-    CONSTRAINT fk_car_setup_carro FOREIGN KEY (car_id) REFERENCES dbo.carro(id_carro)
+    CONSTRAINT fk_car_setup_carro FOREIGN KEY (car_id) REFERENCES dbo.carro(id_carro),
+    CONSTRAINT fk_car_setup_conductor FOREIGN KEY (id_conductor) REFERENCES dbo.conductor(id_conductor)
 );
 GO
 

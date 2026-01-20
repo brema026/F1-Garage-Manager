@@ -1,7 +1,7 @@
 CREATE OR ALTER PROCEDURE dbo.sp_instalar_pieza
     @id_carro INT,
     @id_pieza INT,
-    @categoria NVARCHAR(50)
+    @categoria_id INT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -11,7 +11,8 @@ BEGIN
         DECLARE @id_equipo INT;
         DECLARE @finalizado BIT;
         DECLARE @cantidad_inventario INT;
-        DECLARE @id_pieza_anterior INT;
+        DECLARE @setup_id INT;
+        DECLARE @categoria_existente INT;
 
         -- Obtener información del carro
         SELECT @id_equipo = id_equipo, @finalizado = finalizado
@@ -34,6 +35,18 @@ BEGIN
             RETURN;
         END;
 
+        -- Obtener o crear setup actual
+        SELECT @setup_id = setup_id
+        FROM dbo.car_setup
+        WHERE car_id = @id_carro AND es_actual = 1;
+
+        IF @setup_id IS NULL
+        BEGIN
+            INSERT INTO dbo.car_setup (car_id, es_actual)
+            VALUES (@id_carro, 1);
+            SET @setup_id = SCOPE_IDENTITY();
+        END;
+
         -- Verificar que la pieza existe en el inventario del equipo
         SELECT @cantidad_inventario = cantidad
         FROM dbo.inventario_equipo
@@ -47,36 +60,31 @@ BEGIN
         END;
 
         -- Verificar si ya hay una pieza instalada en esta categoría
-        SELECT @id_pieza_anterior = id_pieza
-        FROM dbo.carro_pieza
-        WHERE id_carro = @id_carro AND categoria = @categoria;
+        SELECT @categoria_existente = part_id
+        FROM dbo.car_setup_pieza
+        WHERE setup_id = @setup_id AND category_id = @categoria_id;
 
         -- Si hay una pieza anterior, devolverla al inventario
-        IF @id_pieza_anterior IS NOT NULL
+        IF @categoria_existente IS NOT NULL
         BEGIN
             -- Devolver la pieza anterior al inventario
             UPDATE dbo.inventario_equipo
             SET cantidad = cantidad + 1
-            WHERE id_equipo = @id_equipo AND id_pieza = @id_pieza_anterior;
+            WHERE id_equipo = @id_equipo AND id_pieza = @categoria_existente;
 
             -- Eliminar la relación anterior
-            DELETE FROM dbo.carro_pieza
-            WHERE id_carro = @id_carro AND categoria = @categoria;
+            DELETE FROM dbo.car_setup_pieza
+            WHERE setup_id = @setup_id AND category_id = @categoria_id;
         END;
 
         -- Disminuir inventario de la nueva pieza
         UPDATE dbo.inventario_equipo
-        SET cantidad = cantidad - 1
+        SET cantidad = cantidad - 1, last_update = SYSUTCDATETIME()
         WHERE id_equipo = @id_equipo AND id_pieza = @id_pieza;
 
         -- Instalar la nueva pieza
-        INSERT INTO dbo.carro_pieza (id_carro, id_pieza, categoria)
-        VALUES (@id_carro, @id_pieza, @categoria);
-
-        -- Actualizar fecha de última actualización del carro
-        UPDATE dbo.carro
-        SET ultima_actualizacion = GETDATE()
-        WHERE id_carro = @id_carro;
+        INSERT INTO dbo.car_setup_pieza (setup_id, category_id, part_id)
+        VALUES (@setup_id, @categoria_id, @id_pieza);
 
         COMMIT TRANSACTION;
 
@@ -84,7 +92,7 @@ BEGIN
             'Pieza instalada correctamente' AS mensaje,
             @id_carro AS id_carro,
             @id_pieza AS id_pieza,
-            @categoria AS categoria;
+            @categoria_id AS categoria_id;
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0

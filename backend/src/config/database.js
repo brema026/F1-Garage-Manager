@@ -70,4 +70,4 @@ async function closeDB() {
 }
 
 // Export the functions for external use
-module.exports = { connectDB, getPool, closeDB };
+module.exports = { connectDB, getPool, getConnection: getPool, closeDB };
