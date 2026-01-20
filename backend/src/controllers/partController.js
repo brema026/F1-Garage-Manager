@@ -82,7 +82,79 @@ const partController = {
             logger.error(`Error fetching parts: ${e.message}`);
             res.status(500).json({ error: 'Error fetching parts' });
         }
+    },
+
+    // Comprar pieza (Engineer)
+    async buyPart(req, res) {
+    try {
+        // Engineer o Admin pueden comprar (si tu profe lo permite)
+        const { id_equipo, id_pieza, cantidad } = req.body;
+
+        if (!id_equipo || !id_pieza || !cantidad) {
+        return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        // seguridad: evitar que un user compre para otro equipo
+        if (String(req.user.id_equipo) !== String(id_equipo) && req.user.rol !== 'Admin') {
+        return res.status(403).json({ error: 'No puedes comprar para otro equipo' });
+        }
+
+        const result = await partModel.buyPart(id_equipo, id_pieza, cantidad);
+        return res.status(200).json(result.recordset?.[0] || { message: 'OK' });
+    } catch (e) {
+        logger.error(`Error buying part: ${e.message}`);
+        res.status(500).json({ error: e.message });
     }
+    },
+
+      // Reducir stock de una pieza (Admin) => resta cantidad en dbo.part_stock
+    async reduceStock(req, res) {
+    try {
+      if (req.user.rol !== 'Admin') {
+        return res.status(403).json({ error: 'You do not have permission to reduce stock' });
+      }
+
+      const { id_pieza } = req.params;
+      const { cantidad } = req.body;
+
+      if (cantidad == null) {
+        return res.status(400).json({ error: 'Quantity is required' });
+      }
+
+      const qty = Number(cantidad);
+      if (!Number.isInteger(qty) || qty <= 0) {
+        return res.status(400).json({ error: 'Quantity must be an integer > 0' });
+      }
+
+      const result = await partModel.reduceStock(Number(id_pieza), qty);
+      logger.info(`Stock reduced for part ${id_pieza} by ${req.user.nombre}`);
+
+      return res.status(200).json(result.recordset?.[0] || { message: 'OK' });
+    } catch (e) {
+      logger.error(`Error reducing stock: ${e.message}`);
+      return res.status(500).json({ error: e.message });
+    }
+  },
+
+  // Eliminar pieza completa (Admin) => borra part_stock y pieza si cumple reglas (stock=0 y sin referencias)
+    async deletePart(req, res) {
+    try {
+      if (req.user.rol !== 'Admin') {
+        return res.status(403).json({ error: 'You do not have permission to delete parts' });
+      }
+
+      const { id_pieza } = req.params;
+      const result = await partModel.deletePart(Number(id_pieza));
+
+      logger.info(`Part deleted ${id_pieza} by ${req.user.nombre}`);
+      return res.status(200).json(result.recordset?.[0] || { message: 'OK' });
+    } catch (e) {
+      logger.error(`Error deleting part: ${e.message}`);
+      return res.status(500).json({ error: e.message });
+    }
+  },
+
+
 
 };
 

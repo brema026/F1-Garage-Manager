@@ -13,6 +13,8 @@ const teamRoutes = require('./routes/team'); // Import team routes
 const userRoutes = require('./routes/user'); // Import user routes
 const partRoutes = require('./routes/part');
 const categoryRoutes = require('./routes/category');
+const inventoryRoutes = require('./routes/inventory');
+const sponsorRoutes = require('./routes/sponsorRoutes');
 
 const app = express(); // Initialize Express application
 
@@ -24,7 +26,7 @@ app.use((req, res, next) => {
 
 // Application middlewares
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Allow requests from frontend
+  origin: process.env.FRONTEND_URL || 'http://localhost:3002', // Allow requests from frontend
   credentials: true // Allow cookies in cross-origin requests
 }));
 app.use(bodyParser.json()); // Parse JSON request bodies
@@ -52,6 +54,8 @@ app.use('/api/teams', teamRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/parts', partRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/sponsors', sponsorRoutes);
 
 // Error handling middleware - catches errors from routes and middlewares
 app.use((err, req, res, next) => {

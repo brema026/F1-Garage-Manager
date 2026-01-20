@@ -1,3 +1,6 @@
+USE f1_garage_tec;
+GO
+
 CREATE OR ALTER PROCEDURE dbo.sp_agregar_stock_pieza
     @id_pieza INT,
     @cantidad INT
