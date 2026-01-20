@@ -14,17 +14,17 @@ export function Sponsors({ user }) {
   // Equipos (para el select del aporte)
   const [teams, setTeams] = useState([]);
 
-  // Aportes (tabla del sponsor seleccionado)
+  // Aportes (tabla)
   const [contributions, setContributions] = useState([]);
 
-  // Presupuesto del equipo seleccionado (opcional)
+  // Presupuesto del equipo seleccionado
   const [teamBudget, setTeamBudget] = useState(null);
 
   const hasSponsors = sponsors.length > 0;
 
   // ===== MODAL SPONSOR =====
   const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState('create'); // create | edit (edit no implementado en backend)
+  const [modalMode, setModalMode] = useState('create'); // create | edit (edit no implementado)
   const [formData, setFormData] = useState({ nombre: '', email: '' });
   const [savingSponsor, setSavingSponsor] = useState(false);
   const [sponsorError, setSponsorError] = useState('');
@@ -44,35 +44,6 @@ export function Sponsors({ user }) {
   const [loadingSponsors, setLoadingSponsors] = useState(false);
   const [loadingContrib, setLoadingContrib] = useState(false);
 
-  // Engineer without team assigned
-  if (hasNoTeam && userRole === 'engineer') {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center p-6">
-        <div className="bg-slate-900/60 border border-red-500/20 p-10 rounded-3xl text-center backdrop-blur-2xl max-w-lg shadow-2xl">
-          <div className="flex justify-center mb-6">
-            <div className="p-4 bg-red-500/10 rounded-full">
-              <svg className="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 15c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-          </div>
-
-          <h2 className="text-white text-2xl font-bold mb-4 tracking-tight">VINCULACIÓN PENDIENTE</h2>
-
-          <p className="text-slate-400 leading-relaxed">
-            Actualmente no tienes un equipo asignado en el sistema. Para comenzar a gestionar inventarios y telemetría.
-          </p>
-
-          <div className="mt-8 pt-6 border-t border-slate-800">
-            <p className="text-xs text-slate-500 uppercase tracking-widest">
-              Estado: Esperando asignación de equipo
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // ==========================
   // HELPERS
   // ==========================
@@ -80,7 +51,6 @@ export function Sponsors({ user }) {
     return contributions.reduce((acc, a) => acc + Number(a.monto || 0), 0);
   }, [contributions]);
 
-  // Normalizar campos de aporte devueltos por SP (por si vienen con nombres distintos)
   const normalizeContribution = (row) => ({
     id_aporte: row.id_aporte ?? row.id ?? row.aporte_id ?? null,
     id_equipo: row.id_equipo ?? null,
@@ -93,12 +63,12 @@ export function Sponsors({ user }) {
   });
 
   // ==========================
-  // LOAD INITIAL DATA
+  // LOADERS
   // ==========================
   const cargarSponsors = async () => {
     setLoadingSponsors(true);
     try {
-      const res = await api.get('/sponsors'); // GET /api/sponsors
+      const res = await api.get('/sponsors');
       const list = res.data || [];
       setSponsors(list);
 
@@ -113,24 +83,39 @@ export function Sponsors({ user }) {
       }
     } catch (e) {
       console.error('Error cargando sponsors', e);
+      setSponsors([]);
+      setSelectedSponsor(null);
     } finally {
       setLoadingSponsors(false);
     }
   };
 
-  // Si no tenés endpoint de equipos todavía, esto usa fallback con el equipo del engineer.
   const cargarTeams = async () => {
     try {
-      // Si ya tenés endpoint real de equipos, cambiá esto:
-      // const res = await api.get('/teams');
-      // setTeams(res.data || []);
+      // 1) Intenta endpoint típico /teams
+      try {
+        const res = await api.get('/teams');
+        const list = res.data || [];
+        if (list.length > 0) {
+          setTeams(list);
+          return;
+        }
+      } catch (_) {}
 
-      // Fallback:
-      if (userRole === 'engineer') {
+      // 2) Intenta endpoint alterno /sponsors/teams
+      try {
+        const res2 = await api.get('/sponsors/teams');
+        const list2 = res2.data || [];
+        if (list2.length > 0) {
+          setTeams(list2);
+          return;
+        }
+      } catch (_) {}
+
+      // 3) Fallback (para no romper UI)
+      if (userRole === 'engineer' && !hasNoTeam) {
         setTeams([{ id_equipo: Number(user.id_equipo), nombre: 'Mi Equipo' }]);
-        setAporteFormData((p) => ({ ...p, id_equipo: Number(user.id_equipo) }));
       } else {
-        // Admin sin endpoint: lista dummy (para que no se rompa la UI)
         setTeams([
           { id_equipo: 1, nombre: 'Equipo 1' },
           { id_equipo: 2, nombre: 'Equipo 2' },
@@ -146,7 +131,7 @@ export function Sponsors({ user }) {
     if (!idEquipo) return;
     setLoadingContrib(true);
     try {
-      const res = await api.get(`/sponsors/contributions/team/${idEquipo}`); // GET /api/sponsors/contributions/team/:id_equipo
+      const res = await api.get(`/sponsors/contributions/team/${idEquipo}`);
       const rows = (res.data || []).map(normalizeContribution);
       setContributions(rows);
     } catch (e) {
@@ -160,7 +145,7 @@ export function Sponsors({ user }) {
   const cargarPresupuestoEquipo = async (idEquipo) => {
     if (!idEquipo) return;
     try {
-      const res = await api.get(`/sponsors/budget/team/${idEquipo}`); // GET /api/sponsors/budget/team/:id_equipo
+      const res = await api.get(`/sponsors/budget/team/${idEquipo}`);
       setTeamBudget(res.data || null);
     } catch (e) {
       console.error('Error cargando presupuesto', e);
@@ -168,15 +153,16 @@ export function Sponsors({ user }) {
     }
   };
 
+  // ==========================
+  // EFFECTS (NO CONDICIONALES)
+  // ==========================
   useEffect(() => {
     cargarSponsors();
     cargarTeams();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Cada vez que cambia sponsor seleccionado:
-  // - Admin: no sabemos el equipo "del sponsor", entonces por defecto se muestra aportes del equipo seleccionado en el modal (o el primero).
-  // - Engineer: siempre su equipo.
+  // Cuando cambia sponsor o equipos, cargar aportes/presupuesto del equipo "activo"
   useEffect(() => {
     if (!selectedSponsor) {
       setContributions([]);
@@ -185,17 +171,15 @@ export function Sponsors({ user }) {
     }
 
     const defaultTeamId =
-      userRole === 'engineer'
+      userRole === 'engineer' && !hasNoTeam
         ? Number(user.id_equipo)
-        : Number(teams?.[0]?.id_equipo || aporteFormData.id_equipo || 0);
+        : Number(aporteFormData.id_equipo || teams?.[0]?.id_equipo || 0);
 
     if (defaultTeamId) {
+      // asegura que el select quede seteado
+      setAporteFormData((p) => ({ ...p, id_equipo: p.id_equipo || defaultTeamId }));
       cargarAportesPorEquipo(defaultTeamId);
       cargarPresupuestoEquipo(defaultTeamId);
-      setAporteFormData((p) => ({
-        ...p,
-        id_equipo: p.id_equipo || defaultTeamId
-      }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSponsor, teams]);
@@ -211,7 +195,6 @@ export function Sponsors({ user }) {
   };
 
   const handleEditSponsor = () => {
-    // No tenemos endpoint de editar, así que lo dejamos como UI y lo bloqueamos:
     setModalMode('edit');
     setFormData({ nombre: selectedSponsor?.nombre || '', email: selectedSponsor?.email || '' });
     setSponsorError('Editar no está implementado en backend (solo crear).');
@@ -227,10 +210,7 @@ export function Sponsors({ user }) {
   const handleSubmitSponsor = async (e) => {
     e.preventDefault();
 
-    if (modalMode === 'edit') {
-      // backend no lo tiene (por ahora)
-      return;
-    }
+    if (modalMode === 'edit') return;
 
     if (userRole !== 'admin') {
       setSponsorError('Solo Admin puede registrar patrocinadores.');
@@ -260,9 +240,9 @@ export function Sponsors({ user }) {
     setShowAporteModal(true);
 
     const defaultTeamId =
-      userRole === 'engineer'
+      userRole === 'engineer' && !hasNoTeam
         ? Number(user.id_equipo)
-        : Number(teams?.[0]?.id_equipo || 1);
+        : Number(aporteFormData.id_equipo || teams?.[0]?.id_equipo || 1);
 
     setAporteFormData({
       id_equipo: defaultTeamId,
@@ -276,7 +256,7 @@ export function Sponsors({ user }) {
     setShowAporteModal(false);
     setAporteError('');
     setAporteFormData({
-      id_equipo: userRole === 'engineer' ? Number(user.id_equipo) : '',
+      id_equipo: userRole === 'engineer' && !hasNoTeam ? Number(user.id_equipo) : '',
       fecha: new Date().toISOString().split('T')[0],
       monto: '',
       descripcion: ''
@@ -306,8 +286,6 @@ export function Sponsors({ user }) {
     setAporteError('');
 
     try {
-      // POST /api/sponsors/contributions
-      // Nota: tu SP actual usa GETDATE() internamente, entonces aunque mandemos "fecha", backend puede ignorarla
       await api.post('/sponsors/contributions', {
         id_equipo: idEquipo,
         id_patrocinador: Number(selectedSponsor.id_patrocinador),
@@ -318,10 +296,12 @@ export function Sponsors({ user }) {
 
       handleCloseAporteModal();
 
-      // refrescar aportes y presupuesto del equipo donde se registró el aporte
-      await cargarAportesPorEquipo(idEquipo);
-      await cargarPresupuestoEquipo(idEquipo);
-      await cargarSponsors();
+      // refrescar UI: aportes + presupuesto + lista sponsors
+      await Promise.all([
+        cargarAportesPorEquipo(idEquipo),
+        cargarPresupuestoEquipo(idEquipo),
+        cargarSponsors()
+      ]);
     } catch (err) {
       setAporteError(err.response?.data?.error || 'Error registrando aporte');
     } finally {
@@ -330,8 +310,35 @@ export function Sponsors({ user }) {
   };
 
   // ==========================
-  // RENDER
+  // RENDER (condiciones aquí, no antes de hooks)
   // ==========================
+  if (hasNoTeam && userRole === 'engineer') {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center p-6">
+        <div className="bg-slate-900/60 border border-red-500/20 p-10 rounded-3xl text-center backdrop-blur-2xl max-w-lg shadow-2xl">
+          <div className="flex justify-center mb-6">
+            <div className="p-4 bg-red-500/10 rounded-full">
+              <svg className="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 15c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+          </div>
+
+          <h2 className="text-white text-2xl font-bold mb-4 tracking-tight">VINCULACIÓN PENDIENTE</h2>
+          <p className="text-slate-400 leading-relaxed">
+            Actualmente no tienes un equipo asignado en el sistema.
+          </p>
+
+          <div className="mt-8 pt-6 border-t border-slate-800">
+            <p className="text-xs text-slate-500 uppercase tracking-widest">
+              Estado: Esperando asignación de equipo
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#0f1419] to-[#050812] p-4 md:p-8">
       {/* Header */}
@@ -345,27 +352,12 @@ export function Sponsors({ user }) {
         </div>
       </div>
 
-      {/* Estado Vacío */}
       {!hasSponsors ? (
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center max-w-md">
-            <div className="mb-8 flex justify-center">
-              <div className="relative">
-                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full"></div>
-                <div className="relative w-24 h-24 bg-gradient-to-br from-primary/20 to-transparent border border-primary/40 rounded-2xl flex items-center justify-center">
-                  <svg className="w-12 h-12 text-primary/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
             <h2 className="text-2xl md:text-3xl font-black text-white mb-3">
               Sin Patrocinadores Registrados
             </h2>
-            <p className="text-light/50 mb-8 text-sm md:text-base">
-              Comienza a registrar patrocinadores y sus aportes monetarios a los equipos.
-            </p>
 
             <button
               onClick={handleCreateSponsor}
@@ -388,7 +380,6 @@ export function Sponsors({ user }) {
                   onClick={handleCreateSponsor}
                   className="w-full bg-gradient-to-r from-primary to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg shadow-primary/30 hover:shadow-primary/50 flex items-center justify-center gap-2 md:text-sm disabled:opacity-60"
                   disabled={userRole !== 'admin'}
-                  title={userRole !== 'admin' ? 'Solo Admin puede registrar patrocinadores' : ''}
                 >
                   <FiPlus className="text-lg" />
                   NUEVO PATROCINADOR
@@ -438,8 +429,6 @@ export function Sponsors({ user }) {
             {/* Main */}
             <div className="lg:col-span-2 space-y-6">
               <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-[#0f1419] to-transparent border border-primary/20 p-8">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-0"></div>
-
                 <div className="relative z-10">
                   <div className="flex flex-col md:flex-row justify-between md:items-start gap-4 mb-8">
                     <div>
@@ -455,7 +444,7 @@ export function Sponsors({ user }) {
                       onClick={handleEditSponsor}
                       className="flex items-center gap-2 bg-primary/20 hover:bg-primary/40 border border-primary/40 text-primary px-4 py-2 rounded-lg transition-all font-bold text-sm md:text-base disabled:opacity-60"
                       disabled={!selectedSponsor}
-                      title="Editar aún no implementado en backend"
+                      title="Editar aún no implementado"
                     >
                       <FiEdit />
                       EDITAR
@@ -464,7 +453,7 @@ export function Sponsors({ user }) {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-[#1a1f3a]/50 border border-light/10 rounded-xl p-4 backdrop-blur">
-                      <div className="text-xs text-light/50 mb-2 uppercase font-bold tracking-wider">Total Aportes (equipo actual)</div>
+                      <div className="text-xs text-light/50 mb-2 uppercase font-bold tracking-wider">Total Aportes (equipo)</div>
                       <div className="text-2xl md:text-3xl font-black text-accent">
                         {formatCurrency(totalAportesSeleccionado)}
                       </div>
@@ -479,30 +468,6 @@ export function Sponsors({ user }) {
                 </div>
               </div>
 
-              {/* Información */}
-              <div className="bg-[#0f1419]/50 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
-                <div className="border-b border-light/5 px-6 py-4">
-                  <h3 className="text-sm font-bold text-light/70 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-400"></span>
-                    Información
-                  </h3>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div>
-                    <div className="text-xs text-light/50 mb-2 uppercase font-bold">Nombre</div>
-                    <div className="text-white font-bold">{selectedSponsor?.nombre}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-light/50 mb-2 uppercase font-bold">Email</div>
-                    <div className="text-white font-bold break-all">{selectedSponsor?.email || '—'}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-light/50 mb-2 uppercase font-bold">ID Patrocinador</div>
-                    <div className="text-white font-bold">#{selectedSponsor?.id_patrocinador}</div>
-                  </div>
-                </div>
-              </div>
-
               {/* Aportes */}
               <div className="bg-[#0f1419]/50 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
                 <div className="border-b border-light/5 px-6 py-4 flex items-center justify-between gap-3">
@@ -511,18 +476,15 @@ export function Sponsors({ user }) {
                     Registro de Aportes
                   </h3>
 
-                  {/* Selector de equipo para ver aportes */}
                   <select
                     value={aporteFormData.id_equipo || ''}
                     onChange={async (e) => {
                       const idEquipo = Number(e.target.value);
                       setAporteFormData((p) => ({ ...p, id_equipo: idEquipo }));
-                      await cargarAportesPorEquipo(idEquipo);
-                      await cargarPresupuestoEquipo(idEquipo);
+                      await Promise.all([cargarAportesPorEquipo(idEquipo), cargarPresupuestoEquipo(idEquipo)]);
                     }}
                     className="px-3 py-2 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all text-sm"
-                    disabled={userRole === 'engineer'} // engineer solo su equipo
-                    title={userRole === 'engineer' ? 'Engineer solo puede ver su equipo' : 'Cambiar equipo'}
+                    disabled={userRole === 'engineer'}
                   >
                     {(teams || []).map((t) => (
                       <option key={t.id_equipo} value={t.id_equipo}>
@@ -558,7 +520,10 @@ export function Sponsors({ user }) {
                           </tr>
                         ) : (
                           contributions.map((aporte) => (
-                            <tr key={`${aporte.id_aporte ?? 'x'}-${aporte.fecha}-${aporte.monto}`} className="border-b border-light/5 hover:bg-[#1a1f3a]/40 transition-all">
+                            <tr
+                              key={`${aporte.id_aporte ?? 'x'}-${aporte.fecha}-${aporte.monto}`}
+                              className="border-b border-light/5 hover:bg-[#1a1f3a]/40 transition-all"
+                            >
                               <td className="py-3 px-4 text-light/80">{formatDate(aporte.fecha)}</td>
                               <td className="py-3 px-4 text-white font-bold">{aporte.equipo_nombre}</td>
                               <td className="py-3 px-4 text-accent font-bold">{formatCurrency(aporte.monto)}</td>
@@ -576,12 +541,6 @@ export function Sponsors({ user }) {
                       <div className="text-3xl font-black text-accent">{formatCurrency(totalAportesSeleccionado)}</div>
                     </div>
                   </div>
-
-                  <div className="mt-4 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                    <p className="text-xs text-blue-300">
-                      <span className="font-bold">Nota:</span> El presupuesto de un equipo se calcula únicamente a partir de los aportes registrados.
-                    </p>
-                  </div>
                 </div>
               </div>
 
@@ -591,7 +550,6 @@ export function Sponsors({ user }) {
                   onClick={handleCreateAporte}
                   className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-gradient-to-r from-primary to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold transition-all shadow-lg shadow-primary/30 hover:shadow-primary/50 disabled:opacity-60"
                   disabled={userRole !== 'admin'}
-                  title={userRole !== 'admin' ? 'Solo Admin puede registrar aportes' : ''}
                 >
                   <FiPlus />
                   REGISTRAR APORTE
@@ -600,7 +558,6 @@ export function Sponsors({ user }) {
                 <button
                   className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 font-bold hover:bg-red-500/20 transition-all disabled:opacity-60"
                   disabled
-                  title="Eliminar sponsor no implementado"
                 >
                   <FiTrash2 />
                   ELIMINAR
@@ -640,7 +597,6 @@ export function Sponsors({ user }) {
                   value={formData.nombre}
                   onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
                   className="w-full px-4 py-3 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white placeholder-light/30 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-                  placeholder="Ej: Red Bull"
                   required
                   disabled={modalMode === 'edit'}
                 />
@@ -655,7 +611,6 @@ export function Sponsors({ user }) {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-4 py-3 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white placeholder-light/30 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-                  placeholder="Ej: sponsors@empresa.com"
                   disabled={modalMode === 'edit'}
                 />
               </div>
@@ -673,7 +628,6 @@ export function Sponsors({ user }) {
                   type="submit"
                   className="flex-1 py-3 px-4 rounded-lg bg-gradient-to-r from-primary to-red-700 text-white font-bold hover:from-red-600 hover:to-red-800 transition-all disabled:opacity-60"
                   disabled={savingSponsor || userRole !== 'admin' || modalMode === 'edit'}
-                  title={modalMode === 'edit' ? 'Editar no implementado' : ''}
                 >
                   {savingSponsor ? 'GUARDANDO...' : 'CREAR'}
                 </button>
@@ -688,9 +642,7 @@ export function Sponsors({ user }) {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-[#0f1419] border border-light/10 rounded-2xl p-6 md:p-8 max-w-md w-full">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl md:text-2xl font-black text-white">
-                REGISTRAR APORTE
-              </h3>
+              <h3 className="text-xl md:text-2xl font-black text-white">REGISTRAR APORTE</h3>
               <button
                 onClick={handleCloseAporteModal}
                 className="text-light/50 hover:text-white transition-colors"
@@ -726,7 +678,6 @@ export function Sponsors({ user }) {
                 </select>
               </div>
 
-              {/* Fecha: si tu SP usa GETDATE() igual lo dejamos en UI por si luego lo usás */}
               <div>
                 <label className="block text-xs font-bold text-light/70 uppercase tracking-wider mb-2">
                   Fecha
@@ -750,7 +701,6 @@ export function Sponsors({ user }) {
                   value={aporteFormData.monto}
                   onChange={(e) => setAporteFormData({ ...aporteFormData, monto: e.target.value })}
                   className="w-full px-4 py-3 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white placeholder-light/30 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-                  placeholder="Ej: 500000"
                   required
                 />
               </div>
@@ -764,7 +714,6 @@ export function Sponsors({ user }) {
                   value={aporteFormData.descripcion}
                   onChange={(e) => setAporteFormData({ ...aporteFormData, descripcion: e.target.value })}
                   className="w-full px-4 py-3 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white placeholder-light/30 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-                  placeholder="Ej: Patrocinio principal"
                 />
               </div>
 
@@ -781,7 +730,6 @@ export function Sponsors({ user }) {
                   type="submit"
                   className="flex-1 py-3 px-4 rounded-lg bg-gradient-to-r from-primary to-red-700 text-white font-bold hover:from-red-600 hover:to-red-800 transition-all disabled:opacity-60"
                   disabled={savingAporte || userRole !== 'admin'}
-                  title={userRole !== 'admin' ? 'Solo Admin puede registrar aportes' : ''}
                 >
                   {savingAporte ? 'REGISTRANDO...' : 'REGISTRAR'}
                 </button>
@@ -802,3 +750,4 @@ export function Sponsors({ user }) {
 }
 
 export default Sponsors;
+

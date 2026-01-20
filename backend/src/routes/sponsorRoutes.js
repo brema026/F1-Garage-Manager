@@ -15,4 +15,7 @@ router.get('/contributions/team/:id_equipo', protect, controller.getContribution
 router.get('/budget/team/:id_equipo', protect, controller.getBudgetByTeam);
 router.get('/balance/team/:id_equipo', protect, controller.getBalanceByTeam);
 
+// teams
+router.get('/teams', protect, controller.getTeams);
+
 module.exports = router;

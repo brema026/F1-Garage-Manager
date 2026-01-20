@@ -49,6 +49,11 @@ const sponsorContributionModel = {
       .input('id_equipo', sql.Int, Number(id_equipo))
       .execute('dbo.sp_saldo_equipo');
   },
+
+  async getTeams() {
+    const pool = await getPool();
+    return pool.request().execute('sp_listar_equipos'); // o el nombre que uses
+  },
 };
 
 module.exports = sponsorContributionModel;

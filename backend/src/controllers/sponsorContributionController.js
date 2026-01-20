@@ -161,6 +161,17 @@ const sponsorContributionController = {
       return res.status(500).json({ error: 'Error fetching balance' });
     }
   },
+
+  async getTeams(req, res) {
+    try {
+      const result = await sponsorContributionModel.getTeams();
+      return res.status(200).json(result.recordset);
+    } catch (e) {
+      logger.error(`Error fetching teams: ${e.message}`);
+      return res.status(500).json({ error: 'Error fetching teams' });
+    }
+  },
+
 };
 
 module.exports = sponsorContributionController;
