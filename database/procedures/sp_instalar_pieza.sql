@@ -18,24 +18,35 @@ BEGIN
         DECLARE @carro_finalizado BIT;
         DECLARE @pieza_instalada INT;
         DECLARE @pieza_nombre NVARCHAR(120);
+        DECLARE @error_msg NVARCHAR(500);
+        DECLARE @equipo_valido BIT;
 
         -- 1. Validar que el carro existe y pertenece al equipo
-        SELECT @carro_finalizado = finalizado
+        SELECT @carro_finalizado = finalizado, @equipo_valido = CASE WHEN id_equipo = @id_equipo THEN 1 ELSE 0 END
         FROM dbo.carro
-        WHERE id_carro = @id_carro AND id_equipo = @id_equipo;
+        WHERE id_carro = @id_carro;
 
         IF @carro_finalizado IS NULL
         BEGIN
-            RAISERROR('El carro no existe o no pertenece a este equipo', 16, 1);
-            ROLLBACK;
+            SET @error_msg = 'El carro con ID ' + CAST(@id_carro AS NVARCHAR(10)) + ' no existe en la base de datos';
+            RAISERROR(@error_msg, 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        IF @equipo_valido = 0
+        BEGIN
+            SET @error_msg = 'El carro con ID ' + CAST(@id_carro AS NVARCHAR(10)) + ' no pertenece al equipo con ID ' + CAST(@id_equipo AS NVARCHAR(10));
+            RAISERROR(@error_msg, 16, 1);
+            ROLLBACK TRANSACTION;
             RETURN;
         END;
 
         -- 2. Validar que el carro no esté finalizado
         IF @carro_finalizado = 1
         BEGIN
-            RAISERROR('No puedes modificar un carro finalizado', 16, 1);
-            ROLLBACK;
+            RAISERROR('No puedes modificar un carro finalizado. El carro ya está en estado final', 16, 1);
+            ROLLBACK TRANSACTION;
             RETURN;
         END;
 
@@ -48,10 +59,9 @@ BEGIN
 
         IF @category_id IS NULL
         BEGIN
-            DECLARE @error_msg NVARCHAR(200);
-            SET @error_msg = 'La pieza con ID ' + CAST(@id_pieza AS NVARCHAR(10)) + ' no existe en la base de datos';
+            SET @error_msg = 'La pieza con ID ' + CAST(@id_pieza AS NVARCHAR(10)) + ' no existe en la base de datos o no está disponible';
             RAISERROR(@error_msg, 16, 1);
-            ROLLBACK;
+            ROLLBACK TRANSACTION;
             RETURN;
         END;
 
@@ -62,9 +72,9 @@ BEGIN
 
         IF @cantidad_inventario IS NULL OR @cantidad_inventario <= 0
         BEGIN
-            SET @error_msg = 'No tienes la pieza "' + @pieza_nombre + '" en el inventario del equipo';
+            SET @error_msg = 'No tienes disponibilidad de la pieza "' + ISNULL(@pieza_nombre, 'desconocida') + '" en el inventario del equipo';
             RAISERROR(@error_msg, 16, 1);
-            ROLLBACK;
+            ROLLBACK TRANSACTION;
             RETURN;
         END;
 
@@ -127,14 +137,16 @@ BEGIN
             @category_id AS category_id,
             @id_pieza AS part_id,
             @pieza_nombre AS part_name,
-            'Pieza instalada correctamente' AS mensaje;
+            'Pieza "' + @pieza_nombre + '" instalada correctamente' AS mensaje;
 
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
             ROLLBACK TRANSACTION;
         
-        THROW;
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
+        RAISERROR(@ErrorMessage, @ErrorSeverity, 1);
     END CATCH
 END;
 GO

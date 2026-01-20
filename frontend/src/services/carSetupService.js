@@ -54,7 +54,7 @@ const carSetupService = {
 
     // Finalizar carro
     async finalizeCar(carId) {
-        const response = await axios.put(`/car-setup/car/${carId}/finalize`);
+        const response = await axios.post(`/car-setup/car/${carId}/finalize`);
         return response.data;
     },
 

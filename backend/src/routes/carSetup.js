@@ -10,12 +10,27 @@ const { protect } = require('../middleware/authMiddleware');
 router.get('/cars', protect, carSetupController.getTeamCars);
 
 /**
+ * GET /api/car-setup/team/:teamId/cars
+ * Obtener todos los carros de un equipo específico
+ */
+router.get('/team/:teamId/cars', protect, carSetupController.getTeamCars);
+
+/**
  * POST /api/car-setup/cars
  * Crear un nuevo carro
  * 
  * @body {string} nombre - Nombre del carro
  */
 router.post('/cars', protect, carSetupController.createCar);
+
+/**
+ * POST /api/car-setup/car
+ * Crear un nuevo carro (alternativa)
+ * 
+ * @body {string} nombre - Nombre del carro
+ * @body {number} id_equipo - ID del equipo (para Admin)
+ */
+router.post('/car', protect, carSetupController.createCar);
 
 /**
  * GET /api/car-setup/car/:id_carro
@@ -50,5 +65,14 @@ router.delete('/car/:id_carro/part/:category_id', protect, carSetupController.re
  * @param {number} id_carro - ID del carro
  */
 router.post('/car/:id_carro/finalize', protect, carSetupController.finalizeCar);
+
+/**
+ * PUT /api/car-setup/car/:id_carro/driver
+ * Asignar un conductor a un carro
+ * 
+ * @param {number} id_carro - ID del carro
+ * @body {number} id_conductor - ID del conductor a asignar
+ */
+router.put('/car/:id_carro/driver', protect, carSetupController.assignDriver);
 
 module.exports = router;

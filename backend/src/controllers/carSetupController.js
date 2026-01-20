@@ -12,7 +12,11 @@ const carSetupController = {
       let id_equipo = req.user.id_equipo;
 
       if (!id_pieza) {
-        return res.status(400).json({ error: 'ID de pieza es requerido' });
+        return res.status(400).json({ error: 'El ID de la pieza es requerido' });
+      }
+
+      if (!id_carro) {
+        return res.status(400).json({ error: 'El ID del carro es requerido' });
       }
 
       // Si el usuario no tiene equipo (Admin), obtener el equipo del carro
@@ -24,7 +28,7 @@ const carSetupController = {
         // Obtener el equipo del carro
         const carResult = await carSetupModel.getCarTeam(parseInt(id_carro));
         if (!carResult.recordset || carResult.recordset.length === 0) {
-          return res.status(404).json({ error: 'Carro no encontrado' });
+          return res.status(404).json({ error: 'El carro con ID ' + id_carro + ' no fue encontrado' });
         }
         id_equipo = carResult.recordset[0].id_equipo;
       }
@@ -38,12 +42,13 @@ const carSetupController = {
       logger.info(`Parte instalada en carro ${id_carro} por ${req.user.nombre}`);
       res.status(200).json({
         message: 'Pieza instalada correctamente',
-        setup: result.recordset[0]
+        data: result.recordset[0]
       });
 
     } catch (e) {
       logger.error(`Error instalando parte: ${e.message}`);
-      res.status(500).json({ error: e.message });
+      // Usar el mensaje del error SQL directamente para máxima claridad
+      res.status(400).json({ error: e.message });
     }
   },
 
@@ -54,6 +59,10 @@ const carSetupController = {
       
       let id_equipo = req.user.id_equipo;
 
+      if (!id_carro || !category_id) {
+        return res.status(400).json({ error: 'El ID del carro y la categoría son requeridos' });
+      }
+
       // Si el usuario no tiene equipo (Admin), obtener el equipo del carro
       if (!id_equipo) {
         if (req.user.rol !== 'Admin') {
@@ -62,7 +71,7 @@ const carSetupController = {
         
         const carResult = await carSetupModel.getCarTeam(parseInt(id_carro));
         if (!carResult.recordset || carResult.recordset.length === 0) {
-          return res.status(404).json({ error: 'Carro no encontrado' });
+          return res.status(404).json({ error: 'El carro con ID ' + id_carro + ' no fue encontrado' });
         }
         id_equipo = carResult.recordset[0].id_equipo;
       }
@@ -78,7 +87,7 @@ const carSetupController = {
 
     } catch (e) {
       logger.error(`Error removiendo parte: ${e.message}`);
-      res.status(500).json({ error: e.message });
+      res.status(400).json({ error: e.message });
     }
   },
 
@@ -102,14 +111,63 @@ const carSetupController = {
         id_equipo = carResult.recordset[0].id_equipo;
       }
 
-      await carSetupModel.finalizeCar(parseInt(id_carro), id_equipo);
+      const result = await carSetupModel.finalizeCar(parseInt(id_carro), id_equipo);
 
       logger.info(`Carro ${id_carro} finalizado por ${req.user.nombre}`);
-      res.status(200).json({ message: 'Carro finalizado correctamente' });
+      res.status(200).json({ 
+        message: 'Carro finalizado correctamente',
+        data: result.recordset[0]
+      });
 
     } catch (e) {
       logger.error(`Error finalizando carro: ${e.message}`);
-      res.status(500).json({ error: e.message });
+      // Extraer el mensaje específico del error SQL
+      const errorMsg = e.message || 'Error al finalizar el carro';
+      res.status(400).json({ error: errorMsg });
+    }
+  },
+
+  // Asignar conductor a un carro
+  async assignDriver(req, res) {
+    try {
+      const { id_carro } = req.params;
+      const { id_conductor } = req.body;
+      
+      let id_equipo = req.user.id_equipo;
+
+      if (!id_conductor) {
+        return res.status(400).json({ error: 'ID de conductor es requerido' });
+      }
+
+      // Si el usuario no tiene equipo (Admin), obtener el equipo del carro
+      if (!id_equipo) {
+        if (req.user.rol !== 'Admin') {
+          return res.status(403).json({ error: 'Tu usuario no tiene un equipo asignado' });
+        }
+        
+        const carResult = await carSetupModel.getCarTeam(parseInt(id_carro));
+        if (!carResult.recordset || carResult.recordset.length === 0) {
+          return res.status(404).json({ error: 'Carro no encontrado' });
+        }
+        id_equipo = carResult.recordset[0].id_equipo;
+      }
+
+      const result = await carSetupModel.assignDriver(
+        parseInt(id_carro),
+        parseInt(id_conductor),
+        id_equipo
+      );
+
+      logger.info(`Conductor ${id_conductor} asignado al carro ${id_carro} por ${req.user.nombre}`);
+      res.status(200).json({
+        message: 'Conductor asignado correctamente',
+        data: result.recordset[0]
+      });
+
+    } catch (e) {
+      logger.error(`Error asignando conductor: ${e.message}`);
+      const errorMsg = e.message || 'Error al asignar conductor';
+      res.status(400).json({ error: errorMsg });
     }
   },
 

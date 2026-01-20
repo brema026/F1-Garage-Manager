@@ -47,53 +47,6 @@ export function CarSetup( { user } ) {
 
   // Cargar datos desde API cuando cambia el equipo
   useEffect(() => {
-    const loadTeamData = async () => {
-      if (!selectedEquipoId) return;
-      
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Intentar cargar desde la API
-        const carsData = await carSetupService.getTeamCars(selectedEquipoId);
-        
-        // Inicializar setups con datos de la API
-        const newSetups = {};
-        carsData.forEach((car) => {
-          newSetups[car.id_carro] = {
-            id_potencia: car.id_potencia || null,
-            id_aerodinamica: car.id_aerodinamica || null,
-            id_neumaticos: car.id_neumaticos || null,
-            id_suspension: car.id_suspension || null,
-            id_caja_cambios: car.id_caja_cambios || null,
-            id_conductor: car.id_conductor || null
-          };
-        });
-        
-        setCarSetups(newSetups);
-        
-        if (carsData.length > 0) {
-          setSelectedCarId(carsData[0].id_carro);
-        }
-      } catch (err) {
-        // Si la API falla, usar datos locales
-        console.warn('Usando datos locales:', err);
-        
-        if (!carSetups[selectedEquipoId] && carsForTeam.length > 0) {
-          const newSetups = {};
-          carsForTeam.forEach((car) => {
-            newSetups[car.id_carro] = carSetups[car.id_carro] || { ...car.setup };
-          });
-          setCarSetups((prev) => ({
-            ...prev,
-            ...newSetups,
-          }));
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadTeamData();
   }, [selectedEquipoId]);
 
@@ -157,7 +110,6 @@ export function CarSetup( { user } ) {
 
   const handleFinalizeCar = async () => {
     if (!allRequirementsMet) return;
-
     try {
       setLoading(true);
       setError(null);
@@ -174,28 +126,97 @@ export function CarSetup( { user } ) {
       // Instalar cada parte
       for (const [categoria, [categoryId, pieceId]] of Object.entries(categoriasMap)) {
         if (pieceId) {
-          await carSetupService.installPart(selectedCarId, pieceId, categoryId);
+          try {
+            await carSetupService.installPart(selectedCarId, pieceId, categoryId);
+          } catch (partError) {
+            const errorMsg = partError.response?.data?.error || `Error al instalar pieza en ${categoria}`;
+            setError(`Error en ${categoria}: ${errorMsg}`);
+            setLoading(false);
+            return;
+          }
         }
       }
 
       // Asignar conductor
       if (currentSetup.id_conductor) {
-        await carSetupService.assignDriver(selectedCarId, currentSetup.id_conductor);
+        try {
+          await carSetupService.assignDriver(selectedCarId, currentSetup.id_conductor);
+        } catch (driverError) {
+          const errorMsg = driverError.response?.data?.error || 'Error al asignar conductor';
+          setError(`Error al asignar conductor: ${errorMsg}`);
+          setLoading(false);
+          return;
+        }
       }
 
       // Finalizar carro
-      await carSetupService.finalizeCar(selectedCarId);
+      try {
+        await carSetupService.finalizeCar(selectedCarId);
+      } catch (finalizeError) {
+        const errorMsg = finalizeError.response?.data?.error || 'Error al finalizar el carro';
+        setError(`Error al finalizar: ${errorMsg}`);
+        setLoading(false);
+        return;
+      }
 
-      setSuccessMessage(`¡Carro ${selectedCar.numero_carro} de ${currentTeam.nombre} finalizado exitosamente!`);
+      setSuccessMessage(`¡Carro ${selectedCar.nombre} de ${currentTeam.nombre} finalizado exitosamente!`);
       setShowSuccessModal(true);
       
       setTimeout(() => {
         setShowSuccessModal(false);
+        // Recargar datos
+        loadTeamData();
       }, 3000);
 
     } catch (err) {
       console.error('Error:', err);
       setError(err.response?.data?.error || 'Error finalizando el carro');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadTeamData = async () => {
+    if (!selectedEquipoId) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Intentar cargar desde la API
+      const carsData = await carSetupService.getTeamCars(selectedEquipoId);
+      
+      // Inicializar setups con datos de la API
+      const newSetups = {};
+      carsData.forEach((car) => {
+        newSetups[car.id_carro] = {
+          id_potencia: car.id_potencia || null,
+          id_aerodinamica: car.id_aerodinamica || null,
+          id_neumaticos: car.id_neumaticos || null,
+          id_suspension: car.id_suspension || null,
+          id_caja_cambios: car.id_caja_cambios || null,
+          id_conductor: car.id_conductor || null
+        };
+      });
+      
+      setCarSetups(newSetups);
+      
+      if (carsData.length > 0) {
+        setSelectedCarId(carsData[0].id_carro);
+      }
+    } catch (err) {
+      console.warn('Usando datos locales:', err);
+      
+      if (!carSetups[selectedEquipoId] && carsForTeam.length > 0) {
+        const newSetups = {};
+        carsForTeam.forEach((car) => {
+          newSetups[car.id_carro] = carSetups[car.id_carro] || { ...car.setup };
+        });
+        setCarSetups((prev) => ({
+          ...prev,
+          ...newSetups,
+        }));
+      }
     } finally {
       setLoading(false);
     }

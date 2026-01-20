@@ -39,6 +39,80 @@ const carSetupModel = {
       .execute('dbo.sp_finalizar_carro');
   },
 
+  // Asignar conductor a un carro
+  async assignDriver(id_carro, id_conductor, id_equipo) {
+    const pool = await getPool();
+    
+    // Validar que el carro existe
+    const carResult = await pool.request()
+      .input('id_carro', sql.Int, id_carro)
+      .input('id_equipo', sql.Int, id_equipo)
+      .query(`
+        SELECT id_carro, id_equipo 
+        FROM dbo.carro 
+        WHERE id_carro = @id_carro AND id_equipo = @id_equipo
+      `);
+    
+    if (!carResult.recordset || carResult.recordset.length === 0) {
+      throw new Error('El carro con ID ' + id_carro + ' no pertenece a este equipo');
+    }
+
+    // Validar que el conductor existe
+    const driverResult = await pool.request()
+      .input('id_conductor', sql.Int, id_conductor)
+      .query(`
+        SELECT id_conductor, nombre 
+        FROM dbo.conductor 
+        WHERE id_conductor = @id_conductor
+      `);
+    
+    if (!driverResult.recordset || driverResult.recordset.length === 0) {
+      throw new Error('El conductor con ID ' + id_conductor + ' no existe en la base de datos');
+    }
+
+    // Obtener o crear el setup actual
+    const setupResult = await pool.request()
+      .input('id_carro', sql.Int, id_carro)
+      .query(`
+        SELECT setup_id 
+        FROM dbo.car_setup 
+        WHERE car_id = @id_carro AND es_actual = 1
+      `);
+
+    let setup_id = setupResult.recordset[0]?.setup_id;
+
+    if (!setup_id) {
+      // Crear un nuevo setup
+      const newSetupResult = await pool.request()
+        .input('id_carro', sql.Int, id_carro)
+        .query(`
+          INSERT INTO dbo.car_setup (car_id, es_actual)
+          OUTPUT INSERTED.setup_id
+          VALUES (@id_carro, 1)
+        `);
+      
+      setup_id = newSetupResult.recordset[0].setup_id;
+    }
+
+    // Actualizar el setup con el conductor
+    return pool.request()
+      .input('setup_id', sql.Int, setup_id)
+      .input('id_conductor', sql.Int, id_conductor)
+      .query(`
+        UPDATE dbo.car_setup
+        SET id_conductor = @id_conductor
+        WHERE setup_id = @setup_id;
+        
+        SELECT 
+          setup_id,
+          car_id,
+          id_conductor,
+          'Conductor asignado correctamente' AS mensaje
+        FROM dbo.car_setup
+        WHERE setup_id = @setup_id
+      `);
+  },
+
   // Obtener el setup actual de un carro
   async getCarSetup(id_carro) {
     const pool = await getPool();
