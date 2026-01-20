@@ -4,57 +4,51 @@ const carSetupController = require('../controllers/carSetupController');
 const { protect } = require('../middleware/authMiddleware');
 
 /**
- * GET /api/car-setup/categories
- * Obtener categorías disponibles
+ * GET /api/car-setup/cars
+ * Obtener todos los carros del equipo del usuario
  */
-router.get('/categories', protect, carSetupController.getCategories);
+router.get('/cars', protect, carSetupController.getTeamCars);
 
 /**
- * GET /api/car-setup/team/:teamId/cars
- * Obtener carros de un equipo
- */
-router.get('/team/:teamId/cars', protect, carSetupController.getTeamCars);
-
-/**
- * GET /api/car-setup/team/:teamId/inventory
- * Obtener inventario de partes del equipo
- */
-router.get('/team/:teamId/inventory', protect, carSetupController.getTeamInventory);
-
-/**
- * GET /api/car-setup/team/:teamId/drivers
- * Obtener conductores del equipo
- */
-router.get('/team/:teamId/drivers', protect, carSetupController.getTeamDrivers);
-
-/**
- * POST /api/car-setup/car
+ * POST /api/car-setup/cars
  * Crear un nuevo carro
+ * 
+ * @body {string} nombre - Nombre del carro
  */
-router.post('/car', protect, carSetupController.createCar);
+router.post('/cars', protect, carSetupController.createCar);
 
 /**
- * PUT /api/car-setup/car/:carId/part
- * Instalar o reemplazar una parte en un carro
+ * GET /api/car-setup/car/:id_carro
+ * Obtener el setup actual de un carro
+ * 
+ * @param {number} id_carro - ID del carro
  */
-router.put('/car/:carId/part', protect, carSetupController.installPart);
+router.get('/car/:id_carro', protect, carSetupController.getCarSetup);
 
 /**
- * PUT /api/car-setup/car/:carId/driver
- * Asignar conductor a un carro
+ * PUT /api/car-setup/car/:id_carro/part
+ * Instalar una pieza en el setup del carro
+ * 
+ * @param {number} id_carro - ID del carro
+ * @body {number} id_pieza - ID de la pieza a instalar
  */
-router.put('/car/:carId/driver', protect, carSetupController.assignDriver);
+router.put('/car/:id_carro/part', protect, carSetupController.installPart);
 
 /**
- * PUT /api/car-setup/car/:carId/finalize
- * Finalizar configuración de un carro
+ * DELETE /api/car-setup/car/:id_carro/part/:category_id
+ * Remover una pieza del setup del carro
+ * 
+ * @param {number} id_carro - ID del carro
+ * @param {number} category_id - ID de la categoría de la pieza a remover
  */
-router.put('/car/:carId/finalize', protect, carSetupController.finalizeCar);
+router.delete('/car/:id_carro/part/:category_id', protect, carSetupController.removePart);
 
 /**
- * DELETE /api/car-setup/car/:carId/part/:categoria_id
- * Desinstalar una parte de un carro
+ * POST /api/car-setup/car/:id_carro/finalize
+ * Finalizar el armado de un carro
+ * 
+ * @param {number} id_carro - ID del carro
  */
-router.delete('/car/:carId/part/:categoria_id', protect, carSetupController.uninstallPart);
+router.post('/car/:id_carro/finalize', protect, carSetupController.finalizeCar);
 
-module.exports = router;    
+module.exports = router;

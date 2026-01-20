@@ -124,12 +124,23 @@ export function CarSetup( { user } ) {
 
   const carImage = selectedCar?.imagen === 2 ? carImage2 : carImage1;
 
+  const getCategoryKey = (category) => {
+    const categoryMap = {
+      'Unidad de Potencia': 'id_potencia',
+      'Paquete Aerodinámico': 'id_aerodinamica',
+      'Neumáticos': 'id_neumaticos',
+      'Suspensión': 'id_suspension',
+      'Caja de Cambios': 'id_caja_cambios'
+    };
+    return categoryMap[category] || `id_${category.toLowerCase().replace(/ /g, '_')}`;
+  };
+
   const handlePartChange = (category, partId) => {
     setCarSetups((prev) => ({
       ...prev,
       [selectedCarId]: {
         ...prev[selectedCarId],
-        [`id_${category.toLowerCase().replace(/ /g, '_')}`]: partId,
+        [getCategoryKey(category)]: partId,
       },
     }));
   };
@@ -504,7 +515,7 @@ export function CarSetup( { user } ) {
               {selectedCar && (
                 <div className="space-y-3">
                   {CATEGORIES.map((category) => {
-                    const categoryKey = `id_${category.toLowerCase().replace(/ /g, '_')}`;
+                    const categoryKey = getCategoryKey(category);
                     const selectedPartId = currentSetup[categoryKey];
                     const parts = getPartsByCategory(category, ALL_PARTS);
                     const selectedPart = getPartById(selectedPartId, ALL_PARTS);

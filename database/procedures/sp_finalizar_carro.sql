@@ -1,4 +1,8 @@
-CREATE OR ALTER PROCEDURE dbo.sp_finalizar_carro
+IF NOT EXISTS (SELECT 1 FROM sys.procedures WHERE name = 'sp_finalizar_carro')
+    EXEC sp_executesql N'CREATE PROCEDURE dbo.sp_finalizar_carro AS BEGIN SELECT 1 END'
+GO
+
+ALTER PROCEDURE dbo.sp_finalizar_carro
     @id_carro INT
 AS
 BEGIN

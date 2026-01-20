@@ -1,4 +1,8 @@
-CREATE OR ALTER PROCEDURE dbo.sp_asignar_conductor
+IF NOT EXISTS (SELECT 1 FROM sys.procedures WHERE name = 'sp_asignar_conductor')
+    EXEC sp_executesql N'CREATE PROCEDURE dbo.sp_asignar_conductor AS BEGIN SELECT 1 END'
+GO
+
+ALTER PROCEDURE dbo.sp_asignar_conductor
     @id_carro INT,
     @id_conductor INT
 AS

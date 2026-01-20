@@ -12,14 +12,14 @@ BEGIN
 
     BEGIN TRANSACTION;
 
-    -- Validar categoría
+    -- Validar categorï¿½a
     IF NOT EXISTS (
         SELECT 1
         FROM dbo.part_category
         WHERE category_id = @categoria_id
     )
     BEGIN
-        RAISERROR('La categoría no existe', 16, 1);
+        RAISERROR('La categoria no existe', 16, 1);
         ROLLBACK TRANSACTION;
         RETURN;
     END

@@ -2,145 +2,197 @@ const sql = require('mssql');
 const { getPool } = require('../config/database');
 
 const carSetupModel = {
-    // Obtener carros de un equipo con sus configuraciones
-    async getCarsByTeam(teamId) {
-        const pool = getPool();
-        return await pool.request()
-            .input('id_equipo', sql.Int, teamId)
-            .execute('dbo.sp_carros_equipo');
-    },
+  // Obtener el equipo al que pertenece un carro
+  async getCarTeam(id_carro) {
+    const pool = await getPool();
+    return pool.request()
+      .input('id_carro', sql.Int, id_carro)
+      .query('SELECT id_equipo FROM dbo.carro WHERE id_carro = @id_carro');
+  },
 
-    // Obtener inventario del equipo
-    async getTeamInventory(teamId) {
-        const pool = getPool();
-        return await pool.request()
-            .input('id_equipo', sql.Int, teamId)
-            .execute('dbo.sp_inventario_equipo');
-    },
+  // Instalar una pieza en el setup del carro
+  async installPart(id_carro, id_pieza, id_equipo) {
+    const pool = await getPool();
+    return pool.request()
+      .input('id_carro', sql.Int, id_carro)
+      .input('id_pieza', sql.Int, id_pieza)
+      .input('id_equipo', sql.Int, id_equipo)
+      .execute('dbo.sp_instalar_pieza_setup');
+  },
 
-    // Obtener conductores del equipo
-    async getTeamDrivers(teamId) {
-        const pool = getPool();
-        return await pool.request()
-            .input('id_equipo', sql.Int, teamId)
-            .execute('dbo.sp_conductores_equipo');
-    },
+  // Remover una pieza del setup del carro
+  async removePart(id_carro, category_id, id_equipo) {
+    const pool = await getPool();
+    return pool.request()
+      .input('id_carro', sql.Int, id_carro)
+      .input('category_id', sql.Int, category_id)
+      .input('id_equipo', sql.Int, id_equipo)
+      .execute('dbo.sp_remover_pieza_setup');
+  },
 
-    // Obtener categorías disponibles
-    async getCategories() {
-        const pool = getPool();
-        return await pool.request()
-            .execute('dbo.sp_listar_categorias');
-    },
+  // Finalizar el armado de un carro
+  async finalizeCar(id_carro, id_equipo) {
+    const pool = await getPool();
+    return pool.request()
+      .input('id_carro', sql.Int, id_carro)
+      .input('id_equipo', sql.Int, id_equipo)
+      .execute('dbo.sp_finalizar_carro');
+  },
 
-    // Crear un nuevo carro
-    async createCar(id_equipo, nombre) {
-        const pool = getPool();
-        return await pool.request()
-            .input('id_equipo', sql.Int, id_equipo)
-            .input('nombre', sql.NVarChar(120), nombre)
-            .execute('dbo.sp_crear_carro');
-    },
+  // Obtener el setup actual de un carro
+  async getCarSetup(id_carro) {
+    const pool = await getPool();
+    return pool.request()
+      .input('id_carro', sql.Int, id_carro)
+      .execute('dbo.sp_obtener_setup_carro');
+  },
 
-    // Obtener carro por ID
-    async getCarById(carId) {
-        const pool = getPool();
-        return await pool.request()
-            .input('id_carro', sql.Int, carId)
-            .query(`
-                SELECT c.*, e.nombre as nombre_equipo
-                FROM dbo.carro c
-                INNER JOIN dbo.equipo e ON c.id_equipo = e.id_equipo
-                WHERE c.id_carro = @id_carro
-            `);
-    },
+  // Obtener todos los carros de un equipo con piezas instaladas
+  async getTeamCars(id_equipo) {
+    const pool = await getPool();
+    
+    // Obtener carros del equipo
+    const carsResult = await pool.request()
+      .input('id_equipo', sql.Int, id_equipo)
+      .query(`
+        SELECT 
+          c.id_carro,
+          c.nombre,
+          c.finalizado,
+          c.id_equipo,
+          e.nombre AS equipo_nombre,
+          cs.setup_id,
+          cond.id_conductor,
+          cond.nombre AS conductor_nombre
+        FROM dbo.carro c
+        INNER JOIN dbo.equipo e ON c.id_equipo = e.id_equipo
+        LEFT JOIN dbo.car_setup cs ON c.id_carro = cs.car_id AND cs.es_actual = 1
+        LEFT JOIN dbo.conductor cond ON cs.id_conductor = cond.id_conductor
+        WHERE c.id_equipo = @id_equipo
+        ORDER BY c.id_carro
+      `);
 
-    // Instalar o reemplazar parte en carro
-    async installPart(carId, piezaId, categoryId) {
-        const pool = getPool();
-        return await pool.request()
-            .input('id_carro', sql.Int, carId)
-            .input('id_pieza', sql.Int, piezaId)
-            .input('categoria_id', sql.Int, categoryId)
-            .execute('dbo.sp_instalar_pieza');
-    },
-
-    // Asignar conductor a carro
-    async assignDriver(carId, conductorId) {
-        const pool = getPool();
-        return await pool.request()
-            .input('id_carro', sql.Int, carId)
-            .input('id_conductor', sql.Int, conductorId)
-            .execute('dbo.sp_asignar_conductor');
-    },
-
-    // Finalizar carro
-    async finalizeCar(carId) {
-        const pool = getPool();
-        return await pool.request()
-            .input('id_carro', sql.Int, carId)
-            .execute('dbo.sp_finalizar_carro');
-    },
-
-    // Desinstalar parte (eliminar de setup)
-    async uninstallPart(carId, categoryId) {
-        const pool = getPool();
+    // Para cada carro, obtener sus piezas instaladas
+    const cars = carsResult.recordset;
+    
+    for (let car of cars) {
+      if (car.setup_id) {
+        const piezasResult = await pool.request()
+          .input('setup_id', sql.Int, car.setup_id)
+          .query(`
+            SELECT 
+              csp.category_id,
+              csp.part_id AS id_pieza,
+              p.nombre AS pieza_nombre
+            FROM dbo.car_setup_pieza csp
+            INNER JOIN dbo.pieza p ON csp.part_id = p.id_pieza
+            WHERE csp.setup_id = @setup_id
+          `);
         
-        // Primero obtener el setup actual
-        const setupResult = await pool.request()
-            .input('car_id', sql.Int, carId)
-            .query(`
-                SELECT setup_id, es_actual 
-                FROM dbo.car_setup 
-                WHERE car_id = @car_id AND es_actual = 1
-            `);
+        // Mapear piezas por categoría
+        car.id_potencia = null;
+        car.id_aerodinamica = null;
+        car.id_neumaticos = null;
+        car.id_suspension = null;
+        car.id_caja_cambios = null;
         
-        if (setupResult.recordset.length === 0) {
-            throw new Error('No se encontró un setup activo para este carro');
-        }
-        
-        const setupId = setupResult.recordset[0].setup_id;
-        
-        // Obtener la pieza que se va a remover
-        const pieceResult = await pool.request()
-            .input('setup_id', sql.Int, setupId)
-            .input('category_id', sql.Int, categoryId)
-            .query(`
-                SELECT csp.part_id, c.id_equipo
-                FROM dbo.car_setup_pieza csp
-                INNER JOIN dbo.car_setup cs ON csp.setup_id = cs.setup_id
-                INNER JOIN dbo.carro c ON cs.car_id = c.id_carro
-                WHERE csp.setup_id = @setup_id AND csp.category_id = @category_id
-            `);
-        
-        if (pieceResult.recordset.length === 0) {
-            throw new Error('No hay ninguna pieza instalada en esta categoría');
-        }
-        
-        const partId = pieceResult.recordset[0].part_id;
-        const teamId = pieceResult.recordset[0].id_equipo;
-        
-        // Devolver al inventario
-        await pool.request()
-            .input('id_equipo', sql.Int, teamId)
-            .input('id_pieza', sql.Int, partId)
-            .query(`
-                UPDATE dbo.inventario_equipo
-                SET cantidad = cantidad + 1, last_update = SYSUTCDATETIME()
-                WHERE id_equipo = @id_equipo AND id_pieza = @id_pieza
-            `);
-        
-        // Eliminar del setup
-        await pool.request()
-            .input('setup_id', sql.Int, setupId)
-            .input('category_id', sql.Int, categoryId)
-            .query(`
-                DELETE FROM dbo.car_setup_pieza
-                WHERE setup_id = @setup_id AND category_id = @category_id
-            `);
-        
-        return { recordset: [{ mensaje: 'Pieza desinstalada correctamente' }] };
+        piezasResult.recordset.forEach(pieza => {
+          switch(pieza.category_id) {
+            case 1: car.id_potencia = pieza.id_pieza; break;
+            case 2: car.id_aerodinamica = pieza.id_pieza; break;
+            case 3: car.id_neumaticos = pieza.id_pieza; break;
+            case 4: car.id_suspension = pieza.id_pieza; break;
+            case 5: car.id_caja_cambios = pieza.id_pieza; break;
+          }
+        });
+      }
     }
+
+    return { recordset: cars };
+  },
+
+  // Obtener todos los carros (para Admin)
+  async getAllCars() {
+    const pool = await getPool();
+    
+    const carsResult = await pool.request()
+      .query(`
+        SELECT 
+          c.id_carro,
+          c.nombre,
+          c.finalizado,
+          c.id_equipo,
+          e.nombre AS equipo_nombre,
+          cs.setup_id,
+          cond.id_conductor,
+          cond.nombre AS conductor_nombre
+        FROM dbo.carro c
+        INNER JOIN dbo.equipo e ON c.id_equipo = e.id_equipo
+        LEFT JOIN dbo.car_setup cs ON c.id_carro = cs.car_id AND cs.es_actual = 1
+        LEFT JOIN dbo.conductor cond ON cs.id_conductor = cond.id_conductor
+        ORDER BY e.nombre, c.nombre
+      `);
+
+    const cars = carsResult.recordset;
+    
+    for (let car of cars) {
+      if (car.setup_id) {
+        const piezasResult = await pool.request()
+          .input('setup_id', sql.Int, car.setup_id)
+          .query(`
+            SELECT 
+              csp.category_id,
+              csp.part_id AS id_pieza,
+              p.nombre AS pieza_nombre
+            FROM dbo.car_setup_pieza csp
+            INNER JOIN dbo.pieza p ON csp.part_id = p.id_pieza
+            WHERE csp.setup_id = @setup_id
+          `);
+        
+        car.id_potencia = null;
+        car.id_aerodinamica = null;
+        car.id_neumaticos = null;
+        car.id_suspension = null;
+        car.id_caja_cambios = null;
+        
+        piezasResult.recordset.forEach(pieza => {
+          switch(pieza.category_id) {
+            case 1: car.id_potencia = pieza.id_pieza; break;
+            case 2: car.id_aerodinamica = pieza.id_pieza; break;
+            case 3: car.id_neumaticos = pieza.id_pieza; break;
+            case 4: car.id_suspension = pieza.id_pieza; break;
+            case 5: car.id_caja_cambios = pieza.id_pieza; break;
+          }
+        });
+      }
+    }
+
+    return { recordset: cars };
+  },
+
+  // Crear un nuevo carro
+  async createCar(id_equipo, nombre) {
+    const pool = await getPool();
+    
+    // Primero verificar que el equipo no tenga ya 2 carros
+    const countResult = await pool.request()
+      .input('id_equipo', sql.Int, id_equipo)
+      .query('SELECT COUNT(*) as total FROM dbo.carro WHERE id_equipo = @id_equipo');
+    
+    if (countResult.recordset[0].total >= 2) {
+      throw new Error('El equipo ya tiene el máximo de 2 carros permitidos');
+    }
+
+    // Crear el carro
+    return pool.request()
+      .input('id_equipo', sql.Int, id_equipo)
+      .input('nombre', sql.NVarChar, nombre)
+      .query(`
+        INSERT INTO dbo.carro (id_equipo, nombre, finalizado)
+        OUTPUT INSERTED.*
+        VALUES (@id_equipo, @nombre, 0)
+      `);
+  }
 };
 
 module.exports = carSetupModel;

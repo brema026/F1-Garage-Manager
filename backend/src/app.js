@@ -11,7 +11,8 @@ const healthRoutes = require('./routes/health');
 const authRoutes = require('./routes/auth'); 
 const teamRoutes = require('./routes/team'); 
 const userRoutes = require('./routes/user'); 
-const carSetupRoutes = require('./routes/carSetup'); // NUEVA LÍNEA
+const carSetupRoutes = require('./routes/carSetup'); 
+const categoriesRoutes = require('./routes/categories');
 
 const app = express(); 
 
@@ -49,7 +50,8 @@ app.use('/api', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/car-setup', carSetupRoutes); // NUEVA LÍNEA
+app.use('/api/car-setup', carSetupRoutes);
+app.use('/api/categories', categoriesRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
