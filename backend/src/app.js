@@ -14,6 +14,7 @@ const userRoutes = require('./routes/user'); // Import user routes
 const partRoutes = require('./routes/part');
 const categoryRoutes = require('./routes/category');
 const inventoryRoutes = require('./routes/inventory');
+const sponsorRoutes = require('-/routes/sponsorRoutes');
 
 const app = express(); // Initialize Express application
 
@@ -54,6 +55,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/parts', partRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/sponsors', sponsorRoutes);
 
 // Error handling middleware - catches errors from routes and middlewares
 app.use((err, req, res, next) => {
