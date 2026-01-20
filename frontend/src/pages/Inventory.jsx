@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../api/axios';
-import { FiTrash2, FiChevronRight } from 'react-icons/fi';
+import { FiTrash2, FiChevronRight, FiX, FiAlertTriangle } from 'react-icons/fi';
 
 export function Inventory({ user }) {
   const [items, setItems] = useState([]);
@@ -8,6 +8,14 @@ export function Inventory({ user }) {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   const [equipos, setEquipos] = useState([]);
+
+    // Modal eliminar inventario
+  const [showInvDeleteModal, setShowInvDeleteModal] = useState(false);
+  const [invDeleteMode, setInvDeleteMode] = useState('reduce'); // 'reduce' | 'delete'
+  const [invDeleteQty, setInvDeleteQty] = useState(1);
+  const [invDeleteLoading, setInvDeleteLoading] = useState(false);
+  const [invDeleteError, setInvDeleteError] = useState('');
+  const [invSelectedItem, setInvSelectedItem] = useState(null);
 
   const userRole = user?.rol?.toLowerCase();
   const hasNoTeam = !user?.id_equipo || String(user?.id_equipo) === '0';
@@ -119,6 +127,69 @@ export function Inventory({ user }) {
       nombre: `Equipo #${Number(user?.id_equipo) || 0}`,
     }];
   }, [user?.id_equipo]);
+
+
+    const canEditInventory =
+    userRole === 'admin' ||
+    (userRole === 'engineer' && String(selectedEquipo) === String(user?.id_equipo));
+
+  const handleInvDeleteClick = (item) => {
+    if (!canEditInventory) {
+      alert('No tienes permisos para modificar este inventario.');
+      return;
+    }
+
+    setInvSelectedItem(item);
+    setInvDeleteMode('reduce');
+    setInvDeleteQty(1);
+    setInvDeleteError('');
+    setShowInvDeleteModal(true);
+  };
+
+  const handleConfirmInvDelete = async () => {
+    if (!invSelectedItem) return;
+
+    const idEquipo = Number(selectedEquipo);
+    const idPieza = Number(invSelectedItem.id_pieza);
+
+    if (!idEquipo || !idPieza) {
+      setInvDeleteError('No se pudo identificar el equipo o la pieza.');
+      return;
+    }
+
+    setInvDeleteLoading(true);
+    setInvDeleteError('');
+
+    try {
+      if (invDeleteMode === 'reduce') {
+        const qty = Number(invDeleteQty);
+        if (!Number.isInteger(qty) || qty <= 0) {
+          setInvDeleteError('La cantidad debe ser un entero mayor a 0.');
+          setInvDeleteLoading(false);
+          return;
+        }
+
+        await api.put(`/inventory/team/${idEquipo}/part/${idPieza}/remove`, {
+          cantidad: qty,
+        });
+
+        setShowInvDeleteModal(false);
+        await cargarInventario();
+        return;
+      }
+
+      // invDeleteMode === 'delete'
+      await api.delete(`/inventory/team/${idEquipo}/part/${idPieza}`);
+
+      setShowInvDeleteModal(false);
+      await cargarInventario();
+    } catch (err) {
+      setInvDeleteError(err?.response?.data?.error || 'Error modificando inventario');
+    } finally {
+      setInvDeleteLoading(false);
+    }
+  };
+
 
   // ✅ Ahora el return condicional va DESPUÉS de los hooks
   if (showNoTeamScreen) {
@@ -323,12 +394,15 @@ export function Inventory({ user }) {
                               {/* Solo visualización por ahora */}
                               <button
                                 type="button"
-                                className="text-red-400 hover:text-red-300 transition-colors opacity-40 cursor-not-allowed"
-                                title="Solo visualización"
-                                disabled
+                                onClick={() => handleInvDeleteClick(item)}
+                                className={`text-red-400 hover:text-red-300 transition-colors ${
+                                  canEditInventory ? '' : 'opacity-40 cursor-not-allowed'
+                                }`}
+                                title={canEditInventory ? 'Eliminar / Reducir' : 'Sin permisos'}
+                                disabled={!canEditInventory}
                               >
                                 <FiTrash2 size={18} />
-                              </button>
+                            </button>
                             </td>
                           </tr>
                         ))}
@@ -371,6 +445,163 @@ export function Inventory({ user }) {
           </div>
         </div>
       )}
+
+            {/* Modal Eliminar Inventario */}
+      {showInvDeleteModal && invSelectedItem && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[#0f1419] border border-light/10 rounded-2xl p-6 md:p-8 max-w-md w-full overflow-hidden">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-400"></span>
+                  <span className="text-xs font-bold text-red-300 uppercase tracking-widest">
+                    Inventario
+                  </span>
+                </div>
+                <h3 className="text-xl md:text-2xl font-black text-white leading-tight">
+                  {invSelectedItem.parte}
+                </h3>
+                <p className="text-light/60 text-sm">{invSelectedItem.categoria}</p>
+              </div>
+
+              <button
+                onClick={() => !invDeleteLoading && setShowInvDeleteModal(false)}
+                className="text-light/50 hover:text-white transition-colors"
+                disabled={invDeleteLoading}
+                title="Cerrar"
+              >
+                <FiX size={24} />
+              </button>
+            </div>
+
+            {/* Selector de modo */}
+            <div className="bg-[#1a1f3a]/40 border border-light/10 rounded-2xl p-4 mb-4 space-y-3">
+              <div className="text-xs font-bold text-light/70 uppercase tracking-wider">
+                Acción
+              </div>
+
+              <label className="flex items-center gap-3 p-3 rounded-xl border border-light/10 bg-[#0f1419]/40 hover:bg-[#0f1419]/60 transition-all cursor-pointer">
+                <input
+                  type="radio"
+                  name="invDeleteMode"
+                  value="reduce"
+                  checked={invDeleteMode === 'reduce'}
+                  onChange={() => setInvDeleteMode('reduce')}
+                  disabled={invDeleteLoading}
+                />
+                <div className="flex-1">
+                  <div className="text-white font-bold">Reducir cantidad</div>
+                  <div className="text-xs text-light/50">Resta unidades del inventario</div>
+                </div>
+                <div className="text-xs font-bold text-blue-300">
+                  Actual: {invSelectedItem.cantidad}
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 p-3 rounded-xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 transition-all cursor-pointer">
+                <input
+                  type="radio"
+                  name="invDeleteMode"
+                  value="delete"
+                  checked={invDeleteMode === 'delete'}
+                  onChange={() => setInvDeleteMode('delete')}
+                  disabled={invDeleteLoading}
+                />
+                <div className="flex-1">
+                  <div className="text-white font-bold flex items-center gap-2">
+                    <FiAlertTriangle className="text-red-300" />
+                    Eliminar del inventario
+                  </div>
+                  <div className="text-xs text-red-200/70">
+                    Borra el registro del inventario para este equipo
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {/* Cantidad si reduce */}
+            {invDeleteMode === 'reduce' && (
+              <div className="bg-[#1a1f3a]/40 border border-light/10 rounded-2xl p-4 mb-4">
+                <label className="block text-xs font-bold text-light/70 uppercase tracking-wider mb-3">
+                  Cantidad a eliminar
+                </label>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setInvDeleteQty((q) => Math.max(1, Number(q) - 1))}
+                    className="w-11 h-11 rounded-xl bg-red-500/10 hover:bg-red-500/15 border border-red-500/30 text-red-300 font-black transition-all disabled:opacity-50"
+                    disabled={invDeleteLoading}
+                  >
+                    −
+                  </button>
+
+                  <input
+                    type="number"
+                    min="1"
+                    value={invDeleteQty}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === '') return setInvDeleteQty('');
+                      const n = Number(v);
+                      setInvDeleteQty(Number.isNaN(n) ? 1 : Math.max(1, Math.floor(n)));
+                    }}
+                    className="flex-1 px-4 py-3 bg-[#0f1419]/60 border border-light/10 rounded-xl text-white focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-400/30 transition-all font-bold"
+                    disabled={invDeleteLoading}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setInvDeleteQty((q) => Math.max(1, Number(q) + 1))}
+                    className="w-11 h-11 rounded-xl bg-red-500/10 hover:bg-red-500/15 border border-red-500/30 text-red-300 font-black transition-all disabled:opacity-50"
+                    disabled={invDeleteLoading}
+                  >
+                    +
+                  </button>
+                </div>
+
+                <div className="mt-3 text-xs text-light/60">
+                  Equipo: <span className="text-white font-bold">#{selectedEquipo}</span> · Pieza:{' '}
+                  <span className="text-white font-bold">#{invSelectedItem.id_pieza}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Error */}
+            {invDeleteError && (
+              <div className="mb-4 bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-3 text-sm font-bold">
+                {invDeleteError}
+              </div>
+            )}
+
+            {/* Acciones */}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowInvDeleteModal(false)}
+                className="flex-1 py-3 px-4 rounded-xl border border-light/10 text-white font-bold hover:bg-[#1a1f3a] transition-all disabled:opacity-50"
+                disabled={invDeleteLoading}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmInvDelete}
+                className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-red-600 to-red-800 text-white font-bold hover:from-red-500 hover:to-red-800 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={invDeleteLoading}
+              >
+                {invDeleteLoading
+                  ? 'Procesando...'
+                  : invDeleteMode === 'reduce'
+                    ? 'Reducir'
+                    : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Scrollbar personalizado */}
       <style>{`

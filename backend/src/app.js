@@ -25,7 +25,7 @@ app.use((req, res, next) => {
 
 // Application middlewares
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Allow requests from frontend
+  origin: process.env.FRONTEND_URL || 'http://localhost:3002', // Allow requests from frontend
   credentials: true // Allow cookies in cross-origin requests
 }));
 app.use(bodyParser.json()); // Parse JSON request bodies

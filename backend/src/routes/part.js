@@ -12,4 +12,10 @@ router.put('/:id_pieza/stock', protect, partController.addStock);
 // Engineer compra
 router.post('/buy', protect, partController.buyPart);
 
+// Admin: reducir stock
+router.put('/:id_pieza/reduce-stock', protect, partController.reduceStock);
+
+// Admin: eliminar pieza completa
+router.delete('/:id_pieza', protect, partController.deletePart);
+
 module.exports = router;

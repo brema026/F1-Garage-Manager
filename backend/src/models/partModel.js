@@ -39,7 +39,22 @@ const partModel = {
     .input('id_pieza', sql.Int, id_pieza)
     .input('cantidad', sql.Int, cantidad)
     .execute('sp_comprar_pieza_equipo');
-}
+},
+
+async reduceStock(id_pieza, cantidad) {
+  const pool = await getPool();
+  return pool.request()
+    .input('id_pieza', sql.Int, id_pieza)
+    .input('cantidad', sql.Int, cantidad)
+    .execute('sp_reducir_stock_pieza');
+},
+
+async deletePart(id_pieza) {
+  const pool = await getPool();
+  return pool.request()
+    .input('id_pieza', sql.Int, id_pieza)
+    .execute('sp_eliminar_pieza_completa');
+},
 
 
 };
