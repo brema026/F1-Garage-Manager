@@ -1,3 +1,6 @@
+USE f1_garage_tec;
+GO
+
 CREATE OR ALTER PROCEDURE dbo.sp_registrar_pieza
     @nombre         NVARCHAR(120),
     @precio         DECIMAL(12,2),

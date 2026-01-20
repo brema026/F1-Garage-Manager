@@ -1,3 +1,6 @@
+USE f1_garage_tec;
+GO
+
 CREATE OR ALTER PROCEDURE dbo.sp_crear_carro
     @id_equipo INT,
     @nombre NVARCHAR(120)

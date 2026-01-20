@@ -1,3 +1,6 @@
+USE f1_garage_tec;
+GO
+
 CREATE OR ALTER PROCEDURE dbo.sp_inventario_equipo_detalle
     @id_equipo INT
 AS
