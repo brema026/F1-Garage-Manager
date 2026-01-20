@@ -14,7 +14,7 @@ const userRoutes = require('./routes/user'); // Import user routes
 const partRoutes = require('./routes/part');
 const categoryRoutes = require('./routes/category');
 const inventoryRoutes = require('./routes/inventory');
-const sponsorRoutes = require('-/routes/sponsorRoutes');
+const sponsorRoutes = require('./routes/sponsorRoutes');
 
 const app = express(); // Initialize Express application
 
