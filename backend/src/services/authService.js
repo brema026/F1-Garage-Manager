@@ -9,16 +9,34 @@ const authService = {
     async registerUser(userData) {
         const passwordHash = await argon2.hash(userData.password); // Hash the password using Argon2
 
-        // Call the user model to register the new user
-        const result = await userModel.register({
-            nombre: userData.nombre,
-            email: userData.email,
-            password_hash: passwordHash,
-            rol: userData.rol,
-            id_equipo: userData.id_equipo
-        });
+        try {
+            // Call the user model to register the new user
+            const result = await userModel.register({
+                nombre: userData.nombre,
+                email: userData.email,
+                password_hash: passwordHash,
+                rol: userData.rol,
+                id_equipo: userData.id_equipo
+            });
 
-        return result.recordset[0]; // Return the newly created user
+            return result.recordset[0]; // Return the newly created user
+        } catch (error) {
+            // Detectar error de email duplicado de SQL Server
+            if (error.message && error.message.includes('correo electrónico ya está registrado')) {
+                const duplicateError = new Error('El correo electrónico ya está registrado');
+                duplicateError.code = 'EMAIL_EXISTS';
+                throw duplicateError;
+            }
+            
+            // Detectar constraint violation de SQL Server (UK violation)
+            if (error.number === 2627 || error.number === 2601) {
+                const duplicateError = new Error('El correo electrónico ya está registrado');
+                duplicateError.code = 'EMAIL_EXISTS';
+                throw duplicateError;
+            }
+
+            throw error; // Re-throw other errors
+        }
     },
 
     async loginUser(email, password) {
@@ -27,12 +45,12 @@ const authService = {
 
         // Check if user exists
         if (!user) {
-            throw new Error('User associated with email not found'); // Throw error if user does not exist
+            throw new Error('Usuario no encontrado'); // Throw error if user does not exist
         }
 
         // Verify the provided password against the stored hash
         const validPassword = await argon2.verify(user.password_hash, password); 
-        if (!validPassword) throw new Error('Invalid password'); // Throw error if password is invalid
+        if (!validPassword) throw new Error('Contraseña incorrecta'); // Throw error if password is invalid
 
         // Generate a new session ID (for simplicity, using a random string here)
         const sessionId = crypto.randomBytes(32).toString('hex');

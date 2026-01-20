@@ -1,16 +1,27 @@
 import { useState } from "react";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
-import { FaGoogle, FaApple, FaFacebook } from "react-icons/fa";
+import { FiCheckCircle } from "react-icons/fi";
 import FullLogo from '../../assets/logo/full-logo-white.png';
 import api from '../../api/axios';
 import { useNavigate } from "react-router-dom";
+import { InputWithValidation, SelectWithValidation } from '../common/Validation';
+import { 
+  validatePassword, 
+  validateEmail, 
+  validateName, 
+  validateRole,
+  validatePasswordMatch,
+  parseBackendError 
+} from '../../utils/validations';
 
 export function RegisterForm() {
     const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState({});
+    const [successMessage, setSuccessMessage] = useState('');
 
-    // Form data state for registration
     const [formData, setFormData] = useState({
         nombre: '',
         apellido: '',
@@ -18,35 +29,102 @@ export function RegisterForm() {
         rol: '',
         password: '',
         confirmPassword: '',
-        id_equipo: '0' // Default team ID for no team
+        id_equipo: '0'
     });
 
     const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-    }
+        const { name, value } = e.target;
+
+        // Evitar espacios en nombre y apellido
+        const cleanedValue = 
+            name === "nombre" || name === "apellido"
+                ? value.replace(/\s+/g, "") 
+                : value;
+
+        setFormData(prev => ({ ...prev, [name]: cleanedValue }));
+
+        // Limpiar error
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: null }));
+        }
+    };
+
+    const clearError = (fieldName) => {
+        setErrors(prev => ({ ...prev, [fieldName]: null }));
+    };
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
-    }
+    };
 
     const toggleConfirmPasswordVisibility = () => {
         setShowConfirmPassword(!showConfirmPassword);
-    }
+    };
+
+    const validateForm = () => {
+        const newErrors = {};
+
+        // Validar nombre
+        const nombreValidation = validateName(formData.nombre, 'Nombre');
+        if (!nombreValidation.isValid) {
+            newErrors.nombre = nombreValidation.errors[0];
+        }
+
+        // Validar apellido
+        const apellidoValidation = validateName(formData.apellido, 'Apellido');
+        if (!apellidoValidation.isValid) {
+            newErrors.apellido = apellidoValidation.errors[0];
+        }
+
+        // Validar email
+        if (!formData.email || formData.email.trim() === '') {
+            newErrors.email = 'El correo electrónico es obligatorio';
+        } else {
+            const emailValidation = validateEmail(formData.email);
+            if (!emailValidation.isValid) {
+                newErrors.email = emailValidation.errors[0];
+            }
+        }
+
+        // Validar rol
+        const rolValidation = validateRole(formData.rol);
+        if (!rolValidation.isValid) {
+            newErrors.rol = rolValidation.errors[0];
+        }
+
+        // Validar contraseña
+        if (!formData.password) {
+            newErrors.password = 'La contraseña es obligatoria';
+        } else {
+            const passwordValidation = validatePassword(formData.password);
+            if (!passwordValidation.isValid) {
+                newErrors.password = passwordValidation.errors[0];
+            }
+        }
+
+        // Validar confirmación
+        if (!formData.confirmPassword) {
+            newErrors.confirmPassword = 'Confirma tu contraseña';
+        } else {
+            const matchValidation = validatePasswordMatch(formData.password, formData.confirmPassword);
+            if (!matchValidation.isValid) {
+                newErrors.confirmPassword = matchValidation.errors[0];
+            }
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Basic validation
-        if (formData.password !== formData.confirmPassword) {
-            alert("Las contraseñas no coinciden");
-            return;
-        }
+        if (!validateForm()) return;
+
+        setLoading(true);
 
         try {
-            const dataToSumit = {
+            const dataToSubmit = {
                 nombre: `${formData.nombre} ${formData.apellido}`,
                 email: formData.email,
                 password: formData.password,
@@ -54,37 +132,50 @@ export function RegisterForm() {
                 id_equipo: formData.id_equipo
             };
 
-            const response = await api.post('/auth/register', dataToSumit);
-            alert("Registro exitoso. Ahora puede iniciar sesión.");
-            navigate('/login');
-        }
+            await api.post('/auth/register', dataToSubmit);
+            setSuccessMessage('¡Cuenta creada exitosamente! Redirigiendo al login...');
+            
+            setTimeout(() => {
+                navigate('/login');
+            }, 3000);
 
-        catch (e) {
+        } catch (e) {
             console.error("Error during registration:", e);
-            alert("Error durante el registro. Por favor, intente nuevamente.");
+            const errorMessage = parseBackendError(e);
+            
+            // Mostrar error en el campo correspondiente
+            if (errorMessage.toLowerCase().includes('correo') || errorMessage.toLowerCase().includes('email')) {
+                setErrors({ email: errorMessage });
+            } else if (errorMessage.toLowerCase().includes('ingeniero') || errorMessage.toLowerCase().includes('equipo')) {
+                setErrors({ rol: errorMessage });
+            } else {
+                setErrors({ email: errorMessage });
+            }
+        } finally {
+            setLoading(false);
         }
-    }
+    };
 
     return (
-        <div className="w-full lg:w-1/2 h-screen bg-dark flex items-center justify-center p-8">
+        <div className="w-full lg:w-1/2 min-h-screen bg-dark flex items-center justify-center p-8 py-12 overflow-visible">
             {/* Form Box */}
-            <div className="w-full max-w-md">
+            <div className="w-full max-w-md lg:mr-16 xl:mr-24">
 
                 {/* Logo */}
-                <div className="mb-8 text-center">
-                <img 
-                    src={FullLogo} 
-                    alt="F1 Garage Logo"
-                    className="w-40 h-auto mx-auto"
-                />
+                <div className="mb-6 text-center">
+                    <img 
+                        src={FullLogo} 
+                        alt="F1 Garage Logo"
+                        className="w-36 h-auto mx-auto"
+                    />
                 </div>
 
                 {/* Header Section */}
-                <div className="mb-8">
-                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
-                        <h1 className="text-3xl font-bold text-light">Bienvenido</h1>
+                <div className="mb-6">
+                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 mb-4">
+                        <h1 className="text-2xl font-bold text-light">Bienvenido</h1>
                         <p className="text-sm text-light">
-                            ¿Ya posee una cuenta?{' '}
+                            ¿Ya tienes cuenta?{' '}
                             <button
                                 onClick={() => window.location.href = '/login'}
                                 className="text-primary-hover-underline font-semibold hover:underline">
@@ -92,77 +183,73 @@ export function RegisterForm() {
                             </button>
                         </p>
                     </div>
-                    <p className="text-light">
-                        Por favor, complete la siguiente información para crear su cuenta.
+                    <p className="text-light text-sm">
+                        Complete la información para crear su cuenta.
                     </p>
                 </div>
 
                 {/* Register Form */}
-                <form className="space-y-4" onSubmit={handleSubmit}>
-                    {/* First Name and Last Name Row */}
+                <form className="space-y-5" onSubmit={handleSubmit}>
+                    {/* Nombre y Apellido */}
                     <div className="grid grid-cols-2 gap-4">
-                        <input 
+                        <InputWithValidation
+                            type="text"
                             name="nombre"
                             value={formData.nombre}
                             onChange={handleChange}
-                            type="text" 
                             placeholder="Nombre"
-                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary"
-                            required
+                            error={errors.nombre}
+                            onClearError={clearError}
                         />
                         
-                        <input 
+                        <InputWithValidation
+                            type="text"
                             name="apellido"
                             value={formData.apellido}
                             onChange={handleChange}
-                            type="text" 
                             placeholder="Apellido"
-                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary"
-                            required
+                            error={errors.apellido}
+                            onClearError={clearError}
                         />
                     </div>
 
-                    {/* Email Input */}
-                    <div>
-                        <input
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange} 
-                            type="email" 
-                            placeholder="Correo electrónico"
-                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary"
-                            required
-                        />
-                    </div>
+                    {/* Email */}
+                    <InputWithValidation
+                        type="text"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="Correo electrónico"
+                        error={errors.email}
+                        onClearError={clearError}
+                    />
                     
-                    {/* User Role Selector */}
-                    <div>
-                        <select
-                            name="rol"
-                            value={formData.rol}
-                            onChange={handleChange}
-                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-dark focus:outline-none focus:ring-2 focus:ring-primary"
-                            defaultValue=""
-                            required
-                        >
-                            <option value="" disabled>Seleccione un rol</option>
-                            <option value="Driver">Conductor</option>
-                            <option value="Engineer">Ingeniero</option>
-                            <option value="Admin">Administrador</option>
-                        </select>
-                    </div>
+                    {/* Rol */}
+                    <SelectWithValidation
+                        name="rol"
+                        value={formData.rol}
+                        onChange={handleChange}
+                        error={errors.rol}
+                        onClearError={clearError}
+                    >
+                        <option value="" disabled>Seleccione un rol</option>
+                        <option value="Driver">Conductor</option>
+                        <option value="Engineer">Ingeniero</option>
+                        <option value="Admin">Administrador</option>
+                    </SelectWithValidation>
 
-                    {/* Password Input */}
-                    <div className="relative">
-                        <input
-                            name="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Contraseña"
-                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary pr-12"
-                            required
-                        />
+                    {/* Contraseña */}
+                    <InputWithValidation
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="Contraseña"
+                        error={errors.password}
+                        onClearError={clearError}
+                        className="pr-12"
+                        hint="Mín. 8 caracteres: 4 letras, 4 números, 1 especial"
+                    >
                         <button
                             type="button"
                             onClick={togglePasswordVisibility}
@@ -174,19 +261,19 @@ export function RegisterForm() {
                                 <AiOutlineEye className="text-xl" />
                             )}
                         </button>
-                    </div>
+                    </InputWithValidation>
 
-                    {/* Confirm Password Input */}
-                    <div className="relative">
-                        <input
-                            name="confirmPassword"
-                            value={formData.confirmPassword}
-                            onChange={handleChange}
-                            type={showConfirmPassword ? "text" : "password"}
-                            placeholder="Confirmar contraseña"
-                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary pr-12"
-                            required
-                        />
+                    {/* Confirmar Contraseña */}
+                    <InputWithValidation
+                        type={showConfirmPassword ? "text" : "password"}
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        placeholder="Confirmar contraseña"
+                        error={errors.confirmPassword}
+                        onClearError={clearError}
+                        className="pr-12"
+                    >
                         <button
                             type="button"
                             onClick={toggleConfirmPasswordVisibility}
@@ -198,17 +285,43 @@ export function RegisterForm() {
                                 <AiOutlineEye className="text-xl" />
                             )}
                         </button>
-                    </div>
+                    </InputWithValidation>
 
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        className="w-full bg-primary text-white font-semibold py-3 rounded-lg hover:bg-primary-hover transition-colors mt-6"
+                        disabled={loading || successMessage}
+                        className={`w-full bg-primary text-white font-semibold py-3 rounded-lg transition-all mt-4 flex items-center justify-center gap-2 ${
+                            loading || successMessage ? 'opacity-70 cursor-not-allowed' : 'hover:bg-primary-hover hover:shadow-lg hover:shadow-primary/30'
+                        }`}
                     >
-                        Crear cuenta
+                        {loading ? (
+                            <>
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                Creando cuenta...
+                            </>
+                        ) : (
+                            'Crear cuenta'
+                        )}
                     </button>
+
+                    {/* Success Message */}
+                    {successMessage && (
+                        <div className="mt-4 p-4 bg-gradient-to-r from-green-500/20 to-green-600/10 border border-green-500/40 rounded-lg flex items-center gap-3 animate-fadeIn">
+                            <FiCheckCircle className="text-green-400 text-xl flex-shrink-0" />
+                            <p className="text-green-300 text-sm font-medium">{successMessage}</p>
+                        </div>
+                    )}
                 </form>
             </div>
+
+            <style>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(-4px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+            `}</style>
         </div>
-    )
+    );
 }
