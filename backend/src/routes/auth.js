@@ -43,13 +43,7 @@ router.post('/login', authController.login);
 router.post('/logout', protect, authController.logout);
 
 // Profile endpoint
-router.get('/profile', protect, (req, res) => {
-    logger.info(`Profile accessed by user: ${req.user.nombre}`);
-    res.json({
-        authenticated: true,
-        user: req.user 
-    });
-});
+router.get('/profile', protect, authController.getProfile);
 
 // Check authentication status endpoint
 router.get('/check-auth', protect, authController.checkAuth);

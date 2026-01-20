@@ -277,7 +277,12 @@ function Navbar({ setView, setIsLoggedIn, user }) {
                   
                   {/* Mi Perfil */}
                   <div className="py-2">
-                    <button className="w-full px-6 py-3 text-left text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-900/40 transition-all duration-200 uppercase tracking-widest">
+                    <button 
+                      onClick={() => {
+                        setView("profile");
+                        setProfileOpen(false);
+                      }}
+                      className="w-full px-6 py-3 text-left text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-900/40 transition-all duration-200 uppercase tracking-widest">
                       Mi Perfil
                     </button>
                   </div>

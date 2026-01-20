@@ -10,11 +10,20 @@ const authController = {
             const newUser = await authService.registerUser(req.body); // Call the auth service to register user
             logger.info(`User registered: ${req.body.email}`); // Log successful registration
             res.status(201).json({ message: 'User registered successfully', user: newUser }); // Send success response
-        }
-
-        catch (e) {
+        } catch (e) {
             logger.error(`Registration error: ${e.message}`);
-            res.status(500).json({ error: 'Error registering user' });
+            
+            // Manejar error de email duplicado
+            if (e.code === 'EMAIL_EXISTS' || e.message.includes('correo electrónico ya está registrado')) {
+                return res.status(409).json({ error: 'El correo electrónico ya está registrado' });
+            }
+
+            // Manejar error de ingeniero sin equipo
+            if (e.message.includes('ingeniero debe estar asociado')) {
+                return res.status(400).json({ error: 'Un ingeniero debe estar asociado a un equipo' });
+            }
+
+            res.status(500).json({ error: 'Error al registrar usuario' });
         }
     },
 
@@ -35,11 +44,19 @@ const authController = {
 
             // Send success response with user info
             res.status(200).json({ message: 'Login successful', user }); // Send success response with user info
-        }
-
-        catch (e) {
+        } catch (e) {
             logger.error(`Login error: ${e.message}`);
-            res.status(401).json({ error: 'Invalid email or password' });
+            
+            // Manejar errores específicos de login
+            if (e.message.includes('Usuario no encontrado') || e.message.includes('inactivo')) {
+                return res.status(401).json({ error: 'Usuario no encontrado o inactivo' });
+            }
+            
+            if (e.message.includes('Contraseña incorrecta') || e.message.includes('Invalid password')) {
+                return res.status(401).json({ error: 'Contraseña incorrecta' });
+            }
+
+            res.status(401).json({ error: 'Credenciales inválidas' });
         }
     },
 
@@ -67,9 +84,7 @@ const authController = {
             
             // Clear session cookie
             res.status(200).json({ message: 'Logout successful' }); // Send success response
-        }
-
-        catch (e) {
+        } catch (e) {
             logger.error(`Logout error: ${e.message}`);
             res.status(500).json({ error: 'Error logging out user' });
         }
@@ -78,6 +93,28 @@ const authController = {
     // Check authentication status
     async checkAuth(req, res, next) {
         res.status(200).json({ authenticated: true, user: req.user });
+    },
+
+    // Get profile
+    async getProfile(req, res) {
+        try {
+            const pool = await getPool();
+            const result = await pool.request()
+                .input('id_usuario', sql.Int, req.user.id_usuario)
+                .execute('dbo.sp_obtener_perfil_detallado');
+
+            if (result.recordset.length === 0) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+
+            res.status(200).json({
+                status: 'SUCCESS',
+                user: result.recordset[0]
+            });
+        } catch (e) {
+            logger.error(`Error getting profile: ${e.message}`);
+            res.status(500).json({ error: 'Server error getting profile' });
+        }
     }
 };
 

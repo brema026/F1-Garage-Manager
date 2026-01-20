@@ -12,6 +12,7 @@ import Inventory from './pages/Inventory';
 import CarSetup from './pages/CarSetup';
 import api from './api/axios';
 import { DriverWelcome } from './components/DriverWelcome';
+import { Profile } from './pages/Profile'
 
 function App() {
   const [view, setView] = useState('teams');
@@ -45,6 +46,10 @@ function App() {
     if (!user) return null;
 
     const role = user.rol?.toLowerCase();
+
+    if (view === 'profile') {
+      return <Profile user={user} />;
+    }
 
     if (role === 'driver') {
       return <DriverWelcome user={user} setView={setView} />;
