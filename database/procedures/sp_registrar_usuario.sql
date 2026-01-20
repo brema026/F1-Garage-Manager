@@ -23,13 +23,7 @@ BEGIN
             RAISERROR('El correo electrónico ya está registrado.', 16, 1);
         END
 
-        -- validad que el ingeniero tenga un equipo asignado
-        IF @rol = 'Engineer' AND @id_equipo IS NULL
-        BEGIN
-            RAISERROR('Un ingeniero debe estar asociado a un equipo.', 16, 1);
-        END
-
-        -- insertar que el usuario
+        -- insertar el usuario (Engineers pueden registrarse sin equipo y asignarse posteriormente)
         INSERT INTO dbo.usuario (nombre, email, password_hash, rol, id_equipo, activo)
         VALUES (@nombre, @email, @password_hash, @rol, @id_equipo, 1);
 
