@@ -13,7 +13,7 @@ import CarSetup from './pages/CarSetup';
 import api from './api/axios';
 import { DriverWelcome } from './components/DriverWelcome';
 import { Profile } from './pages/Profile'
-import CircuitSelection from './pages/race-simulator/CircuitSelection';
+import RaceFlow from './pages/race-simulator/RaceFlow';
 
 function App() {
   const [view, setView] = useState('teams');
@@ -86,7 +86,7 @@ function App() {
           element={!isLoggedIn ? <Login setIsLoggedIn={setIsLoggedIn} setUser={setUser} /> : <Navigate to="/dashboard" />} 
         />
         <Route path="/register" element={<Register />} />
-        <Route path="/simulation" element={<CircuitSelection />} />
+        <Route path="/simulation" element={<RaceFlow />} />
         {/* Protected Dashboard Route */}
         <Route
           path="/dashboard/*"
