@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { FiEdit, FiPlus, FiX, FiChevronRight } from 'react-icons/fi';
 import { HABILIDAD_COLORES, getHabilidadColor, getHabilidadLabel, formatCurrency, calculateTotalAportes, calculateTotalByTeam, getTotalItems, getCategoriesCount, formatDate, getPartsByCategory, getPartById, calculateCarStats, isCarComplete } from '../utils/helpers';
 import api from '../api/axios';
+import { InputWithValidation } from '../components/common/Validation'; 
+import { validateDriverName, validateDriverSkill } from '../utils/validations'; 
 
 // Drivers Page Component
 export function Drivers() {
@@ -14,6 +16,10 @@ export function Drivers() {
   const [loading, setLoading] = useState(true); // Estado de carga
   const [teams, setTeams] = useState([]); // Lista de equipos desde la API
   const hasDrivers = drivers && drivers.length > 0; // Verificar si hay drivers
+  const [fieldErrors, setFieldErrors] = useState({});
+  const handleClearError = (fieldName) => {
+    setFieldErrors(prev => ({ ...prev, [fieldName]: null }));
+  };
 
   // Cargar drivers y equipos desde la API
   const fetchData = async () => {
@@ -57,7 +63,7 @@ export function Drivers() {
   // Manejo del modal
   const handleCreateDriver = () => {
     setModalMode('create');
-    setFormData({ nombre: '', habilidad_h: 80 });
+    setFormData({ nombre: '', habilidad_h: 50 });
     setShowModal(true);
   };
 
@@ -79,11 +85,17 @@ export function Drivers() {
   const handleCloseModal = () => {
     setShowModal(false);
     setFormData({ nombre: '', habilidad_h: 80 });
+    setFieldErrors({});
   };
 
   // Enviar formulario (crear o editar)
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const nombreValidation = validateDriverName(formData.nombre);
+    if (!nombreValidation.isValid) {
+      setFieldErrors({ nombre: nombreValidation.errors[0] });
+      return;
+    }
     try {
       setLoading(true);
 
@@ -413,17 +425,25 @@ export function Drivers() {
                 <label className="block text-xs font-bold text-light/70 uppercase tracking-wider mb-2">
                   Nombre del Driver
                 </label>
-                <input
-                  type="text"
-                  readOnly={modalMode === 'edit'}
-                  value={formData.nombre}
-                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  className={`w-full px-4 py-3 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white placeholder-light/30 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all ${
-                    modalMode === 'edit' ? 'opacity-60 cursor-not-allowed border-transparent shadow-none text-white/40 select-none' : ''
-                  }`}
-                  placeholder="Ej: Lewis Hamilton"
-                  required
-                />
+                {modalMode === 'edit' ? (
+                  <input
+                    type="text"
+                    readOnly
+                    value={formData.nombre}
+                    className="w-full px-4 py-3 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white/40 opacity-60 cursor-not-allowed select-none"
+                  />
+                ) : (
+                  <InputWithValidation
+                    type="text"
+                    name="nombre"
+                    value={formData.nombre}
+                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                    placeholder="Ej: Lewis Hamilton"
+                    error={fieldErrors.nombre}
+                    onClearError={handleClearError}
+                    variant="dark"
+                  />
+                )}
               </div>
 
               <div>

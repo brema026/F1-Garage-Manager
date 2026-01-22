@@ -17,6 +17,7 @@ export function InputWithValidation({
   className = '',
   children, // Para elementos adicionales como el botón de mostrar contraseña
   hint, // Texto de ayuda debajo del input
+  variant = 'light'
 }) {
   const [showError, setShowError] = useState(false);
 
@@ -46,10 +47,16 @@ export function InputWithValidation({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className={`w-full px-4 py-3 bg-white border rounded-lg text-dark placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+          className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 transition-all ${
+            variant === 'dark'
+              ? 'bg-[#1a1f3a]/50 border border-light/10 text-white placeholder-light/30 focus:border-primary focus:ring-primary/30'
+              : 'bg-white border text-dark placeholder-gray-400'
+          } ${
             error && showError
               ? 'border-red-500 focus:ring-red-500/30'
-              : 'border-gray-300 focus:ring-primary'
+              : variant === 'dark' 
+                ? 'border-light/10' 
+                : 'border-gray-300 focus:ring-primary'
           } ${className}`}
         />
         {children}

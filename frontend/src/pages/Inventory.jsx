@@ -31,17 +31,26 @@ export function Inventory({ user }) {
 
   const cargarEquipos = async () => {
     try {
-      const res = await api.get('/teams'); // tu backend ya existe
-      const data = Array.isArray(res.data) ? res.data : [];
+      const res = await api.get('/teams');
+      let data = Array.isArray(res.data) ? res.data : [];
+
+      // 1. Filtrar el equipo con ID 0 o nombres de "Pendiente"
+      data = data.filter(e => 
+        Number(e.id_equipo) !== 0 && 
+        !e.nombre.toLowerCase().includes('sin equipo') &&
+        !e.nombre.toLowerCase().includes('pendiente')
+      );
+
       setEquipos(data);
 
-      // auto-seleccionar el primero si no hay seleccionado
+      // 2. Seleccionar automáticamente el primero de la lista filtrada
       if (data.length > 0) {
-        setSelectedEquipo((prev) => prev ?? data[0].id_equipo);
+        setSelectedEquipo(data[0].id_equipo);
       } else {
         setSelectedEquipo(null);
       }
     } catch (e) {
+      console.error("Error al cargar equipos:", e);
       setEquipos([]);
       setSelectedEquipo(null);
     }
@@ -206,7 +215,7 @@ export function Inventory({ user }) {
 
           <h2 className="text-white text-2xl font-bold mb-4 tracking-tight">VINCULACIÓN PENDIENTE</h2>
           <p className="text-slate-400 leading-relaxed">
-            Actualmente no tienes un equipo asignado en el sistema. Para comenzar a gestionar inventarios y telemetría.
+            Actualmente no tienes un equipo asignado en el sistema.
           </p>
 
           <div className="mt-8 pt-6 border-t border-slate-800">

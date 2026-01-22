@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 // import { TEAMS } from '../data/TeamsData';
 import { FiEdit, FiPlus, FiX, FiChevronRight } from 'react-icons/fi';
 import api from '../api/axios';
+import { InputWithValidation } from '../components/common/Validation';
+import { validateTeamName } from '../utils/validations';
 
 // Teams Page Component
 export function Teams( { user } ) {
@@ -15,9 +17,14 @@ export function Teams( { user } ) {
   const [engineers, setEngineers] = useState([]); // Lista de ingenieros
   const [showAssignModal, setShowAssignModal] = useState(false); // Estado del modal de asignación 
   const [selectedEngineer, setSelectedEngineer] = useState(null); // Ingeniero seleccionado
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const userRole = user?.rol?.toLowerCase(); // Rol del usuario
   const userTeamId = Number(user?.id_equipo); // ID del equipo del usuario
+
+  const handleClearError = (fieldName) => {
+    setFieldErrors(prev => ({ ...prev, [fieldName]: null }));
+  };
 
   // Filtrar equipos según rol
   const filteredTeams = userRole === 'admin' 
@@ -117,6 +124,11 @@ export function Teams( { user } ) {
   // Formulario submit
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const nombreValidation = validateTeamName(formData.nombre);
+    if (!nombreValidation.isValid) {
+      setFieldErrors({ nombre: nombreValidation.errors[0] });
+      return;
+    }
     setSubmitting(true);
 
     try {
@@ -133,6 +145,7 @@ export function Teams( { user } ) {
       // Refrescar la lista de equipos desde el servidor para ver los cambios
       await fetchTeams();
       handleCloseModal();
+      setFieldErrors({});
     } catch (error) {
       console.error("Error al procesar equipo:", error);
       alert(error.response?.data?.error || "Error en el servidor");
@@ -171,7 +184,7 @@ export function Teams( { user } ) {
           <h2 className="text-white text-2xl font-bold mb-4 tracking-tight">VINCULACIÓN PENDIENTE</h2>
           
           <p className="text-slate-400 leading-relaxed">
-            Actualmente no tienes un equipo asignado en el sistema. Para comenzar a gestionar inventarios y telemetría.
+            Actualmente no tienes un equipo asignado en el sistema.
           </p>
 
           <div className="mt-8 pt-6 border-t border-slate-800">
@@ -530,13 +543,15 @@ export function Teams( { user } ) {
                 <label className="block text-xs font-bold text-light/70 uppercase tracking-wider mb-2">
                   Nombre del Equipo
                 </label>
-                <input
+                <InputWithValidation
                   type="text"
+                  name="nombre"
                   value={formData.nombre}
                   onChange={(e) => setFormData({ nombre: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white placeholder-light/30 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
                   placeholder="Ej: Red Racing Team"
-                  required
+                  error={fieldErrors.nombre}
+                  onClearError={handleClearError}
+                  variant="dark"
                 />
               </div>
 

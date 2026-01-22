@@ -137,7 +137,7 @@ export function RegisterForm() {
             
             setTimeout(() => {
                 navigate('/login');
-            }, 3000);
+            }, 1500);
 
         } catch (e) {
             console.error("Error during registration:", e);

@@ -23,6 +23,7 @@ export function Parts({ user }) {
   const [buyQty, setBuyQty] = useState(1);
   const [buyLoading, setBuyLoading] = useState(false);
   const [buyError, setBuyError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   // Modal eliminar (Admin)
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -95,6 +96,7 @@ export function Parts({ user }) {
   }, []);
 
   const cargarPartes = async () => {
+    setLoading(true);
     try {
       const res = await api.get('/parts');
       const data = Array.isArray(res.data) ? res.data : [];
@@ -105,6 +107,8 @@ export function Parts({ user }) {
       console.error('Error cargando partes', error);
       setPartes([]);
       setSelectedPart(null);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -200,8 +204,36 @@ export function Parts({ user }) {
      ============================= */
   if (hasNoTeam && userRole === 'engineer') {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center text-white">
-        No tienes un equipo asignado
+      <div className="min-h-[70vh] flex items-center justify-center p-6">
+        <div className="bg-slate-900/60 border border-red-500/20 p-10 rounded-3xl text-center backdrop-blur-2xl max-w-lg shadow-2xl">
+          <div className="flex justify-center mb-6">
+            <div className="p-4 bg-red-500/10 rounded-full">
+              <svg className="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 15c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+          </div>
+
+          <h2 className="text-white text-2xl font-bold mb-4 tracking-tight">VINCULACIÓN PENDIENTE</h2>
+          <p className="text-slate-400 leading-relaxed">
+            Actualmente no tienes un equipo asignado en el sistema.
+          </p>
+
+          <div className="mt-8 pt-6 border-t border-slate-800">
+            <p className="text-xs text-slate-500 uppercase tracking-widest">
+              Estado: Esperando asignación de equipo
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading spinner while verifying session
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }

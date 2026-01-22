@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import api from '../api/axios';
 import { FiEdit, FiPlus, FiX, FiChevronRight, FiTrash2 } from 'react-icons/fi';
 import { formatCurrency, formatDate } from '../utils/helpers';
+import { InputWithValidation } from '../components/common/Validation'; 
+import { validateSponsorName, validateSponsorEmail, validateAporteMonto, validateAporteEquipo } from '../utils/validations'; 
 
 export function Sponsors({ user }) {
   const userRole = user?.rol?.toLowerCase();
@@ -21,6 +23,10 @@ export function Sponsors({ user }) {
   const [teamBudget, setTeamBudget] = useState(null);
 
   const hasSponsors = sponsors.length > 0;
+  const [fieldErrors, setFieldErrors] = useState({});
+  const handleClearError = (fieldName) => {
+    setFieldErrors(prev => ({ ...prev, [fieldName]: null }));
+  };
 
   // ===== MODAL SPONSOR =====
   const [showModal, setShowModal] = useState(false);
@@ -43,6 +49,7 @@ export function Sponsors({ user }) {
   // ===== LOADERS =====
   const [loadingSponsors, setLoadingSponsors] = useState(false);
   const [loadingContrib, setLoadingContrib] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // ==========================
   // HELPERS
@@ -66,6 +73,7 @@ export function Sponsors({ user }) {
   // LOADERS
   // ==========================
   const cargarSponsors = async () => {
+    setLoading(true);
     setLoadingSponsors(true);
     try {
       const res = await api.get('/sponsors');
@@ -87,6 +95,7 @@ export function Sponsors({ user }) {
       setSelectedSponsor(null);
     } finally {
       setLoadingSponsors(false);
+      setLoading(false);
     }
   };
 
@@ -205,6 +214,7 @@ export function Sponsors({ user }) {
     setShowModal(false);
     setFormData({ nombre: '', email: '' });
     setSponsorError('');
+    setFieldErrors({});
   };
 
   const handleSubmitSponsor = async (e) => {
@@ -214,6 +224,23 @@ export function Sponsors({ user }) {
 
     if (userRole !== 'admin') {
       setSponsorError('Solo Admin puede registrar patrocinadores.');
+      return;
+    }
+
+    const errors = {};
+    
+    const nombreValidation = validateSponsorName(formData.nombre);
+    if (!nombreValidation.isValid) {
+      errors.nombre = nombreValidation.errors[0];
+    }
+    
+    const emailValidation = validateSponsorEmail(formData.email);
+    if (!emailValidation.isValid) {
+      errors.email = emailValidation.errors[0];
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
 
@@ -255,6 +282,7 @@ export function Sponsors({ user }) {
   const handleCloseAporteModal = () => {
     setShowAporteModal(false);
     setAporteError('');
+    setFieldErrors({});
     setAporteFormData({
       id_equipo: userRole === 'engineer' && !hasNoTeam ? Number(user.id_equipo) : '',
       fecha: new Date().toISOString().split('T')[0],
@@ -273,6 +301,23 @@ export function Sponsors({ user }) {
 
     if (!selectedSponsor?.id_patrocinador) {
       setAporteError('No hay patrocinador seleccionado.');
+      return;
+    }
+    
+    const errors = {};
+    
+    const equipoValidation = validateAporteEquipo(aporteFormData.id_equipo);
+    if (!equipoValidation.isValid) {
+      errors.id_equipo = equipoValidation.errors[0];
+    }
+    
+    const montoValidation = validateAporteMonto(aporteFormData.monto);
+    if (!montoValidation.isValid) {
+      errors.monto = montoValidation.errors[0];
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
 
@@ -339,6 +384,15 @@ export function Sponsors({ user }) {
     );
   }
 
+  // Show loading spinner while verifying session
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#0f1419] to-[#050812] p-4 md:p-8">
       {/* Header */}
@@ -376,14 +430,15 @@ export function Sponsors({ user }) {
             {/* Sidebar */}
             <div className="lg:col-span-1">
               <div className="sticky top-8 space-y-4">
-                <button
-                  onClick={handleCreateSponsor}
-                  className="w-full bg-gradient-to-r from-primary to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg shadow-primary/30 hover:shadow-primary/50 flex items-center justify-center gap-2 md:text-sm disabled:opacity-60"
-                  disabled={userRole !== 'admin'}
-                >
-                  <FiPlus className="text-lg" />
-                  NUEVO PATROCINADOR
-                </button>
+                {userRole !== 'engineer' && (
+                  <button
+                    onClick={handleCreateSponsor}
+                    className="w-full bg-gradient-to-r from-primary to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg shadow-primary/30 hover:shadow-primary/50 flex items-center justify-center gap-2 md:text-sm"
+                  >
+                    <FiPlus className="text-lg" />
+                    NUEVO PATROCINADOR
+                  </button>
+                )}
 
                 <div className="bg-[#0f1419]/80 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
                   <div className="p-4 border-b border-light/5">
@@ -440,15 +495,15 @@ export function Sponsors({ user }) {
                       <p className="text-light/60 text-sm">{selectedSponsor?.email || 'sin email'}</p>
                     </div>
 
-                    <button
-                      onClick={handleEditSponsor}
-                      className="flex items-center gap-2 bg-primary/20 hover:bg-primary/40 border border-primary/40 text-primary px-4 py-2 rounded-lg transition-all font-bold text-sm md:text-base disabled:opacity-60"
-                      disabled={!selectedSponsor}
-                      title="Editar aún no implementado"
-                    >
-                      <FiEdit />
-                      EDITAR
-                    </button>
+                    {userRole !== 'engineer' && (
+                      <button
+                        onClick={handleEditSponsor}
+                        className="flex items-center gap-2 bg-primary/20 hover:bg-primary/40 border border-primary/40 text-primary px-4 py-2 rounded-lg transition-all font-bold text-sm md:text-base"
+                      >
+                        <FiEdit />
+                        EDITAR
+                      </button>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -470,28 +525,39 @@ export function Sponsors({ user }) {
 
               {/* Aportes */}
               <div className="bg-[#0f1419]/50 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
-                <div className="border-b border-light/5 px-6 py-4 flex items-center justify-between gap-3">
+                <div className="border-b border-light/5 px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <h3 className="text-sm font-bold text-light/70 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-green-400"></span>
+                    <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
                     Registro de Aportes
                   </h3>
 
-                  <select
-                    value={aporteFormData.id_equipo || ''}
-                    onChange={async (e) => {
-                      const idEquipo = Number(e.target.value);
-                      setAporteFormData((p) => ({ ...p, id_equipo: idEquipo }));
-                      await Promise.all([cargarAportesPorEquipo(idEquipo), cargarPresupuestoEquipo(idEquipo)]);
-                    }}
-                    className="px-3 py-2 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all text-sm"
-                    disabled={userRole === 'engineer'}
-                  >
-                    {(teams || []).map((t) => (
-                      <option key={t.id_equipo} value={t.id_equipo}>
-                        {t.nombre}
-                      </option>
-                    ))}
-                  </select>
+                  {/* Solo se muestra el selector si el usuario NO es ingeniero */}
+                  {userRole !== 'engineer' && (
+                    <div className="flex items-center gap-3 w-full sm:w-auto animate-in fade-in zoom-in duration-300">
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg">
+                        <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span className="text-xs font-bold text-primary uppercase tracking-tight">Equipo:</span>
+                      </div>
+
+                      <select
+                        value={aporteFormData.id_equipo || ''}
+                        onChange={async (e) => {
+                          const idEquipo = Number(e.target.value);
+                          setAporteFormData((p) => ({ ...p, id_equipo: idEquipo }));
+                          await Promise.all([cargarAportesPorEquipo(idEquipo), cargarPresupuestoEquipo(idEquipo)]);
+                        }}
+                        className="flex-1 sm:min-w-[180px] px-4 py-2 bg-[#1a1f3a] border border-light/10 rounded-xl text-white text-sm font-medium focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer hover:border-light/30"
+                      >
+                        {(teams || []).map((t) => (
+                          <option key={t.id_equipo} value={t.id_equipo} className="bg-[#0f1419] text-white">
+                            {t.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-6 space-y-4">
@@ -545,24 +611,24 @@ export function Sponsors({ user }) {
               </div>
 
               {/* Acciones */}
-              <div className="flex gap-3">
-                <button
-                  onClick={handleCreateAporte}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-gradient-to-r from-primary to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold transition-all shadow-lg shadow-primary/30 hover:shadow-primary/50 disabled:opacity-60"
-                  disabled={userRole !== 'admin'}
-                >
-                  <FiPlus />
-                  REGISTRAR APORTE
-                </button>
+              {userRole !== 'engineer' && (
+                <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <button
+                    onClick={handleCreateAporte}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-gradient-to-r from-primary to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold transition-all shadow-lg shadow-primary/30 hover:shadow-primary/50"
+                  >
+                    <FiPlus />
+                    REGISTRAR APORTE
+                  </button>
 
-                <button
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 font-bold hover:bg-red-500/20 transition-all disabled:opacity-60"
-                  disabled
-                >
-                  <FiTrash2 />
-                  ELIMINAR
-                </button>
-              </div>
+                  <button
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 font-bold hover:bg-red-500/20 transition-all cursor-not-allowed opacity-50"
+                  >
+                    <FiTrash2 />
+                    ELIMINAR
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </>
@@ -592,27 +658,50 @@ export function Sponsors({ user }) {
                 <label className="block text-xs font-bold text-light/70 uppercase tracking-wider mb-2">
                   Nombre del Patrocinador
                 </label>
-                <input
-                  type="text"
-                  value={formData.nombre}
-                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white placeholder-light/30 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-                  required
-                  disabled={modalMode === 'edit'}
-                />
+                {modalMode === 'edit' ? (
+                  <input
+                    type="text"
+                    readOnly
+                    value={formData.nombre}
+                    className="w-full px-4 py-3 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white/40 opacity-60 cursor-not-allowed select-none"
+                  />
+                ) : (
+                  <InputWithValidation
+                    type="text"
+                    name="nombre"
+                    value={formData.nombre}
+                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                    placeholder="Ej: Red Bull"
+                    error={fieldErrors.nombre}
+                    onClearError={handleClearError}
+                    variant="dark"
+                  />
+                )}
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-light/70 uppercase tracking-wider mb-2">
                   Email
                 </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white placeholder-light/30 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-                  disabled={modalMode === 'edit'}
-                />
+                {modalMode === 'edit' ? (
+                  <input
+                    type="email"
+                    readOnly
+                    value={formData.email}
+                    className="w-full px-4 py-3 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white/40 opacity-60 cursor-not-allowed select-none"
+                  />
+                ) : (
+                  <InputWithValidation
+                    type="text"
+                    name="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="sponsor@email.com"
+                    error={fieldErrors.email}
+                    onClearError={handleClearError}
+                    variant="dark"
+                  />
+                )}
               </div>
 
               <div className="flex gap-3 pt-4">
@@ -694,14 +783,15 @@ export function Sponsors({ user }) {
                 <label className="block text-xs font-bold text-light/70 uppercase tracking-wider mb-2">
                   Monto (USD)
                 </label>
-                <input
+                <InputWithValidation
                   type="number"
-                  min="1"
-                  step="1000"
+                  name="monto"
                   value={aporteFormData.monto}
                   onChange={(e) => setAporteFormData({ ...aporteFormData, monto: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white placeholder-light/30 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-                  required
+                  placeholder="100000"
+                  error={fieldErrors.monto}
+                  onClearError={handleClearError}
+                  variant="dark"
                 />
               </div>
 

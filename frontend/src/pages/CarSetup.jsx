@@ -134,7 +134,7 @@ export function CarSetup( { user } ) {
           <h2 className="text-white text-2xl font-bold mb-4 tracking-tight">VINCULACIÓN PENDIENTE</h2>
           
           <p className="text-slate-400 leading-relaxed">
-            Actualmente no tienes un equipo asignado en el sistema. Para comenzar a gestionar inventarios y telemetría.
+            Actualmente no tienes un equipo asignado en el sistema.
           </p>
 
           <div className="mt-8 pt-6 border-t border-slate-800">
