@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { 
   FiArrowLeft, 
   FiCheck, 
@@ -9,56 +9,45 @@ import {
   FiUser, 
   FiFlag,
   FiChevronRight,
-  FiMapPin
+  FiMapPin,
+  FiGlobe,
+  FiHash
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 
 // DATA
 import { getCarrosFinalizados } from "../../data/CarSelectionData";
 
-// IMÁGENES BIRD EYE DE CIRCUITOS (FONDO)
-import monzaBirdEye from "../../assets/circuits/monza-birdEye.webp";
-import paulRicardBirdEye from "../../assets/circuits/paulRicard-birdEye.webp";
-import portimaBirdEye from "../../assets/circuits/portimao-birdEye.webp";
+// IMÁGENES DE FONDO ALEATORIAS
+import randomBackground1 from "../../assets/circuits/1.webp";
+import randomBackground2 from "../../assets/circuits/2.webp";
+import randomBackground3 from "../../assets/circuits/3.webp";
 
-// IMÁGENES DE CIRCUITOS (TRAZADO)
-import monzaImg from "../../assets/circuits/monza.webp";
-import portimaoImg from "../../assets/circuits/portimao.webp";
-import paulRicardImg from "../../assets/circuits/paulRicard.webp";
-
-// BANDERAS
-import italyFlag from "../../assets/circuits/flags/italy.webp";
-import franceFlag from "../../assets/circuits/flags/france.webp";
-import portugalFlag from "../../assets/circuits/flags/portugal.webp";
-
-// Mapeo de assets por nombre de circuito
-const circuitAssets = {
-  "Monza": { 
-    background: monzaBirdEye, 
-    track: monzaImg, 
-    flag: italyFlag 
-  },
-  "Paul Ricard": { 
-    background: paulRicardBirdEye, 
-    track: paulRicardImg, 
-    flag: franceFlag 
-  },
-  "Portimao": { 
-    background: portimaBirdEye, 
-    track: portimaoImg, 
-    flag: portugalFlag 
-  },
-};
+// Array de imágenes de fondo aleatorias
+const randomBackgrounds = [
+  randomBackground1,
+  randomBackground2,
+  randomBackground3
+];
 
 const MIN_CARS = 2;
-const MAX_CARS = 20;
+const MAX_CARS = 26;
 
 export default function VehicleSelection({ circuit, onBack, onStartRace }) {
   const [selectedCars, setSelectedCars] = useState([]);
+  const [randomBackground, setRandomBackground] = useState(null);
   const navigate = useNavigate();
 
   const carrosDisponibles = useMemo(() => getCarrosFinalizados(), []);
-  const assets = circuitAssets[circuit?.name] || circuitAssets["Monza"];
+  
+  // Usar circuito pasado como prop o el default
+  const currentCircuit = circuit;
+  
+  // Seleccionar fondo aleatorio al cargar
+  useEffect(() => {
+    const randomIndex = Math.floor(Math.random() * randomBackgrounds.length);
+    setRandomBackground(randomBackgrounds[randomIndex]);
+  }, []);
 
   const toggleCarSelection = (carId) => {
     setSelectedCars((prev) => {
@@ -108,83 +97,79 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
         </div>
       </motion.button>
       
-      {/* ============================================
-    FONDO - SE MUESTRA EN TODOS LOS DISPOSITIVOS
-    ============================================ */}
-    <motion.div
-      className="absolute inset-0 z-0"
-      initial={{ scale: 1.05 }}
-      animate={{ 
-        scale: [1.05, 1.12, 1.05],
-        x: [0, -20, 0],
-        y: [0, -10, 0],
-      }}
-      transition={{ 
-        duration: 20, 
-        repeat: Infinity, 
-        ease: "easeInOut" 
-      }}
-    >
-      <div
-        className="absolute inset-0 w-[120%] h-[120%] -top-[10%] -left-[10%] hidden lg:block"
+      {/* FONDO ALEATORIO */}
+      {randomBackground && (
+        <motion.div
+          className="absolute inset-0 z-0"
+          initial={{ scale: 1.05 }}
+          animate={{ 
+            scale: [1.05, 1.12, 1.05],
+            x: [0, -20, 0],
+            y: [0, -10, 0],
+          }}
+          transition={{ 
+            duration: 20, 
+            repeat: Infinity, 
+            ease: "easeInOut" 
+          }}
+        >
+          <div
+            className="absolute inset-0 w-[120%] h-[120%] -top-[10%] -left-[10%] hidden lg:block"
+            style={{
+              backgroundImage: `url(${randomBackground})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
+          
+          {/* VERSIÓN MÓVIL - MÁS OSCURA */}
+          <div
+            className="absolute inset-0 lg:hidden"
+            style={{
+              backgroundImage: `url(${randomBackground})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              filter: "brightness(0.3)",
+            }}
+          />
+        </motion.div>
+      )}
+
+      {/* OVERLAY - ESCRITORIO */}
+      <div className="absolute inset-0 z-[1] hidden md:block" 
         style={{
-          backgroundImage: `url(${assets.background})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
+          background: `linear-gradient(to right, 
+            rgba(10,10,10,0.50) 0%, 
+            rgba(10,10,10,0.72) 35%, 
+            rgba(10,10,10,0.92) 50%, 
+            rgba(10,10,10,0.98) 100%)`
+        }} 
       />
-      
-      {/* VERSIÓN MÓVIL - MÁS OSCURA Y FIJA */}
-      <div
-        className="absolute inset-0 lg:hidden"
+
+      {/* OVERLAY - MÓVIL */}
+      <div className="absolute inset-0 z-[1] md:hidden" 
         style={{
-          backgroundImage: `url(${assets.background})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          filter: "brightness(0.3)",
-        }}
+          background: `linear-gradient(to bottom, 
+            rgba(0,0,0,0.85) 0%, 
+            rgba(0,0,0,0.75) 30%, 
+            rgba(0,0,0,0.65) 50%, 
+            rgba(0,0,0,0.45) 70%, 
+            rgba(0,0,0,0.25) 100%)`
+        }} 
       />
-    </motion.div>
 
-      {/* OVERLAY - ESCRITORIO (horizontal) */}
-<div className="absolute inset-0 z-[1] hidden md:block" 
-  style={{
-    background: `linear-gradient(to right, 
-      rgba(10,10,10,0.50) 0%, 
-      rgba(10,10,10,0.72) 35%, 
-      rgba(10,10,10,0.92) 50%, 
-      rgba(10,10,10,0.98) 100%)`
-  }} 
-/>
-
-{/* OVERLAY - MÓVIL (vertical - oscuro arriba, claro abajo) */}
-<div className="absolute inset-0 z-[1] md:hidden" 
-  style={{
-    background: `linear-gradient(to bottom, 
-      rgba(0,0,0,0.85) 0%, 
-      rgba(0,0,0,0.75) 30%, 
-      rgba(0,0,0,0.65) 50%, 
-      rgba(0,0,0,0.45) 70%, 
-      rgba(0,0,0,0.25) 100%)`
-  }} 
-/>
-
-{/* OVERLAY ADICIONAL PARA CONTRASTE */}
-<div className="absolute inset-0 z-[1] bg-gradient-to-t from-neutral-950/60 via-transparent to-neutral-950/40" />
+      {/* OVERLAY ADICIONAL PARA CONTRASTE */}
+      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-neutral-950/60 via-transparent to-neutral-950/40" />
       
       {/* LÍNEA DIVISORA - SOLO EN ESCRITORIO */}
       <div className="absolute top-[10%] bottom-[10%] left-[44%] w-px z-[2] hidden lg:block">
         <div className="w-full h-full bg-gradient-to-b from-transparent via-white/[0.05] to-transparent" />
       </div>
 
-      {/* ============================================
-          CONTENIDO PRINCIPAL
-          ============================================ */}
+      {/* CONTENIDO PRINCIPAL */}
       <div className="relative z-10 min-h-screen flex flex-col lg:flex-row pt-16 lg:pt-0">
         
-        {/* ============================================
-            PANEL IZQUIERDO - CIRCUITO
-            ============================================ */}
+        {/* PANEL IZQUIERDO - CIRCUITO */}
         <motion.div 
           className="w-full lg:w-[44%] min-h-[50vh] lg:min-h-screen flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 order-2 lg:order-1"
           initial={{ opacity: 0, x: -60 }}
@@ -195,25 +180,20 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
           {/* CONTENIDO CENTRAL */}
           <div className="flex-1 flex flex-col justify-center">
             
-            {/* LOCATION TAG */}
+            {/* LOCATION TAG - SIMPLIFICADO */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.7 }}
-              className="flex items-center gap-3 mb-4 lg:mb-6"
+              className="flex items-center gap-3 mb-4 lg:mb-6 justify-center lg:justify-start"
             >
-              <motion.img
-                src={assets.flag}
-                alt={`${circuit?.location} flag`}
-                className="w-7 h-4 lg:w-8 lg:h-5 object-cover rounded-sm shadow-lg shadow-black/30"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.8, duration: 0.5 }}
-              />
-              <div className="flex items-center gap-2 text-white/60">
+              <div className="w-7 h-4 lg:w-8 lg:h-5 bg-gradient-to-r from-red-500/20 to-red-700/20 rounded-sm flex items-center justify-center border border-red-500/30">
+                <FiGlobe className="text-red-400/70 text-[10px]" />
+              </div>
+              <div className="flex items-center gap-2 text-white/80">
                 <FiMapPin className="text-[10px] lg:text-[11px]" />
                 <span className="text-xs font-medium tracking-widest uppercase">
-                  {circuit?.location}
+                  Custom Circuit
                 </span>
               </div>
             </motion.div>
@@ -223,31 +203,10 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7, duration: 0.8, ease: "easeOut" }}
-              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black uppercase italic tracking-tight text-white leading-[0.9] mb-4 lg:mb-6"
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black uppercase italic tracking-tight text-white leading-[0.9] mb-20 lg:mb-6 text-center lg:text-left"
             >
-              {circuit?.name}
+              {currentCircuit.name}
             </motion.h1>
-
-            {/* IMAGEN TRAZADO */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.9, duration: 0.8 }}
-              className="relative mb-4 lg:mb-6"
-            >
-              <div className="absolute inset-0 flex items-center justify-center -z-10">
-                <div className="w-[70%] h-[40%] lg:h-[50%] bg-white/[0.015] rounded-full blur-[60px] lg:blur-[80px]" />
-              </div>
-              
-              <motion.img
-                src={assets.track}
-                alt={`${circuit?.name} layout`}
-                className="max-w-full lg:max-w-[75%] max-h-[150px] sm:max-h-[180px] lg:max-h-[200px] object-contain opacity-85 mx-auto
-                  drop-shadow-[0_0_30px_rgba(255,255,255,0.04)] lg:drop-shadow-[0_0_50px_rgba(255,255,255,0.04)]"
-                whileHover={{ scale: 1.03, opacity: 1 }}
-                transition={{ duration: 0.5 }}
-              />
-            </motion.div>
 
             {/* STATS */}
             <motion.div
@@ -257,21 +216,27 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
               className="flex gap-6 lg:gap-12 justify-center lg:justify-start"
             >
               <div className="text-center lg:text-left">
-                <p className="text-[11px] font-medium uppercase tracking-[0.3em] lg:tracking-[0.4em] text-white/40 mb-2">
-                  Distancia
-                </p>
+                <div className="flex items-center gap-2 mb-2">
+                  <FiMapPin className="text-white/40 text-sm" />
+                  <p className="text-[11px] font-medium uppercase tracking-[0.3em] lg:tracking-[0.4em] text-white/80">
+                    Distancia
+                  </p>
+                </div>
                 <p className="text-3xl lg:text-4xl font-extralight text-white/90 tracking-tight">
-                  {circuit?.km}
+                  {currentCircuit.distance}
                   <span className="text-sm text-white/50 ml-1 lg:ml-2 font-normal">km</span>
                 </p>
               </div>
               
               <div className="text-center lg:text-left">
-                <p className="text-[11px] font-medium uppercase tracking-[0.3em] lg:tracking-[0.4em] text-white/40 mb-2">
-                  Curvas
-                </p>
+                <div className="flex items-center gap-2 mb-2">
+                  <FiHash className="text-white/40 text-sm" />
+                  <p className="text-[11px] font-medium uppercase tracking-[0.3em] lg:tracking-[0.4em] text-white/80">
+                    Curvas
+                  </p>
+                </div>
                 <p className="text-3xl lg:text-4xl font-extralight text-white/90 tracking-tight">
-                  {circuit?.curves}
+                  {currentCircuit.curves}
                 </p>
               </div>
             </motion.div>
@@ -287,13 +252,13 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
             <div className="flex flex-col lg:flex-row items-center lg:items-end justify-between gap-6 lg:gap-0">
               {/* CONTADOR */}
               <div className="w-full lg:w-auto text-center lg:text-left">
-                <p className="text-[11px] font-medium uppercase tracking-[0.3em] lg:tracking-[0.4em] text-white/40 mb-2">
+                <p className="text-[11px] font-medium uppercase tracking-[0.3em] lg:tracking-[0.4em] text-white/80 mb-2">
                   Seleccionados
                 </p>
                 <div className="flex items-baseline justify-center lg:justify-start gap-2">
                   <motion.span 
                     className={`text-4xl lg:text-5xl font-extralight tracking-tight transition-colors duration-700 ${
-                      canStartRace ? "text-emerald-400/90" : "text-white/40"
+                      canStartRace ? "text-emerald-400/90" : "text-white/80"
                     }`}
                     key={selectedCars.length}
                     initial={{ opacity: 0, y: -10 }}
@@ -302,7 +267,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
                   >
                     {selectedCars.length}
                   </motion.span>
-                  <span className="text-base lg:text-lg text-white/10 font-light">
+                  <span className="text-base lg:text-lg text-white/50 font-light">
                     / {carrosDisponibles.length}
                   </span>
                 </div>
@@ -314,7 +279,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
                 disabled={!canStartRace}
                 className={`group relative overflow-hidden px-6 py-3 lg:px-8 lg:py-4 transition-all duration-700 w-full lg:w-auto ${
                   canStartRace
-                    ? "cursor-pointer bg-white text-neutral-900"
+                    ? "cursor-pointer bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white"
                     : "cursor-not-allowed bg-white/[0.02] text-white/15 border border-white/[0.04]"
                 }`}
                 whileHover={canStartRace ? { scale: 1.02 } : {}}
@@ -322,7 +287,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
               >
                 <span className="relative flex items-center justify-center lg:justify-start gap-3 text-xs font-semibold uppercase tracking-[0.2em]">
                   <FiFlag className="text-sm" />
-                  Iniciar
+                  Iniciar Carrera
                   <FiChevronRight className={`text-sm transition-transform duration-300 ${
                     canStartRace ? "lg:group-hover:translate-x-1" : ""
                   }`} />
@@ -332,9 +297,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
           </motion.div>
         </motion.div>
 
-        {/* ============================================
-            PANEL DERECHO - SELECCIÓN DE CARROS
-            ============================================ */}
+        {/* PANEL DERECHO - SELECCIÓN DE CARROS */}
         <motion.div
           className="flex-1 w-full lg:w-auto min-h-[50vh] lg:min-h-screen p-6 sm:p-8 md:p-10 lg:p-14 lg:pl-10 order-1 lg:order-2"
           initial={{ opacity: 0, x: 60 }}
@@ -367,7 +330,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
             >
               <div className="flex items-center gap-3 mb-2">
                 <h2 className="text-xl sm:text-2xl lg:text-2xl font-semibold text-white/95 tracking-[0.15em] uppercase">
-                  Vehículos
+                  Selección de Vehículos
                 </h2>
                 <div className="h-px flex-1 sm:flex-none sm:w-8 lg:w-12 bg-gradient-to-r from-white/20 to-transparent" />
               </div>
@@ -443,9 +406,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
   );
 }
 
-// ============================================
 // CAR CARD
-// ============================================
 function CarCard({ carro, index, isSelected, onToggle }) {
   const equipo = carro.equipo;
   const conductor = carro.conductor;
@@ -586,9 +547,7 @@ function CarCard({ carro, index, isSelected, onToggle }) {
   );
 }
 
-// ============================================
-// STAT ITEM CON PROGRESS BAR - VERSIÓN MEJORADA
-// ============================================
+// STAT ITEM CON PROGRESS BAR
 function StatItem({ icon, label, value, maxValue, isSelected, delay }) {
   const percentage = (value / maxValue) * 100;
 
