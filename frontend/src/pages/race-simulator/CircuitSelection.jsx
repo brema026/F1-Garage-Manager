@@ -2,6 +2,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { FiArrowLeft, FiPlus, FiTrash2, FiEdit2, FiCheck, FiMapPin, FiHash } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import api from "../../api/axios";
+import { validateCircuitName, validateCircuitDistance, validateCircuitCurves } from "../../utils/validations";
+import { InputWithValidation } from '../../components/common/Validation'; 
 
 // Videos de fondo
 import onboard01 from "../../assets/circuits/backgroundVideos/onboard-01.mp4";
@@ -15,7 +18,132 @@ export default function CircuitSelection({ onSelect }) {
   const [editingId, setEditingId] = useState(null);
   const [randomVideo, setRandomVideo] = useState(null);
   const [isFormValid, setIsFormValid] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [errors, setErrors] = useState({
+    circuitName: "",
+    distance: "",
+    curves: ""
+  });
+
+  const validateForm = () => {
+    const nameValidation = validateCircuitName(circuitName, createdCircuits);
+    const distanceValidation = validateCircuitDistance(distance);
+    const curvesValidation = validateCircuitCurves(curves);
+
+    const newErrors = {
+      circuitName: nameValidation.errors.length > 0 ? nameValidation.errors[0] : "",
+      distance: distanceValidation.errors.length > 0 ? distanceValidation.errors[0] : "",
+      curves: curvesValidation.errors.length > 0 ? curvesValidation.errors[0] : ""
+    };
+
+    setErrors(newErrors);
+
+    return nameValidation.isValid && distanceValidation.isValid && curvesValidation.isValid;
+  };
+
+  const handleInputChange = (field, value) => {
+    let sanitizedValue = value;
+    
+    switch (field) {
+      case 'circuitName':
+      // Limitar a 120 caracteres
+      if (value.length > 120) return;
+      
+      setCircuitName(value);
+      if (errors.circuitName) {
+        setErrors(prev => ({ ...prev, circuitName: "" }));
+      }
+      break;
+        
+      case 'distance':
+      // Solo números y un punto decimal, máximo 3 decimales
+      sanitizedValue = value.replace(/[^\d.]/g, '');
+      
+      // Permitir solo un punto decimal
+      const parts = sanitizedValue.split('.');
+      if (parts.length > 2) {
+        sanitizedValue = parts[0] + '.' + parts.slice(1).join('');
+      }
+      
+      // Limitar a 3 decimales
+      if (parts.length === 2 && parts[1].length > 3) {
+        sanitizedValue = parts[0] + '.' + parts[1].substring(0, 3);
+      }
+
+      const distanceNum = parseFloat(sanitizedValue || '0');
+      
+      // Validar que no exceda 1000
+      if (!isNaN(distanceNum) && distanceNum > 1000) {
+        // Encontrar el valor máximo posible
+        if (parts.length === 2) {
+          // Si tiene decimales, limitar a "1000.000"
+          sanitizedValue = "1000";
+          // Si ya era 1000 pero con decimales, mantener solo "1000"
+          if (parts[0] === "1000") {
+            sanitizedValue = "1000";
+          }
+        } else if (sanitizedValue.length >= 4) {
+          // Si tiene 4 o más dígitos enteros, limitar a "1000"
+          sanitizedValue = "1000";
+        }
+      }
+      
+      setDistance(sanitizedValue);
+      if (errors.distance) {
+        setErrors(prev => ({ ...prev, distance: "" }));
+      }
+      break;
+          
+      case 'curves':
+        // Solo números enteros, máximo 100
+        sanitizedValue = value.replace(/[^\d]/g, '');
+        
+        // Limitar a 3 dígitos (máx 100)
+        if (sanitizedValue.length > 3) {
+          sanitizedValue = sanitizedValue.substring(0, 3);
+        }
+        
+        // Convertir a número y limitar a 100
+        const numValue = parseInt(sanitizedValue || '0');
+        if (numValue > 100) {
+          sanitizedValue = '100';
+        }
+        
+        // Eliminar ceros a la izquierda
+        if (sanitizedValue.length > 1 && sanitizedValue.startsWith('0')) {
+          sanitizedValue = sanitizedValue.replace(/^0+/, '');
+        }
+        
+        setCurves(sanitizedValue);
+        if (errors.curves) {
+          setErrors(prev => ({ ...prev, curves: "" }));
+        }
+        break;
+    }
+  };
+
+  const handleClearError = (fieldName) => {
+    setErrors(prev => ({ ...prev, [fieldName]: "" }));
+  };
+
+  // Cargar circuitos desde la API
+  useEffect(() => {
+    fetchCircuits();
+  }, []);
+
+  const fetchCircuits = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/circuits');
+      setCreatedCircuits(response.data);
+    } catch (error) {
+      console.error("Error cargando circuitos:", error);
+      alert("Error al cargar los circuitos");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Seleccionar video aleatorio
   useEffect(() => {
@@ -36,79 +164,87 @@ export default function CircuitSelection({ onSelect }) {
     setIsFormValid(isValid);
   }, [circuitName, distance, curves]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!circuitName.trim() || !distance || !curves) {
-      alert("Por favor, completa todos los campos");
-      return;
+
+    // Validar el formulario (incluye validación de nombre único)
+    const isValid = validateForm();
+    if (!isValid) {
+      return; // Detener si hay errores
     }
 
-    const distanceNum = parseFloat(distance);
+    // CORRECCIÓN: Usar parseFloat, no parseInt para distancia
+    const distanceNum = parseFloat(distance.replace(',', '.')); // Asegurar punto decimal
     const curvesNum = parseInt(curves);
 
+    // Validaciones adicionales
     if (isNaN(distanceNum) || distanceNum <= 0) {
-      alert("La distancia debe ser un número positivo");
+      setErrors(prev => ({ ...prev, distance: "La distancia debe ser mayor a 0" }));
       return;
     }
 
-    if (isNaN(curvesNum) || curvesNum <= 0) {
-      alert("El número de curvas debe ser un número positivo");
+    if (distanceNum > 1000) {
+      setErrors(prev => ({ ...prev, distance: "La distancia no puede exceder 1000 km" }));
       return;
     }
 
-    if (editingId) {
-      setCreatedCircuits(prev => prev.map(circuit => {
-        if (circuit.id === editingId) {
-          return {
-            ...circuit,
-            name: circuitName.trim(),
-            distance: distanceNum,
-            curves: curvesNum,
-          };
-        }
-        return circuit;
-      }));
-      setEditingId(null);
-    } else {
-      const newCircuit = {
-        id: Date.now(),
-        name: circuitName.trim(),
-        distance: distanceNum,
-        curves: curvesNum,
-      };
-
-      setCreatedCircuits(prev => [newCircuit, ...prev]);
+    if (isNaN(curvesNum) || curvesNum <= 0 || curvesNum > 100) {
+      setErrors(prev => ({ ...prev, curves: "El número de curvas debe estar entre 1 y 100" }));
+      return;
     }
 
-    // Limpiar formulario
-    setCircuitName("");
-    setDistance("");
-    setCurves("");
+    try {
+      // Crear circuito en la base de datos
+      const response = await api.post('/circuits', {
+        nombre: circuitName.trim(),
+        distancia_d: distanceNum,
+        curvas_c: curvesNum
+      });
+
+      // Agregar el nuevo circuito a la lista
+      setCreatedCircuits(prev => [response.data, ...prev]);
+      
+      // Limpiar formulario
+      setCircuitName("");
+      setDistance("");
+      setCurves("");
+      setErrors({ circuitName: "", distance: "", curves: "" });
+      
+    } catch (error) {
+      console.error("Error creando circuito:", error);
+      
+      // Capturar error de nombre duplicado del backend también
+      if (error.response?.data?.error?.includes('Ya existe un circuito') || 
+          error.response?.data?.error?.includes('duplicate') ||
+          error.response?.data?.error?.includes('nombre')) {
+        setErrors(prev => ({ ...prev, circuitName: "Ya existe un circuito con ese nombre" }));
+      } else {
+        alert(error.response?.data?.error || "Error al crear el circuito");
+      }
+    }
   };
 
-  const handleEdit = (circuit) => {
-    setCircuitName(circuit.name);
-    setDistance(circuit.distance);
-    setCurves(circuit.curves.toString());
-    setEditingId(circuit.id);
-  };
-
-  const handleDelete = (id) => {
-    setCreatedCircuits(prev => prev.filter(circuit => circuit.id !== id));
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`/circuits/${id}`);
+      setCreatedCircuits(prev => prev.filter(circuit => circuit.id_circuito !== id));
+    } catch (error) {
+      console.error("Error eliminando circuito:", error);
+      alert(error.response?.data?.error || "Error al eliminar el circuito");
+    }
   };
 
   const handleUseCircuit = (circuit) => {
     if (onSelect) {
-      onSelect(circuit);
+      // Transformar los datos al formato que espera onSelect
+      const formattedCircuit = {
+        id: circuit.id_circuito,
+        name: circuit.nombre,
+        distance: circuit.distancia_d,
+        curves: circuit.curvas_c
+      };
+      onSelect(formattedCircuit);
     }
-  };
-
-  const cancelEdit = () => {
-    setCircuitName("");
-    setDistance("");
-    setCurves("");
-    setEditingId(null);
   };
 
   return (
@@ -191,7 +327,7 @@ export default function CircuitSelection({ onSelect }) {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/dashboard")}
             className="lg:hidden flex items-center gap-3 group p-3 mb-3"
           >
             <FiArrowLeft className="text-xl text-gray-400 group-hover:text-red-500 transition-colors duration-300" />
@@ -271,19 +407,18 @@ export default function CircuitSelection({ onSelect }) {
                       <div className="w-1.5 h-1.5 rounded-full bg-red-500/60" />
                       Nombre del Circuito
                     </label>
-                    <div className="relative group">
-                      <input
-                        type="text"
-                        value={circuitName}
-                        onChange={(e) => setCircuitName(e.target.value)}
-                        className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-5 py-4 text-white placeholder-gray-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30 transition-all duration-300 text-sm backdrop-blur-sm group-hover:border-white/[0.15]"
-                        placeholder="Ej: Circuito de Alta Velocidad"
-                        required
-                      />
-                      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-hover:text-red-500 transition-colors duration-300">
-                        🏁
-                      </div>
-                    </div>
+                    <InputWithValidation
+                      errorPosition="below"
+                      type="text"
+                      name="circuitName"
+                      value={circuitName}
+                      onChange={(e) => handleInputChange('circuitName', e.target.value)}
+                      placeholder="Ej: Circuito de Alta Velocidad"
+                      error={errors.circuitName}
+                      onClearError={handleClearError}
+                      className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-5 py-4 text-white placeholder-gray-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30 transition-all duration-300 text-sm backdrop-blur-sm group-hover:border-white/[0.15]"
+                      variant="dark"
+                    />
                   </motion.div>
 
                   {/* Distancia y curvas */}
@@ -299,21 +434,24 @@ export default function CircuitSelection({ onSelect }) {
                         <div className="w-1.5 h-1.5 rounded-full bg-red-500/60" />
                         Distancia (km)
                       </label>
-                      <div className="relative group">
-                        <input
-                          type="number"
-                          step="0.001"
-                          min="0.1"
-                          value={distance}
-                          onChange={(e) => setDistance(e.target.value)}
-                          className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-5 py-4 text-white placeholder-gray-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30 transition-all duration-300 text-sm appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none backdrop-blur-sm group-hover:border-white/[0.15]"
-                          placeholder="5.793"
-                          required
-                        />
-                        <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-hover:text-red-500 transition-colors duration-300">
-                          <FiMapPin className="text-sm" />
-                        </span>
-                      </div>
+                      <InputWithValidation
+                        errorPosition="below"
+                        type="text"
+                        name="distance"
+                        value={distance}
+                        onChange={(e) => handleInputChange('distance', e.target.value)}
+                        onKeyDown={(e) => {
+                          if (!/[\d.]|Backspace|Delete|ArrowLeft|ArrowRight|Tab|Enter/.test(e.key)) {
+                            e.preventDefault();
+                          }
+                        }}
+                        inputMode="decimal"
+                        placeholder="5.793 (máx 3 decimales y 1000 km)"
+                        error={errors.distance}
+                        onClearError={handleClearError}
+                        className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-5 py-4 text-white placeholder-gray-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30 transition-all duration-300 text-sm backdrop-blur-sm group-hover:border-white/[0.15] appearance-none"
+                        variant="dark"
+                      />
                     </div>
 
                     {/* Curvas */}
@@ -322,20 +460,24 @@ export default function CircuitSelection({ onSelect }) {
                         <div className="w-1.5 h-1.5 rounded-full bg-red-500/60" />
                         Número de Curvas
                       </label>
-                      <div className="relative group">
-                        <input
-                          type="number"
-                          min="1"
-                          value={curves}
-                          onChange={(e) => setCurves(e.target.value)}
-                          className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-5 py-4 text-white placeholder-gray-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30 transition-all duration-300 text-sm appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none backdrop-blur-sm group-hover:border-white/[0.15]"
-                          placeholder="15"
-                          required
-                        />
-                        <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-hover:text-red-500 transition-colors duration-300">
-                          <FiHash className="text-sm" />
-                        </span>
-                      </div>
+                      <InputWithValidation
+                        errorPosition="below"
+                        type="text"
+                        name="curves"
+                        value={curves}
+                        onChange={(e) => handleInputChange('curves', e.target.value)}
+                        onKeyDown={(e) => {
+                          if (!/[\d]|Backspace|Delete|ArrowLeft|ArrowRight|Tab|Enter/.test(e.key)) {
+                            e.preventDefault();
+                          }
+                        }}
+                        inputMode="numeric"
+                        placeholder="15 (entero, máx 100)"
+                        error={errors.curves}
+                        onClearError={handleClearError}
+                        className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-5 py-4 text-white placeholder-gray-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30 transition-all duration-300 text-sm backdrop-blur-sm group-hover:border-white/[0.15] appearance-none"
+                        variant="dark"
+                      />
                     </div>
                   </motion.div>
 
@@ -372,21 +514,9 @@ export default function CircuitSelection({ onSelect }) {
                       <span className={`relative z-10 transition-all duration-300 ${
                         isFormValid ? '' : 'opacity-40'
                       }`}>
-                        {editingId ? "Actualizar" : "Crear Circuito"}
+                        Crear Circuito
                       </span>
                     </button>
-                    
-                    {editingId && (
-                      <button
-                        type="button"
-                        onClick={cancelEdit}
-                        className="px-6 py-4 border border-white/[0.1] text-gray-300 hover:text-white hover:border-white/20 hover:bg-white/[0.03] rounded-xl transition-all duration-300 uppercase tracking-wider text-sm font-medium backdrop-blur-sm"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        Cancelar
-                      </button>
-                    )}
                   </motion.div>
                 </form>
               </div>
@@ -407,7 +537,7 @@ export default function CircuitSelection({ onSelect }) {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/dashboard")}
             className="absolute top-6 right-6 z-50 hidden lg:flex items-center gap-3 group p-3"
           >
             <FiArrowLeft className="text-xl text-gray-400 group-hover:text-red-500 transition-colors duration-300" />
@@ -470,10 +600,9 @@ export default function CircuitSelection({ onSelect }) {
                   <AnimatePresence mode="popLayout">
                     {createdCircuits.map((circuit, index) => (
                       <CircuitCard
-                        key={circuit.id}
+                        key={circuit.id_circuito}
                         circuit={circuit}
                         index={index}
-                        onEdit={handleEdit}
                         onDelete={handleDelete}
                         onUse={handleUseCircuit}
                       />
@@ -510,7 +639,7 @@ export default function CircuitSelection({ onSelect }) {
 }
 
 // Componente CircuitCard
-function CircuitCard({ circuit, index, onEdit, onDelete, onUse }) {
+function CircuitCard({ circuit, index, onDelete, onUse }) {
   return (
     <motion.div
       layout
@@ -536,7 +665,7 @@ function CircuitCard({ circuit, index, onEdit, onDelete, onUse }) {
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-2 h-6 bg-gradient-to-b from-red-500 to-red-700 rounded-full"></div>
                 <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-red-400 transition-colors duration-300 truncate">
-                  {circuit.name}
+                  {circuit.nombre}
                 </h3>
               </div>
             </div>
@@ -546,19 +675,7 @@ function CircuitCard({ circuit, index, onEdit, onDelete, onUse }) {
               <motion.button 
                 onClick={(e) => {
                   e.stopPropagation();
-                  onEdit(circuit);
-                }}
-                className="p-2.5 rounded-lg bg-white/[0.05] border border-white/[0.1] text-gray-400 hover:text-yellow-500 hover:border-yellow-500/30 hover:bg-yellow-500/10 transition-all duration-300"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                title="Editar circuito"
-              >
-                <FiEdit2 className="text-sm" />
-              </motion.button>
-              <motion.button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(circuit.id);
+                  onDelete(circuit.id_circuito);
                 }}
                 className="p-2.5 rounded-lg bg-white/[0.05] border border-white/[0.1] text-gray-400 hover:text-red-500 hover:border-red-500/30 hover:bg-red-500/10 transition-all duration-300"
                 whileHover={{ scale: 1.1 }}
@@ -581,7 +698,7 @@ function CircuitCard({ circuit, index, onEdit, onDelete, onUse }) {
               </div>
               <div className="flex items-baseline">
                 <span className="text-2xl font-light text-white">
-                  {circuit.distance}
+                  {circuit.distancia_d}
                 </span>
                 <span className="text-sm text-gray-400 ml-2">km</span>
               </div>
@@ -595,7 +712,7 @@ function CircuitCard({ circuit, index, onEdit, onDelete, onUse }) {
                 </span>
               </div>
               <span className="text-2xl font-light text-white">
-                {circuit.curves}
+                {circuit.curvas_c}
               </span>
             </div>
           </div>

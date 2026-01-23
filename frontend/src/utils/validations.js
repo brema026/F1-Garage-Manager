@@ -342,3 +342,109 @@ export const validateAporteEquipo = (idEquipo) => {
     errors,
   };
 };
+
+// ========== VALIDACIONES DE CIRCUITO ==========
+export const validateCircuitName = (nombre, existingCircuits = []) => {
+  const errors = [];
+
+  if (!nombre || nombre.trim() === '') {
+    errors.push('El nombre del circuito es obligatorio');
+    return { isValid: false, errors };
+  }
+
+  if (nombre.trim().length > 120) {
+    errors.push('El nombre no puede superar 120 caracteres');
+  }
+
+  // Validar nombre único (solo si se proporciona la lista de circuitos existentes)
+  if (existingCircuits.length > 0) {
+    const nombreNormalizado = nombre.trim().toLowerCase();
+    const existeCircuito = existingCircuits.some(circuit => 
+      circuit.nombre.trim().toLowerCase() === nombreNormalizado
+    );
+    
+    if (existeCircuito) {
+      errors.push('Ya existe un circuito con ese nombre');
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+export const validateCircuitDistance = (distancia) => {
+  const errors = [];
+  
+  if (!distancia || distancia === '') {
+    errors.push('La distancia es obligatoria');
+    return { isValid: false, errors };
+  }
+
+  const distanciaNormalizada = distancia.replace(',', '.');
+  const distance = parseFloat(distanciaNormalizada);
+
+  if (isNaN(distance)) {
+    errors.push('La distancia debe ser un número');
+    return { isValid: false, errors };
+  }
+
+  if (distance <= 0) {
+    errors.push('La distancia debe ser mayor a 0');
+  }
+
+  if (distance > 1000) {
+    errors.push('La distancia no puede exceder 1000 km');
+  }
+
+  // Verificar máximo 3 decimales
+  const decimalPlaces = distanciaNormalizada.split('.')[1];
+  if (decimalPlaces && decimalPlaces.length > 3) {
+    errors.push('La distancia puede tener máximo 3 decimales');
+  }
+
+  // Verificar dígitos enteros (máximo 4 para 1000)
+  const integerPart = distanciaNormalizada.split('.')[0];
+  if (integerPart && integerPart.length > 4) {
+    errors.push('Máximo 4 dígitos enteros permitidos (hasta 1000)');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+export const validateCircuitCurves = (curvas) => {
+  const errors = [];
+  const curves = parseInt(curvas);
+
+  if (!curvas || curvas === '') {
+    errors.push('El número de curvas es obligatorio');
+    return { isValid: false, errors };
+  }
+
+  if (isNaN(curves)) {
+    errors.push('El número de curvas debe ser un número entero');
+    return { isValid: false, errors };
+  }
+
+  if (curves <= 0) {
+    errors.push('El número de curvas debe ser un número positivo');
+  }
+
+  if (curves > 100) {
+    errors.push('El número de curvas no puede superar 100');
+  }
+
+  // Verificar que sea entero
+  if (!Number.isInteger(parseFloat(curvas))) {
+    errors.push('El número de curvas debe ser un número entero');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};

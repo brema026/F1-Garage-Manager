@@ -191,7 +191,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
               {/* Funciones Dropdown Menu */}
               {mobileMenuOpen && (
                 <div className="absolute left-1/2 -translate-x-1/2 mt-3 w-56 rounded-xl bg-slate-950/95 backdrop-blur-2xl border border-slate-800/50 shadow-2xl py-2 z-50 overflow-hidden">
-                  <SimulationButton isMobile={true} />
+                  {role === "admin" && <SimulationButton isMobile={true} />}
                   <div className="h-px bg-slate-800/50 my-1"></div>
                   {navItems.map((item) => (
                     <button
@@ -307,7 +307,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
                 )}
               </button>
             ))}
-            <SimulationButton isMobile={false} />
+            {role === "admin" && <SimulationButton isMobile={false} />}
           </div>
 
           {/* Right Section */}

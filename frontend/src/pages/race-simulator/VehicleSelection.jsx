@@ -19,16 +19,10 @@ import { useNavigate } from "react-router-dom";
 import { getCarrosFinalizados } from "../../data/CarSelectionData";
 
 // IMÁGENES DE FONDO ALEATORIAS
-import randomBackground1 from "../../assets/circuits/1.webp";
-import randomBackground2 from "../../assets/circuits/2.webp";
-import randomBackground3 from "../../assets/circuits/3.webp";
-
-// Array de imágenes de fondo aleatorias
-const randomBackgrounds = [
-  randomBackground1,
-  randomBackground2,
-  randomBackground3
-];
+const maxImages = 3;
+const randomBackgrounds = Array.from({ length: maxImages }, (_, i) =>
+  require(`../../assets/circuits/${i + 1}.webp`)
+);
 
 const MIN_CARS = 2;
 const MAX_CARS = 26;
@@ -287,7 +281,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
               >
                 <span className="relative flex items-center justify-center lg:justify-start gap-3 text-xs font-semibold uppercase tracking-[0.2em]">
                   <FiFlag className="text-sm" />
-                  Iniciar Carrera
+                  Iniciar Simulación
                   <FiChevronRight className={`text-sm transition-transform duration-300 ${
                     canStartRace ? "lg:group-hover:translate-x-1" : ""
                   }`} />
