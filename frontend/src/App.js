@@ -20,6 +20,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [prewarming, setPrewarming] = useState(false);
 
   // Check authentication status on app load
   useEffect(() => {
@@ -42,6 +43,17 @@ function App() {
 
     verifySession();
   }, []);
+
+  // ejecuta simulation en 100 ms porque al entrar por primera ves lo devuelve
+  useEffect(() => {
+    if (isLoggedIn) {
+      setPrewarming(true);
+      const timer = setTimeout(() => {
+        setPrewarming(false);
+      }, 100); 
+      return () => clearTimeout(timer);
+    }
+  }, [isLoggedIn]);
 
   const renderView = () => {
     if (!user) return null;
@@ -79,6 +91,12 @@ function App() {
 
   return (
     <Router>
+      {prewarming && (
+        <div style={{ display: 'none' }}>
+          <RaceFlow />
+        </div>
+      )}
+
       <Routes>
         {/* Public Routes */}
         <Route 
@@ -86,7 +104,19 @@ function App() {
           element={!isLoggedIn ? <Login setIsLoggedIn={setIsLoggedIn} setUser={setUser} /> : <Navigate to="/dashboard" />} 
         />
         <Route path="/register" element={<Register />} />
-        <Route path="/simulation" element={<RaceFlow />} />
+        
+        {/* Simulation Route */}
+        <Route 
+          path="/simulation" 
+          element={
+            isLoggedIn ? (
+              <RaceFlow />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          } 
+        />
+        
         {/* Protected Dashboard Route */}
         <Route
           path="/dashboard/*"

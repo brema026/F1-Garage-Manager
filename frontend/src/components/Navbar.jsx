@@ -94,7 +94,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
         if (isMobile) setMobileMenuOpen(false);
       }}
       className={`group relative flex items-center justify-center transition-all duration-1000 bg-transparent
-        ${isMobile ? "w-full py-6" : "px-8 py-2"}`}
+        ${isMobile ? "w-full px-6 py-3 text-left" : ""}`}
     >
       <style>
         {`
@@ -110,8 +110,8 @@ function Navbar({ setView, setIsLoggedIn, user }) {
 
       <span className={`relative z-10 flex items-center tracking-[-0.08em] uppercase italic
         ${isMobile 
-          ? "text-3xl font-[1000] text-[#E10600]" 
-          : "text-[2.4rem] font-[1000]"}`}>
+          ? "text-xs font-medium tracking-widest uppercase" 
+          : "text-[1.5rem] font-[1000]"}`}>
         
         <span className="relative inline-block overflow-visible">
           <span className="text-slate-300 transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:text-[#E10600] group-hover:drop-shadow-[0_0_15px_rgba(225,6,0,0.5)]">
@@ -163,7 +163,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
       <div className="relative mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
         
         {/* Mobile Layout */}
-        <div className="min-[1550px]:hidden flex flex-col items-center gap-4">
+        <div className="min-[1500px]:hidden flex flex-col items-center gap-4">
           {/* Logo - Centered */}
           <div className="flex-shrink-0 group cursor-pointer" onClick={() => window.location.reload()}>
             <img 
@@ -258,7 +258,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
         </div>
 
         {/* Desktop Layout */}
-        <div className="hidden min-[1550px]:grid grid-cols-[1fr_auto_1fr] items-center px-8">
+        <div className="hidden min-[1500px]:flex items-center justify-between px-4 lg:px-8 xl:px-12 2xl:px-16">
           
           {/* Logo */}
           <div className="flex justify-start">

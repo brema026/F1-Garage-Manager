@@ -92,104 +92,126 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-neutral-950 font-sans">
       
-      {/* ============================================
-          FONDO ANIMADO
-          ============================================ */}
-      <motion.div
-        className="absolute inset-0 z-0"
-        initial={{ scale: 1.05 }}
-        animate={{ 
-          scale: [1.05, 1.12, 1.05],
-          x: [0, -20, 0],
-          y: [0, -10, 0],
-        }}
-        transition={{ 
-          duration: 40, 
-          repeat: Infinity, 
-          ease: "easeInOut" 
-        }}
+      {/* BOTÓN VOLVER SUPERIOR - SIEMPRE VISIBLE EN MÓVIL/TABLET */}
+      <motion.button
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5 }}
+        onClick={onBack}
+        className="absolute top-6 left-6 z-50 flex items-center gap-2 group p-3 lg:hidden"
       >
-        <div
-          className="absolute inset-0 w-[120%] h-[120%] -top-[10%] -left-[10%]"
-          style={{
-            backgroundImage: `url(${assets.background})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        />
-      </motion.div>
-
-      {/* OVERLAY */}
-      <div className="absolute inset-0 z-[1]" 
-        style={{
-          background: `linear-gradient(to right, 
-            rgba(10,10,10,0.50) 0%, 
-            rgba(10,10,10,0.72) 35%, 
-            rgba(10,10,10,0.92) 50%, 
-            rgba(10,10,10,0.98) 100%)`
-        }} 
-      />
-      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-neutral-950/70 via-transparent to-neutral-950/30" />
+        <FiArrowLeft className="text-gray-400 text-xl group-hover:text-red-500 transition-colors duration-200" />
+        <div className="relative">
+          <span className="text-sm font-black uppercase tracking-[0.2em] text-gray-400 group-hover:text-red-500 transition-colors duration-200">
+            Volver
+          </span>
+        </div>
+      </motion.button>
       
-      {/* LÍNEA DIVISORA */}
-      <div className="absolute top-[10%] bottom-[10%] left-[44%] w-px z-[2]">
+      {/* ============================================
+    FONDO - SE MUESTRA EN TODOS LOS DISPOSITIVOS
+    ============================================ */}
+    <motion.div
+      className="absolute inset-0 z-0"
+      initial={{ scale: 1.05 }}
+      animate={{ 
+        scale: [1.05, 1.12, 1.05],
+        x: [0, -20, 0],
+        y: [0, -10, 0],
+      }}
+      transition={{ 
+        duration: 20, 
+        repeat: Infinity, 
+        ease: "easeInOut" 
+      }}
+    >
+      <div
+        className="absolute inset-0 w-[120%] h-[120%] -top-[10%] -left-[10%] hidden lg:block"
+        style={{
+          backgroundImage: `url(${assets.background})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      />
+      
+      {/* VERSIÓN MÓVIL - MÁS OSCURA Y FIJA */}
+      <div
+        className="absolute inset-0 lg:hidden"
+        style={{
+          backgroundImage: `url(${assets.background})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          filter: "brightness(0.3)",
+        }}
+      />
+    </motion.div>
+
+      {/* OVERLAY - ESCRITORIO (horizontal) */}
+<div className="absolute inset-0 z-[1] hidden md:block" 
+  style={{
+    background: `linear-gradient(to right, 
+      rgba(10,10,10,0.50) 0%, 
+      rgba(10,10,10,0.72) 35%, 
+      rgba(10,10,10,0.92) 50%, 
+      rgba(10,10,10,0.98) 100%)`
+  }} 
+/>
+
+{/* OVERLAY - MÓVIL (vertical - oscuro arriba, claro abajo) */}
+<div className="absolute inset-0 z-[1] md:hidden" 
+  style={{
+    background: `linear-gradient(to bottom, 
+      rgba(0,0,0,0.85) 0%, 
+      rgba(0,0,0,0.75) 30%, 
+      rgba(0,0,0,0.65) 50%, 
+      rgba(0,0,0,0.45) 70%, 
+      rgba(0,0,0,0.25) 100%)`
+  }} 
+/>
+
+{/* OVERLAY ADICIONAL PARA CONTRASTE */}
+<div className="absolute inset-0 z-[1] bg-gradient-to-t from-neutral-950/60 via-transparent to-neutral-950/40" />
+      
+      {/* LÍNEA DIVISORA - SOLO EN ESCRITORIO */}
+      <div className="absolute top-[10%] bottom-[10%] left-[44%] w-px z-[2] hidden lg:block">
         <div className="w-full h-full bg-gradient-to-b from-transparent via-white/[0.05] to-transparent" />
       </div>
 
       {/* ============================================
           CONTENIDO PRINCIPAL
           ============================================ */}
-      <div className="relative z-10 min-h-screen flex">
+      <div className="relative z-10 min-h-screen flex flex-col lg:flex-row pt-16 lg:pt-0">
         
         {/* ============================================
             PANEL IZQUIERDO - CIRCUITO
             ============================================ */}
         <motion.div 
-          className="w-[44%] min-h-screen flex flex-col p-10 lg:p-14"
+          className="w-full lg:w-[44%] min-h-[50vh] lg:min-h-screen flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 order-2 lg:order-1"
           initial={{ opacity: 0, x: -60 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         >
-          {/* BOTÓN VOLVER */}
-            <motion.button
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
-                onClick={onBack}
-                className="absolute top-8 left-8 z-50 flex items-center gap-2 group"
-            >
-                <FiArrowLeft className="text-gray-400 text-xl group-hover:text-red-500 transition-colors duration-200" />
-                <div className="relative">
-                <span className="text-sm font-black uppercase tracking-[0.2em] text-gray-400 group-hover:text-red-500 transition-colors duration-200">
-                    Volver
-                </span>
-                <motion.div
-                    className="absolute -bottom-1 left-0 h-[2px] bg-red-500 w-0 group-hover:w-full"
-                    transition={{ duration: 0.2 }}
-                />
-                </div>
-            </motion.button>
-
+          
           {/* CONTENIDO CENTRAL */}
-          <div className="flex-1 flex flex-col justify-center -mt-10">
+          <div className="flex-1 flex flex-col justify-center">
             
             {/* LOCATION TAG */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.7 }}
-              className="flex items-center gap-3 mb-6"
+              className="flex items-center gap-3 mb-4 lg:mb-6"
             >
               <motion.img
                 src={assets.flag}
                 alt={`${circuit?.location} flag`}
-                className="w-8 h-5 object-cover rounded-sm shadow-lg shadow-black/30"
+                className="w-7 h-4 lg:w-8 lg:h-5 object-cover rounded-sm shadow-lg shadow-black/30"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.8, duration: 0.5 }}
               />
-              <div className="flex items-center gap-2 text-white/35">
-                <FiMapPin className="text-[10px]" />
+              <div className="flex items-center gap-2 text-white/60">
+                <FiMapPin className="text-[10px] lg:text-[11px]" />
                 <span className="text-xs font-medium tracking-widest uppercase">
                   {circuit?.location}
                 </span>
@@ -201,7 +223,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7, duration: 0.8, ease: "easeOut" }}
-              className="text-6xl lg:text-7xl xl:text-8xl font-black uppercase italic tracking-tight text-white leading-[0.9] mb-10"
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black uppercase italic tracking-tight text-white leading-[0.9] mb-4 lg:mb-6"
             >
               {circuit?.name}
             </motion.h1>
@@ -211,17 +233,17 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.9, duration: 0.8 }}
-              className="relative mb-12"
+              className="relative mb-4 lg:mb-6"
             >
               <div className="absolute inset-0 flex items-center justify-center -z-10">
-                <div className="w-[70%] h-[50%] bg-white/[0.015] rounded-full blur-[80px]" />
+                <div className="w-[70%] h-[40%] lg:h-[50%] bg-white/[0.015] rounded-full blur-[60px] lg:blur-[80px]" />
               </div>
               
               <motion.img
                 src={assets.track}
                 alt={`${circuit?.name} layout`}
-                className="max-w-[75%] max-h-[200px] object-contain opacity-85
-                  drop-shadow-[0_0_50px_rgba(255,255,255,0.04)]"
+                className="max-w-full lg:max-w-[75%] max-h-[150px] sm:max-h-[180px] lg:max-h-[200px] object-contain opacity-85 mx-auto
+                  drop-shadow-[0_0_30px_rgba(255,255,255,0.04)] lg:drop-shadow-[0_0_50px_rgba(255,255,255,0.04)]"
                 whileHover={{ scale: 1.03, opacity: 1 }}
                 transition={{ duration: 0.5 }}
               />
@@ -232,23 +254,23 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1, duration: 0.6 }}
-              className="flex gap-16"
+              className="flex gap-6 lg:gap-12 justify-center lg:justify-start"
             >
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-[0.4em] text-white/20 mb-2">
+              <div className="text-center lg:text-left">
+                <p className="text-[11px] font-medium uppercase tracking-[0.3em] lg:tracking-[0.4em] text-white/40 mb-2">
                   Distancia
                 </p>
-                <p className="text-4xl font-extralight text-white/90 tracking-tight">
+                <p className="text-3xl lg:text-4xl font-extralight text-white/90 tracking-tight">
                   {circuit?.km}
-                  <span className="text-sm text-white/25 ml-2 font-normal">km</span>
+                  <span className="text-sm text-white/50 ml-1 lg:ml-2 font-normal">km</span>
                 </p>
               </div>
               
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-[0.4em] text-white/20 mb-2">
+              <div className="text-center lg:text-left">
+                <p className="text-[11px] font-medium uppercase tracking-[0.3em] lg:tracking-[0.4em] text-white/40 mb-2">
                   Curvas
                 </p>
-                <p className="text-4xl font-extralight text-white/90 tracking-tight">
+                <p className="text-3xl lg:text-4xl font-extralight text-white/90 tracking-tight">
                   {circuit?.curves}
                 </p>
               </div>
@@ -260,17 +282,17 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.1, duration: 0.6 }}
-            className="mt-auto pt-10 border-t border-white/[0.04]"
+            className="mt-4 lg:mt-4 pt-4 lg:pt-6 border-t border-white/[0.04]"
           >
-            <div className="flex items-end justify-between">
+            <div className="flex flex-col lg:flex-row items-center lg:items-end justify-between gap-6 lg:gap-0">
               {/* CONTADOR */}
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-[0.4em] text-white/20 mb-3">
+              <div className="w-full lg:w-auto text-center lg:text-left">
+                <p className="text-[11px] font-medium uppercase tracking-[0.3em] lg:tracking-[0.4em] text-white/40 mb-2">
                   Seleccionados
                 </p>
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-baseline justify-center lg:justify-start gap-2">
                   <motion.span 
-                    className={`text-5xl font-extralight tracking-tight transition-colors duration-700 ${
+                    className={`text-4xl lg:text-5xl font-extralight tracking-tight transition-colors duration-700 ${
                       canStartRace ? "text-emerald-400/90" : "text-white/40"
                     }`}
                     key={selectedCars.length}
@@ -280,7 +302,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
                   >
                     {selectedCars.length}
                   </motion.span>
-                  <span className="text-lg text-white/10 font-light">
+                  <span className="text-base lg:text-lg text-white/10 font-light">
                     / {carrosDisponibles.length}
                   </span>
                 </div>
@@ -290,7 +312,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
               <motion.button
                 onClick={handleStartRace}
                 disabled={!canStartRace}
-                className={`group relative overflow-hidden px-8 py-4 transition-all duration-700 ${
+                className={`group relative overflow-hidden px-6 py-3 lg:px-8 lg:py-4 transition-all duration-700 w-full lg:w-auto ${
                   canStartRace
                     ? "cursor-pointer bg-white text-neutral-900"
                     : "cursor-not-allowed bg-white/[0.02] text-white/15 border border-white/[0.04]"
@@ -298,11 +320,11 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
                 whileHover={canStartRace ? { scale: 1.02 } : {}}
                 whileTap={canStartRace ? { scale: 0.98 } : {}}
               >
-                <span className="relative flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em]">
+                <span className="relative flex items-center justify-center lg:justify-start gap-3 text-xs font-semibold uppercase tracking-[0.2em]">
                   <FiFlag className="text-sm" />
                   Iniciar
                   <FiChevronRight className={`text-sm transition-transform duration-300 ${
-                    canStartRace ? "group-hover:translate-x-1" : ""
+                    canStartRace ? "lg:group-hover:translate-x-1" : ""
                   }`} />
                 </span>
               </motion.button>
@@ -314,31 +336,48 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
             PANEL DERECHO - SELECCIÓN DE CARROS
             ============================================ */}
         <motion.div
-          className="flex-1 min-h-screen p-10 lg:p-14 pl-10"
+          className="flex-1 w-full lg:w-auto min-h-[50vh] lg:min-h-screen p-6 sm:p-8 md:p-10 lg:p-14 lg:pl-10 order-1 lg:order-2"
           initial={{ opacity: 0, x: 60 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
         >
+          {/* BOTÓN VOLVER - VERSIÓN ESCRITORIO */}
+          <motion.button
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            onClick={onBack}
+            className="absolute top-6 right-6 z-50 hidden lg:flex items-center gap-2 group p-3"
+          >
+            <FiArrowLeft className="text-gray-400 text-xl group-hover:text-red-500 transition-colors duration-200" />
+            <div className="relative">
+              <span className="text-sm font-black uppercase tracking-[0.2em] text-gray-400 group-hover:text-red-500 transition-colors duration-200">
+                Volver
+              </span>
+            </div>
+          </motion.button>
+          
           {/* HEADER ELEGANTE */}
-          <div className="flex items-end justify-between mb-10">
+          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-6 lg:mb-10 gap-4 lg:gap-0 pt-0 lg:pt-0">
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.5 }}
+              className="w-full sm:w-auto"
             >
               <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-white tracking-[0.15em] uppercase">
+                <h2 className="text-xl sm:text-2xl lg:text-2xl font-semibold text-white/95 tracking-[0.15em] uppercase">
                   Vehículos
                 </h2>
-                <div className="h-px w-8 sm:w-12 bg-gradient-to-r from-white/20 to-transparent" />
+                <div className="h-px flex-1 sm:flex-none sm:w-8 lg:w-12 bg-gradient-to-r from-white/20 to-transparent" />
               </div>
-              <p className="text-[10px] sm:text-[11px] text-white/30 tracking-[0.2em] uppercase flex items-center gap-2">
+              <p className="text-[11px] text-white/50 tracking-[0.2em] uppercase flex items-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-red-500/60" />
                 Mínimo {MIN_CARS} para continuar
               </p>
             </motion.div>
             
-            {/* SELECT ALL CON BORDE */}
+            {/* SELECT ALL */}
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -347,24 +386,24 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
               className="px-4 py-2 border border-white/[0.06] rounded-sm
                 text-[10px] font-medium uppercase tracking-[0.25em] text-white/25 
                 hover:text-white/60 hover:border-white/15 hover:bg-white/[0.02]
-                transition-all duration-400"
+                transition-all duration-400 w-full sm:w-auto"
             >
               {selectedCars.length === carrosDisponibles.length ? "Limpiar" : "Seleccionar todos"}
             </motion.button>
           </div>
 
           {/* SCROLL CONTAINER */}
-          <div className="relative h-[calc(100vh-200px)]">
-            <div className="absolute top-0 left-0 right-4 h-6 bg-gradient-to-b from-neutral-950 to-transparent z-10 pointer-events-none" />
+          <div className="relative h-[calc(45vh-120px)] lg:h-[calc(85vh-130px)] rounded-lg border border-white/[0.03] overflow-hidden bg-white/[0.005] backdrop-blur-sm">
+            <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-neutral-950 to-transparent z-10 pointer-events-none" />
             
             <div 
-              className="h-full overflow-y-auto pr-4 custom-scrollbar"
+              className="h-full overflow-y-auto pr-1 lg:pr-2 custom-scrollbar"
               style={{
-                maskImage: "linear-gradient(to bottom, transparent 0%, black 1.5%, black 93%, transparent 100%)",
-                WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 1.5%, black 93%, transparent 100%)",
+                maskImage: "linear-gradient(to bottom, transparent 0%, black 2%, black 95%, transparent 100%)",
+                WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 2%, black 95%, transparent 100%)",
               }}
             >
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 py-3 pb-16">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2 p-2 pb-12">
                 <AnimatePresence mode="popLayout">
                   {carrosDisponibles.map((carro, index) => (
                     <CarCard
@@ -379,7 +418,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
               </div>
             </div>
 
-            <div className="absolute bottom-0 left-0 right-4 h-16 bg-gradient-to-t from-neutral-950 to-transparent z-10 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-neutral-950 to-transparent z-10 pointer-events-none" />
           </div>
         </motion.div>
       </div>
@@ -428,20 +467,20 @@ function CarCard({ carro, index, isSelected, onToggle }) {
       <motion.div
         className={`relative rounded-xl overflow-hidden transition-all duration-500
           ${isSelected 
-            ? "bg-white/[0.025] ring-1 ring-red-500/30" 
-            : "bg-white/[0.008] ring-1 ring-white/[0.03] hover:bg-white/[0.018] hover:ring-white/[0.07]"
+            ? "bg-black/40 ring-1 ring-red-500/40 backdrop-blur-sm" 
+            : "bg-black/30 ring-1 ring-white/[0.08] hover:bg-black/40 hover:ring-white/[0.15] backdrop-blur-sm"
           }`}
         whileHover={{ y: -3 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="p-5">
+        <div className="p-4 sm:p-5">
           {/* HEADER */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1 min-w-0">
-              <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-white/15 mb-1.5 truncate">
+              <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-white/40 mb-1.5 truncate">
                 {equipo?.nombre}
               </p>
-              <h3 className="text-[15px] font-semibold text-white/90 truncate tracking-tight">
+              <h3 className="text-[15px] sm:text-[16px] font-semibold text-white/95 truncate tracking-tight">
                 {carro.nombre}
               </h3>
             </div>
@@ -473,7 +512,7 @@ function CarCard({ carro, index, isSelected, onToggle }) {
 
           {/* CONDUCTOR CON PROGRESS BAR */}
           <div className="flex items-center gap-3 mb-5 pb-4 border-b border-white/[0.025]">
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-400
+            <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center transition-all duration-400
               ${isSelected ? "bg-red-500/[0.08]" : "bg-white/[0.015]"}`}
             >
               <FiUser className={`text-sm transition-colors duration-400 ${
@@ -481,14 +520,14 @@ function CarCard({ carro, index, isSelected, onToggle }) {
               }`} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-white/70 truncate mb-1">
+              <p className="text-sm text-white/85 truncate mb-1">
                 {conductor?.nombre}
               </p>
               {/* HABILIDAD CON PROGRESS */}
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-white/25">H</span>
-                <span className={`text-[11px] font-medium transition-colors duration-400 ${
-                  isSelected ? "text-red-400/80" : "text-white/40"
+                <span className="text-[11px] text-white/50 font-medium">H</span>
+                <span className={`text-[12px] font-medium transition-colors duration-400 ${
+                  isSelected ? "text-red-400" : "text-white/70"
                 }`}>
                   {conductor?.habilidad_h}
                 </span>
@@ -507,7 +546,7 @@ function CarCard({ carro, index, isSelected, onToggle }) {
           </div>
 
           {/* STATS CON PROGRESS BARS */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
             <StatItem
               icon={<FiZap />}
               label="POT"
@@ -548,29 +587,29 @@ function CarCard({ carro, index, isSelected, onToggle }) {
 }
 
 // ============================================
-// STAT ITEM CON PROGRESS BAR
+// STAT ITEM CON PROGRESS BAR - VERSIÓN MEJORADA
 // ============================================
 function StatItem({ icon, label, value, maxValue, isSelected, delay }) {
   const percentage = (value / maxValue) * 100;
 
   return (
     <div className="text-center">
-      <div className={`flex items-center justify-center gap-1 mb-1.5 transition-colors duration-400
-        ${isSelected ? "text-white/35" : "text-white/15"}`}
+      <div className={`flex items-center justify-center gap-1.5 mb-2 transition-colors duration-400
+        ${isSelected ? "text-white/60" : "text-white/30"}`}
       >
-        <span className="text-[10px]">{icon}</span>
-        <span className="text-[8px] font-medium uppercase tracking-wider">{label}</span>
+        <span className="text-[11px]">{icon}</span>
+        <span className="text-[9px] font-medium uppercase tracking-wider">{label}</span>
       </div>
-      <p className={`text-lg font-light mb-2 transition-colors duration-400
-        ${isSelected ? "text-white" : "text-white/50"}`}
+      <p className={`text-xl font-light mb-2 transition-colors duration-400
+        ${isSelected ? "text-white" : "text-white/80"}`}
       >
         {value}
       </p>
       {/* PROGRESS BAR SUTIL */}
-      <div className="h-[2px] bg-white/[0.03] rounded-full overflow-hidden mx-auto max-w-[40px]">
+      <div className="h-[2px] bg-white/[0.08] rounded-full overflow-hidden mx-auto max-w-[40px]">
         <motion.div
           className={`h-full rounded-full transition-colors duration-400 ${
-            isSelected ? "bg-red-500/40" : "bg-white/10"
+            isSelected ? "bg-red-500/60" : "bg-white/30"
           }`}
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
