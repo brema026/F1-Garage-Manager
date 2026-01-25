@@ -10,7 +10,7 @@ import { InputWithValidation } from '../../components/common/Validation';
 import onboard01 from "../../assets/circuits/backgroundVideos/onboard-01.mp4";
 import onboard02 from "../../assets/circuits/backgroundVideos/onboard-02.mp4";
 
-export default function CircuitSelection({ onSelect }) {
+export default function CircuitSelection({ onSelect, onShowHistory }) {
   const [createdCircuits, setCreatedCircuits] = useState([]);
   const [circuitName, setCircuitName] = useState("");
   const [distance, setDistance] = useState("");
@@ -336,29 +336,6 @@ export default function CircuitSelection({ onSelect }) {
             </span>
           </motion.button>
 
-          {/* Título */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.7 }}
-            className="mb-8 lg:mb-12 flex flex-col items-center lg:items-start"
-          > 
-            <div className="text-center lg:text-left">
-              <h1 className="text-4xl sm:text-5xl lg:text-4xl font-black uppercase tracking-tight text-white mb-2">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
-                  CREADOR DE
-                </span>
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-red-600 ml-3">
-                  CIRCUITOS
-                </span>
-              </h1>
-              <div className="w-24 h-[2px] bg-gradient-to-r from-red-500/40 via-red-500 to-red-500/40 rounded-full mx-auto lg:mx-0 my-2" />
-              <p className="text-xs uppercase tracking-[0.4em] text-gray-400">
-                CREA TUS PROPIOS CIRCUITOS
-              </p>
-            </div>
-          </motion.div>
-
           {/* Contenido del formulario */}
           <div className="flex-1 flex flex-col justify-center">
             
@@ -522,6 +499,17 @@ export default function CircuitSelection({ onSelect }) {
               </div>
             </motion.div>
           </div>
+          {/* BOTÓN HISTORIAL DE SIMULACIONES */}
+          <motion.button
+            onClick={() => onShowHistory()}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.7, duration: 0.8 }}
+            className="w-full sm:w-auto px-5 py-3 mb-6 rounded-xl flex items-center justify-center gap-3 text-white text-sm font-semibold tracking-wide bg-white/5 backdrop-blur-xl border border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-300 mt-5 sm:mt-0"
+          >
+            <FiHash className="text-lg opacity-80" />
+            <span className="uppercase tracking-wider">Historial de Simulaciones</span>
+          </motion.button>
         </motion.div>
 
         {/* Panel derecho - Lista */}

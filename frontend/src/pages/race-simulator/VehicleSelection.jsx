@@ -11,15 +11,17 @@ import {
   FiChevronRight,
   FiMapPin,
   FiGlobe,
-  FiHash
+  FiHash,
+  FiLoader,
+  FiCheckCircle,
+  FiLock
 } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
 
 // DATA
 import { getCarrosFinalizados } from "../../data/CarSelectionData";
 
 // IMÁGENES DE FONDO ALEATORIAS
-const maxImages = 3;
+const maxImages = 4;
 const randomBackgrounds = Array.from({ length: maxImages }, (_, i) =>
   require(`../../assets/circuits/${i + 1}.webp`)
 );
@@ -30,7 +32,9 @@ const MAX_CARS = 26;
 export default function VehicleSelection({ circuit, onBack, onStartRace }) {
   const [selectedCars, setSelectedCars] = useState([]);
   const [randomBackground, setRandomBackground] = useState(null);
-  const navigate = useNavigate();
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simulationProgress, setSimulationProgress] = useState(0);
+  const [showResultsButton, setShowResultsButton] = useState(false);
 
   const carrosDisponibles = useMemo(() => getCarrosFinalizados(), []);
   
@@ -44,6 +48,8 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
   }, []);
 
   const toggleCarSelection = (carId) => {
+    if (isSimulating) return; // No permitir cambios durante simulación
+    
     setSelectedCars((prev) => {
       if (prev.includes(carId)) {
         return prev.filter((id) => id !== carId);
@@ -54,6 +60,8 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
   };
 
   const selectAll = () => {
+    if (isSimulating) return; // No permitir cambios durante simulación
+    
     if (selectedCars.length === carrosDisponibles.length) {
       setSelectedCars([]);
     } else {
@@ -61,15 +69,50 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
     }
   };
 
-  const canStartRace = selectedCars.length >= MIN_CARS;
+  const canStartRace = selectedCars.length >= MIN_CARS && !isSimulating;
 
   const handleStartRace = () => {
     if (canStartRace) {
       const selectedCarsData = carrosDisponibles.filter((c) =>
         selectedCars.includes(c.id_carro)
       );
-      onStartRace(selectedCarsData);
+      
+      // Iniciar simulación
+      setIsSimulating(true);
+      setShowResultsButton(false);
+      setSimulationProgress(0);
+      
+      // Simular proceso
+      const startTime = Date.now();
+      const duration = 2000;
+      
+      const updateSimulation = () => {
+        const elapsed = Date.now() - startTime;
+        const newProgress = Math.min(100, (elapsed / duration) * 100);
+        setSimulationProgress(newProgress);
+        
+        // Mostrar botón de resultados al 100%
+        if (elapsed >= duration) {
+          setShowResultsButton(true);
+        }
+        
+        if (elapsed < duration) {
+          requestAnimationFrame(updateSimulation);
+        } else {
+          setShowResultsButton(true);
+        }
+      };
+      
+      requestAnimationFrame(updateSimulation);
     }
+  };
+
+  const handleSeeResults = () => {
+    // Llamar a onStartRace para navegar a resultados
+    const selectedCarsData = carrosDisponibles.filter((c) =>
+      selectedCars.includes(c.id_carro)
+    );
+    onStartRace(selectedCarsData);
   };
 
   return (
@@ -80,14 +123,31 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5 }}
-        onClick={onBack}
-        className="absolute top-6 left-6 z-50 flex items-center gap-2 group p-3 lg:hidden"
+        onClick={isSimulating ? undefined : onBack}
+        disabled={isSimulating}
+        className={`absolute top-6 left-6 z-50 flex items-center gap-2 group p-3 lg:hidden ${isSimulating ? 'cursor-not-allowed' : ''}`}
       >
-        <FiArrowLeft className="text-gray-400 text-xl group-hover:text-red-500 transition-colors duration-200" />
+        <div className={`relative transition-all duration-300 ${isSimulating ? 'opacity-40' : 'opacity-100'}`}>
+          <FiArrowLeft className={`text-xl transition-colors duration-200 ${isSimulating ? 'text-gray-500' : 'text-gray-400 group-hover:text-red-500'}`} />
+          {isSimulating && (
+            <div className="absolute -top-1 -right-1">
+              <FiLock className="text-[8px] text-red-500/70" />
+            </div>
+          )}
+        </div>
         <div className="relative">
-          <span className="text-sm font-black uppercase tracking-[0.2em] text-gray-400 group-hover:text-red-500 transition-colors duration-200">
+          <span className={`text-sm font-black uppercase tracking-[0.2em] transition-colors duration-200 ${
+            isSimulating ? 'text-gray-500' : 'text-gray-400 group-hover:text-red-500'
+          }`}>
             Volver
           </span>
+          {isSimulating && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute -bottom-1 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-red-500/30 to-transparent"
+            />
+          )}
         </div>
       </motion.button>
       
@@ -174,7 +234,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
           {/* CONTENIDO CENTRAL */}
           <div className="flex-1 flex flex-col justify-center">
             
-            {/* LOCATION TAG - SIMPLIFICADO */}
+            {/* LOCATION TAG */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -185,8 +245,8 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
                 <FiGlobe className="text-red-400/70 text-[10px]" />
               </div>
               <div className="flex items-center gap-2 text-white/80">
-                <FiMapPin className="text-[10px] lg:text-[11px]" />
-                <span className="text-xs font-medium tracking-widest uppercase">
+                <FiMapPin className="text-[10px] lg:text-[15px]" />
+                <span className="text-xl font-medium tracking-widest uppercase">
                   Custom Circuit
                 </span>
               </div>
@@ -212,7 +272,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
               <div className="text-center lg:text-left">
                 <div className="flex items-center gap-2 mb-2">
                   <FiMapPin className="text-white/40 text-sm" />
-                  <p className="text-[11px] font-medium uppercase tracking-[0.3em] lg:tracking-[0.4em] text-white/80">
+                  <p className="text-[15px] font-medium uppercase tracking-[0.3em] lg:tracking-[0.4em] text-white/80">
                     Distancia
                   </p>
                 </div>
@@ -225,7 +285,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
               <div className="text-center lg:text-left">
                 <div className="flex items-center gap-2 mb-2">
                   <FiHash className="text-white/40 text-sm" />
-                  <p className="text-[11px] font-medium uppercase tracking-[0.3em] lg:tracking-[0.4em] text-white/80">
+                  <p className="text-[15px] font-medium uppercase tracking-[0.3em] lg:tracking-[0.4em] text-white/80">
                     Curvas
                   </p>
                 </div>
@@ -236,7 +296,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
             </motion.div>
           </div>
 
-          {/* FOOTER */}
+          {/* FOOTER CON BOTÓN DE SIMULACIÓN/RESULTADOS */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -246,7 +306,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
             <div className="flex flex-col lg:flex-row items-center lg:items-end justify-between gap-6 lg:gap-0">
               {/* CONTADOR */}
               <div className="w-full lg:w-auto text-center lg:text-left">
-                <p className="text-[11px] font-medium uppercase tracking-[0.3em] lg:tracking-[0.4em] text-white/80 mb-2">
+                <p className="text-[16px] font-medium uppercase tracking-[0.3em] lg:tracking-[0.4em] text-white/80 mb-2">
                   Seleccionados
                 </p>
                 <div className="flex items-baseline justify-center lg:justify-start gap-2">
@@ -267,26 +327,98 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
                 </div>
               </div>
 
-              {/* BOTÓN INICIAR */}
-              <motion.button
-                onClick={handleStartRace}
-                disabled={!canStartRace}
-                className={`group relative overflow-hidden px-6 py-3 lg:px-8 lg:py-4 transition-all duration-700 w-full lg:w-auto ${
-                  canStartRace
-                    ? "cursor-pointer bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white"
-                    : "cursor-not-allowed bg-white/[0.02] text-white/15 border border-white/[0.04]"
-                }`}
-                whileHover={canStartRace ? { scale: 1.02 } : {}}
-                whileTap={canStartRace ? { scale: 0.98 } : {}}
-              >
-                <span className="relative flex items-center justify-center lg:justify-start gap-3 text-xs font-semibold uppercase tracking-[0.2em]">
-                  <FiFlag className="text-sm" />
-                  Iniciar Simulación
-                  <FiChevronRight className={`text-sm transition-transform duration-300 ${
-                    canStartRace ? "lg:group-hover:translate-x-1" : ""
-                  }`} />
-                </span>
-              </motion.button>
+              {/* BOTÓN DE SIMULACIÓN/RESULTADOS */}
+              <div className="w-full lg:w-auto min-w-[280px] max-w-[280px] flex-shrink-0">
+                {/* BARRA DE PROGRESO SUTIL */}
+                {isSimulating && (
+                  <div className="h-[2px] bg-white/[0.08] rounded-full overflow-hidden mb-2">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                      initial={{ width: "0%" }}
+                      animate={{ width: `${simulationProgress}%` }}
+                      transition={{ duration: 0.1 }}
+                    />
+                  </div>
+                )}
+                
+                {/* BOTÓN CON ESTADO */}
+                <AnimatePresence mode="wait">
+                  {!isSimulating ? (
+                    <motion.button
+                      key="start"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      onClick={handleStartRace}
+                      disabled={!canStartRace}
+                      className={`group relative overflow-hidden w-full px-6 py-4 transition-all duration-700 flex items-center justify-center ${
+                        canStartRace
+                          ? "cursor-pointer bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white"
+                          : "cursor-not-allowed bg-white/[0.02] text-white/15 border border-white/[0.04]"
+                      }`}
+                      whileHover={canStartRace ? { scale: 1.02 } : {}}
+                      whileTap={canStartRace ? { scale: 0.98 } : {}}
+                    >
+                      <span className="flex items-center justify-center gap-3 text-sm font-semibold uppercase tracking-[0.2em] whitespace-nowrap">
+                        <FiFlag className="text-sm" />
+                        Iniciar Simulación
+                        <FiChevronRight className={`text-sm transition-transform duration-300 ${
+                          canStartRace ? "lg:group-hover:translate-x-1" : ""
+                        }`} />
+                      </span>
+                    </motion.button>
+                  ) : !showResultsButton ? (
+                    <motion.button
+                      key="simulating"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="w-full px-6 py-4 bg-gradient-to-r from-emerald-600/90 to-emerald-700/90 text-white flex items-center justify-center gap-3 disabled:cursor-not-allowed"
+                      disabled
+                    >
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      >
+                        <FiLoader className="text-sm" />
+                      </motion.div>
+                      <span className="text-sm font-semibold uppercase tracking-[0.2em] whitespace-nowrap">
+                        Simulando...
+                      </span>
+                    </motion.button>
+                  ) : (
+                    <motion.button
+                      key="results"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ 
+                        opacity: 1, 
+                        scale: 1,
+                        scale: [1, 1.02, 1] // Pulso leve
+                      }}
+                      transition={{
+                        scale: {
+                          duration: 1.5,
+                          repeat: Infinity,
+                          repeatType: "reverse"
+                        }
+                      }}
+                      onClick={handleSeeResults}
+                      className="w-full px-6 py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white flex items-center justify-center gap-3 group relative overflow-hidden"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {/* Efecto brillo al pasar el ratón */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                      
+                      <FiCheckCircle className="text-sm group-hover:scale-110 transition-transform duration-300 relative z-10" />
+                      <span className="text-sm font-semibold uppercase tracking-[0.2em] whitespace-nowrap relative z-10">
+                        Ver Resultados
+                      </span>
+                      <FiChevronRight className="text-sm transition-transform duration-300 group-hover:translate-x-1 relative z-10" />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </motion.div>
         </motion.div>
@@ -303,14 +435,31 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            onClick={onBack}
-            className="absolute top-6 right-6 z-50 hidden lg:flex items-center gap-2 group p-3"
+            onClick={isSimulating ? undefined : onBack}
+            disabled={isSimulating}
+            className={`absolute top-6 right-6 z-50 hidden lg:flex items-center gap-2 group p-3 ${isSimulating ? 'cursor-not-allowed' : ''}`}
           >
-            <FiArrowLeft className="text-gray-400 text-xl group-hover:text-red-500 transition-colors duration-200" />
+            <div className={`relative transition-all duration-300 ${isSimulating ? 'opacity-40' : 'opacity-100'}`}>
+              <FiArrowLeft className={`text-xl transition-colors duration-200 ${isSimulating ? 'text-gray-500' : 'text-gray-400 group-hover:text-red-500'}`} />
+              {isSimulating && (
+                <div className="absolute -top-1 -right-1">
+                  <FiLock className="text-[8px] text-red-500/70" />
+                </div>
+              )}
+            </div>
             <div className="relative">
-              <span className="text-sm font-black uppercase tracking-[0.2em] text-gray-400 group-hover:text-red-500 transition-colors duration-200">
+              <span className={`text-sm font-black uppercase tracking-[0.2em] transition-colors duration-200 ${
+                isSimulating ? 'text-gray-500' : 'text-gray-400 group-hover:text-red-500'
+              }`}>
                 Volver
               </span>
+              {isSimulating && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="absolute -bottom-1 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-red-500/30 to-transparent"
+                />
+              )}
             </div>
           </motion.button>
           
@@ -328,7 +477,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
                 </h2>
                 <div className="h-px flex-1 sm:flex-none sm:w-8 lg:w-12 bg-gradient-to-r from-white/20 to-transparent" />
               </div>
-              <p className="text-[11px] text-white/50 tracking-[0.2em] uppercase flex items-center gap-2">
+              <p className="text-[15px] text-white/50 tracking-[0.2em] uppercase flex items-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-red-500/60" />
                 Mínimo {MIN_CARS} para continuar
               </p>
@@ -340,10 +489,12 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.7, duration: 0.5 }}
               onClick={selectAll}
-              className="px-4 py-2 border border-white/[0.06] rounded-sm
-                text-[10px] font-medium uppercase tracking-[0.25em] text-white/25 
-                hover:text-white/60 hover:border-white/15 hover:bg-white/[0.02]
-                transition-all duration-400 w-full sm:w-auto"
+              disabled={isSimulating}
+              className={`px-4 py-2 border rounded-sm text-[13px] font-medium uppercase tracking-[0.25em] transition-all duration-400 w-full sm:w-auto ${
+                isSimulating 
+                  ? 'border-white/[0.03] text-white/10 cursor-not-allowed bg-white/[0.01]' 
+                  : 'border-white/[0.06] text-white/25 hover:text-white/60 hover:border-white/15 hover:bg-white/[0.02]'
+              }`}
             >
               {selectedCars.length === carrosDisponibles.length ? "Limpiar" : "Seleccionar todos"}
             </motion.button>
@@ -369,6 +520,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
                       index={index}
                       isSelected={selectedCars.includes(carro.id_carro)}
                       onToggle={() => toggleCarSelection(carro.id_carro)}
+                      disabled={isSimulating}
                     />
                   ))}
                 </AnimatePresence>
@@ -401,7 +553,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace }) {
 }
 
 // CAR CARD
-function CarCard({ carro, index, isSelected, onToggle }) {
+function CarCard({ carro, index, isSelected, onToggle, disabled = false }) {
   const equipo = carro.equipo;
   const conductor = carro.conductor;
 
@@ -416,26 +568,26 @@ function CarCard({ carro, index, isSelected, onToggle }) {
         duration: 0.5,
         ease: [0.22, 1, 0.36, 1]
       }}
-      onClick={onToggle}
-      className="group relative cursor-pointer"
+      onClick={disabled ? undefined : onToggle}
+      className={`group relative ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
     >
       <motion.div
         className={`relative rounded-xl overflow-hidden transition-all duration-500
           ${isSelected 
             ? "bg-black/40 ring-1 ring-red-500/40 backdrop-blur-sm" 
             : "bg-black/30 ring-1 ring-white/[0.08] hover:bg-black/40 hover:ring-white/[0.15] backdrop-blur-sm"
-          }`}
-        whileHover={{ y: -3 }}
+          } ${disabled ? 'hover:ring-white/[0.08]' : ''}`}
+        whileHover={disabled ? {} : { y: -3 }}
         transition={{ duration: 0.3 }}
       >
         <div className="p-4 sm:p-5">
           {/* HEADER */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-white/40 mb-1.5 truncate">
+              <p className="text-[13px] font-medium uppercase tracking-[0.2em] text-white/40 mb-1.5 truncate">
                 {equipo?.nombre}
               </p>
-              <h3 className="text-[15px] sm:text-[16px] font-semibold text-white/95 truncate tracking-tight">
+              <h3 className="text-[15px] sm:text-[19px] font-semibold text-white/95 truncate tracking-tight">
                 {carro.nombre}
               </h3>
             </div>
@@ -447,8 +599,8 @@ function CarCard({ carro, index, isSelected, onToggle }) {
                 ${isSelected 
                   ? "bg-red-500/90 border-red-500/90" 
                   : "border-white/[0.06] group-hover:border-white/15"
-                }`}
-              whileTap={{ scale: 0.85 }}
+                } ${disabled ? 'group-hover:border-white/[0.06]' : ''}`}
+              whileTap={disabled ? {} : { scale: 0.85 }}
             >
               <AnimatePresence>
                 {isSelected && (
@@ -475,13 +627,13 @@ function CarCard({ carro, index, isSelected, onToggle }) {
               }`} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-white/85 truncate mb-1">
+              <p className="text-[16px] text-white/85 truncate mb-1">
                 {conductor?.nombre}
               </p>
               {/* HABILIDAD CON PROGRESS */}
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-white/50 font-medium">H</span>
-                <span className={`text-[12px] font-medium transition-colors duration-400 ${
+                <span className="text-[13px] text-white/50 font-medium">H</span>
+                <span className={`text-[14px] font-medium transition-colors duration-400 ${
                   isSelected ? "text-red-400" : "text-white/70"
                 }`}>
                   {conductor?.habilidad_h}
@@ -541,7 +693,7 @@ function CarCard({ carro, index, isSelected, onToggle }) {
   );
 }
 
-// STAT ITEM CON PROGRESS BAR
+// STAT ITEM CON PROGRESS BAR (sin cambios)
 function StatItem({ icon, label, value, maxValue, isSelected, delay }) {
   const percentage = (value / maxValue) * 100;
 
@@ -550,8 +702,8 @@ function StatItem({ icon, label, value, maxValue, isSelected, delay }) {
       <div className={`flex items-center justify-center gap-1.5 mb-2 transition-colors duration-400
         ${isSelected ? "text-white/60" : "text-white/30"}`}
       >
-        <span className="text-[11px]">{icon}</span>
-        <span className="text-[9px] font-medium uppercase tracking-wider">{label}</span>
+        <span className="text-[13px]">{icon}</span>
+        <span className="text-[11px] font-medium uppercase tracking-wider">{label}</span>
       </div>
       <p className={`text-xl font-light mb-2 transition-colors duration-400
         ${isSelected ? "text-white" : "text-white/80"}`}
