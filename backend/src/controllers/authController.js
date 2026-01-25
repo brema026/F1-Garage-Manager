@@ -39,7 +39,7 @@ const authController = {
                 httpOnly: true, // Mitigate XSS attacks
                 secure: process.env.NODE_ENV === 'production', // Only HTTPs in production
                 sameSite: 'Lax', // Mitigate CSRF attacks
-                maxAge: parseInt(process.env.SESSION_TIMEOUT) || 3600000 // Default to 1 hour if not set
+                maxAge: parseInt(process.env.SESSION_TIMEOUT) || 86400000 // Default to 1 day if not set
             });
 
             // Send success response with user info

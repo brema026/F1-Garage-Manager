@@ -112,3 +112,16 @@ export const isCarComplete = (setup) => {
     setup.id_conductor
   );
 };
+
+// Función para formatear tiempo en formato MM:SS.sss
+export const formatTime = (seconds) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = (seconds % 60).toFixed(3);
+  return `${mins}:${secs.padStart(6, '0')}`;
+};
+
+// Función para formatear diferencia
+export const formatDiff = (diff) => {
+  if (diff === 0) return "0.000";
+  return `+${diff.toFixed(3)}`;
+};

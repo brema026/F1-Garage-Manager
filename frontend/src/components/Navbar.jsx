@@ -87,6 +87,74 @@ function Navbar({ setView, setIsLoggedIn, user }) {
     }
   };
 
+  const SimulationButton = ({ isMobile }) => (
+    <button
+      onClick={() => {
+        navigate('/simulation');
+        if (isMobile) setMobileMenuOpen(false);
+      }}
+      className={`group relative flex items-center justify-center transition-all duration-1000 bg-transparent
+        ${isMobile ? "w-full px-6 py-3 text-left" : ""}`}
+    >
+      <style>
+        {`
+          @keyframes lineBreath {
+            0%, 100% { width: 30%; opacity: 0.1; }
+            50% { width: 80%; opacity: 0.4; }
+          }
+          .animate-line-breath {
+            animation: lineBreath 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+          }
+        `}
+      </style>
+
+      <span className={`relative z-10 flex items-center tracking-[-0.08em] uppercase italic
+        ${isMobile 
+          ? "text-xs font-medium tracking-widest uppercase" 
+          : "text-[1.5rem] font-[1000]"}`}>
+        
+        <span className="relative inline-block overflow-visible">
+          <span className="text-slate-300 transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:text-[#E10600] group-hover:drop-shadow-[0_0_15px_rgba(225,6,0,0.5)]">
+            Simulación
+          </span>
+
+          {!isMobile && (
+            <span className="absolute inset-0 text-[#E10600] opacity-0 group-hover:opacity-20 translate-x-0 translate-y-0 group-hover:translate-x-1.5 group-hover:-translate-y-1.5 transition-all duration-[1.2s] ease-[cubic-bezier(0.23,1,0.32,1)] pointer-events-none">
+              Simulación
+            </span>
+          )}
+
+          {!isMobile && (
+            <div className="absolute -bottom-1 left-0 w-full h-[1px] flex justify-center items-center">
+              <div className="h-full bg-gradient-to-r from-transparent via-red-600 to-transparent animate-line-breath group-hover:opacity-0 transition-opacity duration-500"></div>
+              
+              <div className="absolute inset-0 flex justify-center">
+                <div className="w-0 group-hover:w-full h-full bg-gradient-to-r from-transparent via-[#E10600] to-transparent transition-all duration-[1.1s] ease-[cubic-bezier(0.23,1,0.32,1)]"></div>
+              </div>
+            </div>
+          )}
+        </span>
+
+        <div className="relative ml-3 flex items-center">
+          <svg 
+            className={`transition-all duration-[1s] ease-[cubic-bezier(0.23,1,0.32,1)]
+              ${isMobile 
+                ? "w-9 h-9 text-[#E10600]" 
+                : "w-11 h-11 text-slate-500 group-hover:text-[#E10600] group-hover:scale-110 group-hover:rotate-[10deg]"}`} 
+            fill="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
+          
+          {!isMobile && (
+            <div className="absolute top-0 -right-1 w-2 h-2 bg-white rounded-full opacity-0 group-hover:opacity-100 animate-pulse transition-all duration-700 shadow-[0_0_10px_#fff]"></div>
+          )}
+        </div>
+      </span>
+    </button>
+  );
+
   return (
     <nav className="relative">
       {/* Background with glass effect */}
@@ -95,7 +163,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
       <div className="relative mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
         
         {/* Mobile Layout */}
-        <div className="lg:hidden flex flex-col items-center gap-4">
+        <div className="min-[1500px]:hidden flex flex-col items-center gap-4">
           {/* Logo - Centered */}
           <div className="flex-shrink-0 group cursor-pointer" onClick={() => window.location.reload()}>
             <img 
@@ -122,7 +190,9 @@ function Navbar({ setView, setIsLoggedIn, user }) {
 
               {/* Funciones Dropdown Menu */}
               {mobileMenuOpen && (
-                <div className="absolute left-1/2 -translate-x-1/2 mt-3 w-56 rounded-xl bg-slate-950/95 backdrop-blur-2xl border border-slate-800/50 shadow-2xl shadow-black/60 py-2 z-50 overflow-hidden animate-in fade-in slide-in-from-top-3 duration-300">
+                <div className="absolute left-1/2 -translate-x-1/2 mt-3 w-56 rounded-xl bg-slate-950/95 backdrop-blur-2xl border border-slate-800/50 shadow-2xl py-2 z-50 overflow-hidden">
+                  {role === "admin" && <SimulationButton isMobile={true} />}
+                  <div className="h-px bg-slate-800/50 my-1"></div>
                   {navItems.map((item) => (
                     <button
                       key={item.id}
@@ -188,7 +258,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
         </div>
 
         {/* Desktop Layout */}
-        <div className="hidden lg:grid grid-cols-3 items-center px-4">
+        <div className="hidden min-[1500px]:flex items-center justify-between px-4 lg:px-8 xl:px-12 2xl:px-16">
           
           {/* Logo */}
           <div className="flex justify-start">
@@ -203,9 +273,6 @@ function Navbar({ setView, setIsLoggedIn, user }) {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-6 xl:gap-12 flex-1 justify-center">
-
-            {/* Vertical Divider */}
-            <div className="hidden lg:block w-px h-8 bg-gradient-to-b from-transparent via-red-600/60 to-transparent mr-8"></div>
 
               {role === 'driver' && (
                 <div className="animate-in fade-in zoom-in duration-700">
@@ -240,9 +307,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
                 )}
               </button>
             ))}
-            
-            <div className="hidden lg:block w-px h-8 bg-gradient-to-b from-transparent via-red-600/60 to-transparent ml-8"></div>
-
+            {role === "admin" && <SimulationButton isMobile={false} />}
           </div>
 
           {/* Right Section */}

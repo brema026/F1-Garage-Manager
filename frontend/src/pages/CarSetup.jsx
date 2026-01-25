@@ -358,14 +358,23 @@ export function CarSetup( { user } ) {
                     </div>
 
                     {/* Imagen del Auto */}
-                    <div className="flex items-center justify-center">
+                    <div className="flex items-center justify-center lg:justify-end">
                       <div className="relative">
-                        <div className="absolute inset-0 bg-gradient-to-b from-primary/30 to-transparent rounded-3xl blur-3xl"></div>
-                        <img
-                          src={carImage}
-                          alt="F1 Car"
-                          className="relative w-[500px] h-[500px] object-contain drop-shadow-2xl filter brightness-110 ml-20"
-                        />
+                        <div className="absolute -inset-6 sm:-inset-8 md:-inset-10 lg:-inset-12 bg-gradient-to-br from-primary/25 via-transparent to-accent/15 rounded-full blur-xl sm:blur-2xl md:blur-3xl -z-10"></div>
+                        <div className="relative w-full h-full">
+                          <img
+                            src={carImage}
+                            alt="F1 Car"
+                            className="w-auto h-[240px] xs:h-[280px] sm:h-[320px] md:h-[360px] lg:h-[400px] xl:h-[440px] 2xl:h-[500px]
+                                    object-contain 
+                                    drop-shadow-[0_0_20px_rgba(225,6,0,0.2)] 
+                                    filter brightness-105 contrast-110 
+                                    transition-all duration-500 
+                                    hover:scale-105 hover:drop-shadow-[0_0_40px_rgba(225,6,0,0.4)]
+                                    transform translateX(5%) lg:translateX(15%) xl:translateX(20%)"
+                            loading="lazy"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

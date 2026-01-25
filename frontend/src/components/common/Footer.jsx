@@ -35,9 +35,6 @@ function Footer() {
               © 2026 · TEC · All Rights Reserved
             </p>
           </div>
-
-          {/* Divider - Hidden on mobile */}
-          <div className="hidden sm:block w-px h-6 bg-gradient-to-b from-transparent via-red-600/40 to-transparent"></div>
         </div>
       </div>
 
