@@ -102,8 +102,21 @@ const partController = {
         const result = await partModel.buyPart(id_equipo, id_pieza, cantidad);
         return res.status(200).json(result.recordset?.[0] || { message: 'OK' });
     } catch (e) {
-        logger.error(`Error buying part: ${e.message}`);
-        res.status(500).json({ error: e.message });
+    logger.error(`Error buying part: ${e.message}`);
+
+    const msg = (e.message || '').toLowerCase();
+
+    if (msg.includes('presupuesto insuficiente')) {
+        return res.status(400).json({ error: 'Presupuesto insuficiente' });
+    }
+    if (msg.includes('stock insuficiente')) {
+        return res.status(409).json({ error: 'Stock insuficiente' });
+    }
+    if (msg.includes('la pieza no existe') || msg.includes('cantidad debe ser mayor')) {
+        return res.status(400).json({ error: e.message });
+    }
+
+    return res.status(500).json({ error: e.message });
     }
     },
 
@@ -153,6 +166,23 @@ const partController = {
       return res.status(500).json({ error: e.message });
     }
   },
+
+  async getBalance(req, res) {
+  try {
+    const { id_equipo } = req.params;
+
+    if (String(req.user.id_equipo) !== String(id_equipo) && req.user.rol !== 'Admin') {
+      return res.status(403).json({ error: 'No puedes ver finanzas de otro equipo' });
+    }
+
+    const result = await partModel.getTeamBalance(Number(id_equipo));
+    return res.status(200).json(result.recordset?.[0] || {});
+  } catch (e) {
+    logger.error(`Error fetching balance: ${e.message}`);
+    return res.status(500).json({ error: e.message });
+  }
+}
+
 
 
 

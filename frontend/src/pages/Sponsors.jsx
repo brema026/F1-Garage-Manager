@@ -19,8 +19,8 @@ export function Sponsors({ user }) {
   // Aportes (tabla)
   const [contributions, setContributions] = useState([]);
 
-  // Presupuesto del equipo seleccionado
-  const [teamBudget, setTeamBudget] = useState(null);
+  // Presupuesto / Finanzas del equipo seleccionado
+  const [teamFinance, setTeamFinance] = useState(null);
 
   const hasSponsors = sponsors.length > 0;
   const [fieldErrors, setFieldErrors] = useState({});
@@ -154,11 +154,11 @@ export function Sponsors({ user }) {
   const cargarPresupuestoEquipo = async (idEquipo) => {
     if (!idEquipo) return;
     try {
-      const res = await api.get(`/sponsors/budget/team/${idEquipo}`);
-      setTeamBudget(res.data || null);
+      const res = await api.get(`/sponsors/balance/team/${idEquipo}`);
+      setTeamFinance(res.data || null);
     } catch (e) {
-      console.error('Error cargando presupuesto', e);
-      setTeamBudget(null);
+      console.error('Error cargando finanzas', e);
+      setTeamFinance(null);
     }
   };
 
@@ -171,11 +171,11 @@ export function Sponsors({ user }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Cuando cambia sponsor o equipos, cargar aportes/presupuesto del equipo "activo"
+  // Cuando cambia sponsor o equipos, cargar aportes/finanzas del equipo "activo"
   useEffect(() => {
     if (!selectedSponsor) {
       setContributions([]);
-      setTeamBudget(null);
+      setTeamFinance(null);
       return;
     }
 
@@ -185,12 +185,11 @@ export function Sponsors({ user }) {
         : Number(aporteFormData.id_equipo || teams?.[0]?.id_equipo || 0);
 
     if (defaultTeamId) {
-      // asegura que el select quede seteado
       setAporteFormData((p) => ({ ...p, id_equipo: p.id_equipo || defaultTeamId }));
       cargarAportesPorEquipo(defaultTeamId);
       cargarPresupuestoEquipo(defaultTeamId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSponsor, teams]);
 
   // ==========================
@@ -489,9 +488,13 @@ export function Sponsors({ user }) {
                     <div>
                       <div className="flex items-center gap-3 mb-2">
                         <div className="w-3 h-3 bg-primary rounded-full"></div>
-                        <span className="text-xs font-bold text-primary uppercase tracking-widest">PATROCINADOR ACTUAL</span>
+                        <span className="text-xs font-bold text-primary uppercase tracking-widest">
+                          PATROCINADOR ACTUAL
+                        </span>
                       </div>
-                      <h2 className="text-3xl md:text-4xl font-black text-white mb-2">{selectedSponsor?.nombre}</h2>
+                      <h2 className="text-3xl md:text-4xl font-black text-white mb-2">
+                        {selectedSponsor?.nombre}
+                      </h2>
                       <p className="text-light/60 text-sm">{selectedSponsor?.email || 'sin email'}</p>
                     </div>
 
@@ -506,22 +509,29 @@ export function Sponsors({ user }) {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  {/* === CARDS FINANZAS === */}
+                  <div className="grid grid-cols-3 gap-3">
                     <div className="bg-[#1a1f3a]/50 border border-light/10 rounded-xl p-4 backdrop-blur">
-                      <div className="text-xs text-light/50 mb-2 uppercase font-bold tracking-wider">Total Aportes (equipo)</div>
+                      <div className="text-xs text-light/50 mb-2 uppercase font-bold tracking-wider">
+                        Total Aportes (equipo)
+                      </div>
                       <div className="text-2xl md:text-3xl font-black text-accent">
                         {formatCurrency(totalAportesSeleccionado)}
                       </div>
                     </div>
+
                     <div className="bg-[#1a1f3a]/50 border border-light/10 rounded-xl p-4 backdrop-blur">
-                      <div className="text-xs text-light/50 mb-2 uppercase font-bold tracking-wider">Presupuesto Equipo</div>
+                      <div className="text-xs text-light/50 mb-2 uppercase font-bold tracking-wider">
+                        Presupuesto (Aportes)
+                      </div>
                       <div className="text-2xl md:text-3xl font-black text-blue-400">
-                        {formatCurrency(Number(teamBudget?.presupuesto ?? teamBudget?.budget ?? 0))}
+                        {formatCurrency(Number(teamFinance?.saldo ?? 0))}
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+
 
               {/* Aportes */}
               <div className="bg-[#0f1419]/50 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">

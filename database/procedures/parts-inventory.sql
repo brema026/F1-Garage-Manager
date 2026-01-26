@@ -59,6 +59,7 @@ GO
 
 -- =========================================
 -- Comprar pieza para un equipo (transacción)
+-- (Cambio mínimo: validar contra SALDO disponible = aportes - compras)
 -- =========================================
 CREATE OR ALTER PROCEDURE dbo.sp_comprar_pieza_equipo
     @id_equipo INT,
@@ -70,7 +71,7 @@ BEGIN
 
     DECLARE @precio DECIMAL(12,2);
     DECLARE @stock INT;
-    DECLARE @presupuesto DECIMAL(12,2);
+    DECLARE @presupuesto DECIMAL(12,2);  -- aquí lo usamos como "saldo disponible"
     DECLARE @total DECIMAL(12,2);
 
     -- Validar cantidad positiva
@@ -102,12 +103,20 @@ BEGIN
         RETURN;
     END;
 
-    -- Calcular presupuesto del equipo
-    SELECT @presupuesto = ISNULL(SUM(monto), 0)
-    FROM dbo.aporte
-    WHERE id_equipo = @id_equipo;
-
     SET @total = @precio * @cantidad;
+
+    -- Calcular SALDO disponible del equipo:
+    -- Regla: el presupuesto se calcula solo con aportes (SUM(aporte.monto))
+    -- Para comprar: validar contra aportes - compras acumuladas (compra_equipo.total)
+    SELECT
+        @presupuesto =
+            ISNULL(SUM(a.monto), 0) - ISNULL((
+                SELECT SUM(ce.total)
+                FROM dbo.compra_equipo ce
+                WHERE ce.id_equipo = @id_equipo
+            ), 0)
+    FROM dbo.aporte a
+    WHERE a.id_equipo = @id_equipo;
 
     -- Validar presupuesto suficiente
     IF @presupuesto < @total
@@ -160,6 +169,7 @@ BEGIN
     END CATCH
 END;
 GO
+
 
 -- =========================================
 -- Eliminar pieza del inventario de equipo
@@ -539,5 +549,28 @@ BEGIN
     SELECT 
         'Pieza registrada correctamente' AS resultado,
         @id_pieza AS id_pieza;
+END;
+GO
+
+-- =========================================
+-- Manejo de Finanzaz o Saldo por equipo
+-- =========================================
+CREATE OR ALTER PROCEDURE dbo.sp_finanzas_equipo
+  @id_equipo INT
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  DECLARE @presupuesto_total DECIMAL(12,2) =
+    (SELECT ISNULL(SUM(monto),0) FROM dbo.aporte WHERE id_equipo = @id_equipo);
+
+  DECLARE @gasto_total DECIMAL(12,2) =
+    (SELECT ISNULL(SUM(total),0) FROM dbo.compra_equipo WHERE id_equipo = @id_equipo);
+
+  SELECT
+    @id_equipo AS id_equipo,
+    @presupuesto_total AS presupuesto_total,
+    @gasto_total AS gasto_total,
+    (@presupuesto_total - @gasto_total) AS saldo_disponible;
 END;
 GO

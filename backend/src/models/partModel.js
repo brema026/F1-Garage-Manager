@@ -56,6 +56,13 @@ async deletePart(id_pieza) {
     .execute('sp_eliminar_pieza_completa');
 },
 
+async getTeamBalance(id_equipo) {
+  const pool = await getPool();
+  return pool.request()
+    .input('id_equipo', sql.Int, id_equipo)
+    .execute('sp_finanzas_equipo'); // o el SP que definan para esto
+}
+
 
 };
 

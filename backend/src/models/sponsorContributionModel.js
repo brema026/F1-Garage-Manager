@@ -19,13 +19,18 @@ const sponsorContributionModel = {
   // ---------- Contributions ----------
   async createContribution(data) {
     const pool = await getPool();
-    return pool.request()
+    const req = pool.request()
       .input('id_equipo', sql.Int, data.id_equipo)
       .input('id_patrocinador', sql.Int, data.id_patrocinador)
-      // si tu SP NO tiene @fecha, quitá esta línea
       .input('monto', sql.Decimal(12, 2), data.monto)
-      .input('descripcion', sql.NVarChar(300), data.descripcion ?? null)
-      .execute('dbo.sp_registrar_aporte');
+      .input('descripcion', sql.NVarChar(300), data.descripcion ?? null);
+
+    // SOLO si el SP tiene @fecha
+    if (data.fecha) {
+      req.input('fecha', sql.Date, data.fecha);
+    }
+
+    return req.execute('dbo.sp_registrar_aporte');
   },
 
   async listContributionsByTeam(id_equipo) {
