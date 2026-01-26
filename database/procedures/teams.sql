@@ -92,8 +92,11 @@ END;
 GO
 
 -- =========================================
--- Listar equipos según rol del usuario (con finanzas)
--- Devuelve: presupuesto_total, gasto_total, saldo_disponible
+-- Listar equipos según rol del usuario (con finanzas + patrocinadores únicos)
+-- Devuelve:
+--   - conductores_datos (JSON)
+--   - presupuesto_total, gasto_total, saldo_disponible
+--   - patrocinadores_datos (JSON)  -> patrocinadores únicos con total_aportado y ultimo_aporte
 -- =========================================
 CREATE OR ALTER PROCEDURE dbo.sp_listar_equipos
     @id_usuario INT,
@@ -148,7 +151,23 @@ BEGIN
                 FROM dbo.compra_equipo ce
                 WHERE ce.id_equipo = e.id_equipo
             ), 0)
-        AS DECIMAL(12,2)) AS saldo_disponible
+        AS DECIMAL(12,2)) AS saldo_disponible,
+
+        -- ========= PATROCINADORES (ÚNICOS) =========
+        -- Lista única de patrocinadores que han aportado a este equipo (con métricas)
+        (SELECT
+            p.id_patrocinador,
+            p.nombre,
+            p.email,
+            CAST(SUM(a.monto) AS DECIMAL(12,2)) AS total_aportado,
+            MAX(a.fecha) AS ultimo_aporte
+         FROM dbo.aporte a
+         INNER JOIN dbo.patrocinador p
+            ON p.id_patrocinador = a.id_patrocinador
+         WHERE a.id_equipo = e.id_equipo
+         GROUP BY p.id_patrocinador, p.nombre, p.email
+         ORDER BY SUM(a.monto) DESC
+         FOR JSON PATH) AS patrocinadores_datos
 
     FROM dbo.equipo e
     LEFT JOIN dbo.usuario u ON e.id_equipo = u.id_equipo
@@ -160,3 +179,4 @@ BEGIN
         e.nombre;
 END;
 GO
+

@@ -499,33 +499,48 @@ export function Teams({ user }) {
                         Patrocinadores
                       </h3>
                     </div>
+
                     <div className="p-4 space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
-                      {selectedTeam.aportes?.map((aporte) => (
+                      {selectedTeam.patrocinadores?.map((p) => (
                         <div
-                          key={aporte.id_aporte}
+                          key={p.id_patrocinador}
                           className="p-3 rounded-lg bg-[#1a1f3a]/40 border border-light/5 hover:border-accent/30 transition-all"
                         >
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex-1">
                               <div className="font-bold text-white text-sm md:text-base">
-                                {aporte.nombre_patrocinador}
+                                {p.nombre}
                               </div>
-                              <div className="text-xs text-light/50 mt-1">{aporte.descripcion}</div>
+
+                              <div className="text-xs text-light/50 mt-1">
+                                {p.email || 'Sin email'}
+                              </div>
+
+                              <div className="text-[10px] text-light/40 mt-1">
+                                Último aporte:{' '}
+                                {p.ultimo_aporte ? String(p.ultimo_aporte).slice(0, 10) : '—'}
+                              </div>
                             </div>
+
                             <div className="text-accent font-black text-sm md:text-base ml-2">
-                              ${((aporte.monto || 0) / 1000).toFixed(0)}k
+                              ${((Number(p.total_aportado || 0)) / 1000).toFixed(0)}k
                             </div>
                           </div>
+
+                          {/* Barra visual opcional basada en total aportado */}
                           <div className="mt-2 w-full h-1 bg-[#1a1f3a] rounded-full overflow-hidden">
                             <div
                               className="h-full bg-gradient-to-r from-accent to-yellow-500"
-                              style={{ width: `${((aporte.monto || 0) / 800000) * 100}%` }}
+                              style={{
+                                width: `${Math.min(((Number(p.total_aportado || 0)) / 800000) * 100, 100)}%`,
+                              }}
                             />
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
+
                 </div>
               )}
 

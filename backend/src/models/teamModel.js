@@ -3,49 +3,62 @@ const sql = require('mssql');
 
 // Model for team-related database operations
 const teamModel = {
-  // Get all teams, with access control based on user role
-  // IMPORTANTE:
-  // - El SP dbo.sp_listar_equipos ahora debe traer (si ya lo agregaste) columnas como:
-  //   presupuesto_total, gasto_total, saldo_disponible (o los nombres que definiste).
-  // - Aquí solo normalizamos y dejamos esos campos listos para el frontend.
-  async getAllTeams(id_usuario, rol) {
-    const pool = await getPool();
+ // Get all teams, with access control based on user role
+// IMPORTANTE:
+// - El SP dbo.sp_listar_equipos ahora debe traer:
+//   presupuesto_total, gasto_total, saldo_disponible
+//   conductores_datos (JSON)
+//   patrocinadores_datos (JSON)
+async getAllTeams(id_usuario, rol) {
+  const pool = await getPool();
 
-    const result = await pool.request()
-      .input('id_usuario', sql.Int, Number(id_usuario))
-      .input('rol', sql.NVarChar(50), String(rol))
-      .execute('dbo.sp_listar_equipos');
+  const result = await pool.request()
+    .input('id_usuario', sql.Int, Number(id_usuario))
+    .input('rol', sql.NVarChar(50), String(rol))
+    .execute('dbo.sp_listar_equipos');
 
-    const equiposProcesados = (result.recordset || []).map((team) => {
-      let conductores = [];
-      try {
-        conductores = team.conductores_datos ? JSON.parse(team.conductores_datos) : [];
-      } catch (_) {
-        conductores = [];
-      }
+  const equiposProcesados = (result.recordset || []).map((team) => {
+    let conductores = [];
+    let patrocinadores = [];
 
-      return {
-        ...team,
+    // Parse conductores
+    try {
+      conductores = team.conductores_datos ? JSON.parse(team.conductores_datos) : [];
+    } catch (_) {
+      conductores = [];
+    }
 
-        // normalización extra (por si acaso)
-        id_equipo: Number(team.id_equipo),
-        total_conductores: Number(team.total_conductores ?? team.totalConductores ?? 0),
+    // Parse patrocinadores únicos
+    try {
+      patrocinadores = team.patrocinadores_datos ? JSON.parse(team.patrocinadores_datos) : [];
+    } catch (_) {
+      patrocinadores = [];
+    }
 
-        // JSON parse
-        conductores,
+    return {
+      ...team,
 
-        // Finanzas (si vienen del SP)
-        presupuesto_total: Number(team.presupuesto_total ?? 0),
-        gasto_total: Number(team.gasto_total ?? 0),
-        saldo_disponible: Number(team.saldo_disponible ?? 0),
+      // Normalización base
+      id_equipo: Number(team.id_equipo),
+      total_conductores: Number(team.total_conductores ?? 0),
 
-        // compat: si tu UI todavía usa "saldo" en algún lado
-        saldo: Number(team.saldo ?? team.saldo_disponible ?? 0)
-      };
-    });
+      // Relaciones JSON
+      conductores,
+      patrocinadores,
 
-    return { recordset: equiposProcesados };
-  },
+      // Finanzas
+      presupuesto_total: Number(team.presupuesto_total ?? 0),
+      gasto_total: Number(team.gasto_total ?? 0),
+      saldo_disponible: Number(team.saldo_disponible ?? 0),
+
+      // Compatibilidad con código viejo
+      saldo: Number(team.saldo ?? team.saldo_disponible ?? 0)
+    };
+  });
+
+  return { recordset: equiposProcesados };
+},
+
 
   // Create a new team
   async createTeam(nombre) {
