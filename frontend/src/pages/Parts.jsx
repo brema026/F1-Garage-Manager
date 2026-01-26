@@ -509,14 +509,15 @@ export function Parts({ user }) {
                       </h2>
                       <p className="text-light/60 text-sm">{selectedPart?.categoria}</p>
                     </div>
-
-                    <button
-                      onClick={handleEditPart}
-                      className="flex items-center gap-2 bg-primary/20 hover:bg-primary/40 border border-primary/40 text-primary px-4 py-2 rounded-lg transition-all font-bold text-sm md:text-base"
-                    >
-                      <FiEdit />
-                      AGREGAR STOCK
-                    </button>
+                    {userRole !== 'engineer' && (
+                      <button
+                        onClick={handleEditPart}
+                        className="flex items-center gap-2 bg-primary/20 hover:bg-primary/40 border border-primary/40 text-primary px-4 py-2 rounded-lg transition-all font-bold text-sm md:text-base"
+                      >
+                        <FiEdit />
+                        AGREGAR STOCK
+                      </button>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-3 gap-3 md:gap-4">
@@ -580,13 +581,15 @@ export function Parts({ user }) {
                   COMPRAR
                 </button>
 
-                <button
-                  onClick={handleDeleteClick}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 font-bold hover:bg-red-500/20 transition-all"
-                >
-                  <FiTrash2 />
-                  ELIMINAR
-                </button>
+                {userRole !== 'engineer' && (
+                  <button
+                    onClick={handleDeleteClick}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 font-bold hover:bg-red-500/20 transition-all"
+                  >
+                    <FiTrash2 />
+                    ELIMINAR
+                  </button>
+                )}
               </div>
             </div>
           </div>
