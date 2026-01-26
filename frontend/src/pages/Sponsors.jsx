@@ -498,15 +498,7 @@ export function Sponsors({ user }) {
                       <p className="text-light/60 text-sm">{selectedSponsor?.email || 'sin email'}</p>
                     </div>
 
-                    {userRole !== 'engineer' && (
-                      <button
-                        onClick={handleEditSponsor}
-                        className="flex items-center gap-2 bg-primary/20 hover:bg-primary/40 border border-primary/40 text-primary px-4 py-2 rounded-lg transition-all font-bold text-sm md:text-base"
-                      >
-                        <FiEdit />
-                        EDITAR
-                      </button>
-                    )}
+                    
                   </div>
 
                   {/* === CARDS FINANZAS === */}
