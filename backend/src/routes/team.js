@@ -34,5 +34,12 @@ router.post('/', protect, teamController.createTeam);
  */
 router.put('/:id', protect, teamController.updateTeam);
 
+/**
+ * GET /api/teams/:id/finance
+ * Get finance info for a team (Admin or same-team Engineer)
+ */
+router.get('/:id/finance', protect, teamController.getTeamFinance);
+
+
 // Export router for use in main app.js
 module.exports = router;

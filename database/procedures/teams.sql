@@ -92,7 +92,8 @@ END;
 GO
 
 -- =========================================
--- Listar equipos según rol del usuario
+-- Listar equipos según rol del usuario (con finanzas)
+-- Devuelve: presupuesto_total, gasto_total, saldo_disponible
 -- =========================================
 CREATE OR ALTER PROCEDURE dbo.sp_listar_equipos
     @id_usuario INT,
@@ -104,9 +105,12 @@ BEGIN
     SELECT 
         e.id_equipo, 
         e.nombre,
+
         -- Conteo de conductores del equipo
-        (SELECT COUNT(*) FROM dbo.conductor c WHERE c.id_equipo = e.id_equipo) AS total_conductores,
-        
+        (SELECT COUNT(*) 
+         FROM dbo.conductor c 
+         WHERE c.id_equipo = e.id_equipo) AS total_conductores,
+
         -- Conductores en formato JSON para el frontend
         (SELECT 
             c.id_conductor,
@@ -114,13 +118,45 @@ BEGIN
             c.habilidad_h
          FROM dbo.conductor c 
          WHERE c.id_equipo = e.id_equipo
-         FOR JSON PATH) AS conductores_datos
-         
+         FOR JSON PATH) AS conductores_datos,
+
+        -- ========= FINANZAS =========
+        -- Total aportado al equipo
+        CAST(ISNULL((
+            SELECT SUM(a.monto)
+            FROM dbo.aporte a
+            WHERE a.id_equipo = e.id_equipo
+        ), 0) AS DECIMAL(12,2)) AS presupuesto_total,
+
+        -- Total gastado por compras del equipo
+        CAST(ISNULL((
+            SELECT SUM(ce.total)
+            FROM dbo.compra_equipo ce
+            WHERE ce.id_equipo = e.id_equipo
+        ), 0) AS DECIMAL(12,2)) AS gasto_total,
+
+        -- Saldo disponible = aportes - compras
+        CAST(
+            ISNULL((
+                SELECT SUM(a.monto)
+                FROM dbo.aporte a
+                WHERE a.id_equipo = e.id_equipo
+            ), 0)
+            -
+            ISNULL((
+                SELECT SUM(ce.total)
+                FROM dbo.compra_equipo ce
+                WHERE ce.id_equipo = e.id_equipo
+            ), 0)
+        AS DECIMAL(12,2)) AS saldo_disponible
+
     FROM dbo.equipo e
     LEFT JOIN dbo.usuario u ON e.id_equipo = u.id_equipo
     WHERE 
         -- Admin ve todos, otros solo su equipo
         (LOWER(@rol) = 'admin') OR (u.id_usuario = @id_usuario)
-    GROUP BY e.id_equipo, e.nombre;
+    GROUP BY 
+        e.id_equipo, 
+        e.nombre;
 END;
 GO
