@@ -27,9 +27,20 @@ app.use((req, res, next) => {
 
 // Application middlewares
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3002', // Allow requests from frontend
-  credentials: true // Allow cookies in cross-origin requests
+  origin: function (origin, callback) {
+    // Permitir apps móviles, Postman o requests sin origin
+    if (!origin) return callback(null, true);
+
+    // Permitir cualquier IP local (192.168.x.x)
+    if (origin.includes('localhost') || origin.includes('192.168.')) {
+      return callback(null, true);
+    }
+
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
 }));
+
 app.use(bodyParser.json()); // Parse JSON request bodies
 app.use(bodyParser.urlencoded({ extended: true })); // Parse URL-encoded request bodies
 
