@@ -26,17 +26,40 @@ app.use((req, res, next) => {
 });
 
 // Application middlewares
+// Application middlewares
 app.use(cors({
   origin: function (origin, callback) {
-    // Permitir apps móviles, Postman o requests sin origin
+    // Permitir Postman/curl/requests sin Origin
     if (!origin) return callback(null, true);
 
-    // Permitir cualquier IP local (192.168.x.x)
-    if (origin.includes('localhost') || origin.includes('192.168.')) {
-      return callback(null, true);
-    }
+    try {
+      const url = new URL(origin);
 
-    callback(new Error('Not allowed by CORS'));
+      const hostname = url.hostname; // ej: localhost, 192.168.1.40
+      const port = url.port || (url.protocol === 'https:' ? '443' : '80');
+
+      // ✅ Puerto permitido del frontend (ajusta si usas otro)
+      const FRONTEND_PORT = '3002';
+
+      // ✅ Solo hosts de red local (LAN)
+      const isLocalHost =
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1';
+
+      const isPrivateIp =
+        /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||                  // 192.168.x.x
+        /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||               // 10.x.x.x
+        /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname);    // 172.16–31.x.x
+
+      // ✅ Permite localhost o IP privada + puerto correcto
+      if ((isLocalHost || isPrivateIp) && port === FRONTEND_PORT) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`Not allowed by CORS: ${origin}`));
+    } catch (e) {
+      return callback(new Error(`Invalid Origin: ${origin}`));
+    }
   },
   credentials: true
 }));
