@@ -410,13 +410,15 @@ export function Parts({ user }) {
             {/* Sidebar */}
             <div className="lg:col-span-1">
               <div className="sticky top-8 space-y-4">
-                <button
-                  onClick={handleCreatePart}
-                  className="w-full bg-gradient-to-r from-primary to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg shadow-primary/30 hover:shadow-primary/50 flex items-center justify-center gap-2 md:text-sm"
-                >
-                  <FiPlus className="text-lg" />
-                  NUEVA PARTE
-                </button>
+                {userRole !== 'engineer' && (
+                  <button
+                    onClick={handleCreatePart}
+                    className="w-full bg-gradient-to-r from-primary to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg shadow-primary/30 hover:shadow-primary/50 flex items-center justify-center gap-2 md:text-sm"
+                  >
+                    <FiPlus className="text-lg" />
+                    NUEVA PARTE
+                  </button>
+                )}
 
                 {/* Filtros */}
                 <div className="bg-[#0f1419]/80 border border-light/5 backdrop-blur rounded-2xl overflow-hidden p-4 space-y-4">
