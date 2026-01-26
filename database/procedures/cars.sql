@@ -336,3 +336,23 @@ BEGIN
   SELECT 'Carro finalizado' AS resultado, @setup_id AS setup_id;
 END;
 GO
+
+-- =========================================
+-- Listar Carros por Equipos
+-- =========================================
+CREATE OR ALTER PROCEDURE dbo.sp_carros_por_equipo
+  @id_equipo INT
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  SELECT
+    id_carro,
+    id_equipo,
+    nombre,
+    finalizado
+  FROM dbo.carro
+  WHERE id_equipo = @id_equipo
+  ORDER BY id_carro ASC;
+END;
+GO
