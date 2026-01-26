@@ -70,9 +70,21 @@ export function CarSetup({ user }) {
   }
 
   async function fetchInventoryOptions(category_id) {
+  // Engineer: su propio equipo (del token)
+  if (userRole === 'engineer') {
     const r = await api.get(`/car-setup/inventory/category/${category_id}`);
     return Array.isArray(r.data) ? r.data : [];
   }
+
+  // Admin: usa el equipo seleccionado en UI
+  if (userRole === 'admin') {
+    if (!selectedTeamId) return [];
+    const r = await api.get(`/car-setup/team/${selectedTeamId}/inventory/category/${category_id}`);
+    return Array.isArray(r.data) ? r.data : [];
+  }
+
+  return [];
+}
 
   // ===== Carga inicial (teams + select team) =====
   useEffect(() => {
@@ -230,22 +242,23 @@ export function CarSetup({ user }) {
 
   // ===== Acciones =====
   async function toggleCategory(category_id) {
-    setError('');
-    const next = expandedCategoryId === category_id ? null : category_id;
-    setExpandedCategoryId(next);
+  setError('');
+  const next = expandedCategoryId === category_id ? null : category_id;
+  setExpandedCategoryId(next);
 
-    if (next && !optionsByCategory[next]) {
-      try {
-        setLoadingOptions(true);
-        const opts = await fetchInventoryOptions(next);
-        setOptionsByCategory((prev) => ({ ...prev, [next]: opts }));
-      } catch (e) {
-        setError(e?.response?.data?.error || e.message || 'Error cargando inventario');
-      } finally {
-        setLoadingOptions(false);
-      }
+  if (next && !optionsByCategory[next]) {
+    try {
+      setLoadingOptions(true);
+      const opts = await fetchInventoryOptions(next);
+      setOptionsByCategory((prev) => ({ ...prev, [next]: opts }));
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message || 'Error cargando inventario');
+    } finally {
+      setLoadingOptions(false);
     }
   }
+}
+
 
   async function handleGenerateCars() {
     try {
@@ -288,7 +301,12 @@ export function CarSetup({ user }) {
 
       setSaving(true);
 
-      await api.put(`/car-setup/car/${selectedCarId}/install`, { part_id: Number(part_id) });
+      await api.put(
+        `/car-setup/car/${selectedCarId}/install`,
+        userRole === 'admin'
+          ? { part_id: Number(part_id), id_equipo: Number(selectedTeamId) }
+          : { part_id: Number(part_id) }
+      );
 
       const data = await fetchCarSetup(Number(selectedCarId));
       setSetupSummary(data?.summary || null);
@@ -312,7 +330,13 @@ export function CarSetup({ user }) {
       if (!allRequirementsMet) return;
 
       setFinalizing(true);
-      await api.post(`/car-setup/car/${selectedCarId}/finalize`);
+      await api.post(
+        `/car-setup/car/${selectedCarId}/finalize`,
+        userRole === 'admin'
+          ? { id_equipo: Number(selectedTeamId) }
+          : {}
+      );
+
 
       setSuccessMessage('¡Carro finalizado exitosamente!');
       setShowSuccessModal(true);
@@ -412,7 +436,8 @@ return (
             <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto px-3 py-3 custom-scrollbar">
               {teams.map((t) => {
                 const active = Number(selectedTeamId) === Number(t.id_equipo);
-                const locked = userRole === 'engineer' && Number(user?.id_equipo) !== Number(t.id_equipo);
+                const locked =
+                  userRole === 'engineer' && Number(user?.id_equipo) !== Number(t.id_equipo);
 
                 return (
                   <button
@@ -426,8 +451,12 @@ return (
                     } ${locked ? 'opacity-40 cursor-not-allowed' : ''}`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-sm md:text-base text-white truncate">{t.nombre}</span>
-                      <FiChevronRight className={`text-primary transition-transform ${active ? 'translate-x-1' : ''}`} />
+                      <span className="font-bold text-sm md:text-base text-white truncate">
+                        {t.nombre}
+                      </span>
+                      <FiChevronRight
+                        className={`text-primary transition-transform ${active ? 'translate-x-1' : ''}`}
+                      />
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-light/50">{locked ? 'Solo tu equipo' : 'Equipo'}</span>
@@ -470,7 +499,9 @@ return (
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-white">{car.nombre || `Carro ${car.id_carro}`}</span>
+                      <span className="font-bold text-white">
+                        {car.nombre || `Carro ${car.id_carro}`}
+                      </span>
                       {car.finalizado ? (
                         <div className="flex items-center gap-1 bg-green-500/20 px-2 py-1 rounded-full">
                           <FiCheckCircle className="text-green-400 text-sm" />
@@ -483,7 +514,9 @@ return (
                         </div>
                       )}
                     </div>
-                    <span className="text-xs text-light/60">{car.finalizado ? 'Finalizado' : 'En armado'}</span>
+                    <span className="text-xs text-light/60">
+                      {car.finalizado ? 'Finalizado' : 'En armado'}
+                    </span>
                   </button>
                 ))
               )}
@@ -496,7 +529,8 @@ return (
               <div>
                 <div className="text-xs text-light/50 uppercase font-bold">Progreso</div>
                 <div className="text-2xl font-black text-white mt-1">
-                  {completedItems}<span className="text-light/50 text-lg">/{REQUIRED_CATEGORIES_COUNT}</span>
+                  {completedItems}
+                  <span className="text-light/50 text-lg">/{REQUIRED_CATEGORIES_COUNT}</span>
                 </div>
               </div>
               <div className="text-right">
@@ -520,7 +554,9 @@ return (
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/15 via-[#0f1419] to-transparent border border-primary/30 p-12 backdrop-blur-xl flex items-center justify-center min-h-96">
             <div className="relative z-10 text-center">
               <FiFlag className="text-primary/40 text-8xl mx-auto mb-4" />
-              <h2 className="text-3xl md:text-4xl font-black text-light/50 mb-2">Sin Auto Seleccionado</h2>
+              <h2 className="text-3xl md:text-4xl font-black text-light/50 mb-2">
+                Sin Auto Seleccionado
+              </h2>
               <p className="text-light/40 text-sm md:text-base max-w-2xl">
                 Selecciona un carro para comenzar a configurarlo
               </p>
@@ -595,7 +631,9 @@ return (
                   >
                     <div className="flex items-center gap-3 flex-1">
                       <span className="w-2 h-2 rounded-full bg-primary"></span>
-                      <h3 className="text-sm font-bold text-light/70 uppercase tracking-wider">{cat.categoria}</h3>
+                      <h3 className="text-sm font-bold text-light/70 uppercase tracking-wider">
+                        {cat.categoria}
+                      </h3>
 
                       {selectedPartId && (
                         <div className="flex items-center gap-2 ml-3 px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full">
@@ -605,7 +643,9 @@ return (
                       )}
                     </div>
 
-                    <FiChevronDown className={`transition-transform text-light/50 ${isExpanded ? 'rotate-180' : ''}`} />
+                    <FiChevronDown
+                      className={`transition-transform text-light/50 ${isExpanded ? 'rotate-180' : ''}`}
+                    />
                   </button>
 
                   {isExpanded && (
@@ -640,35 +680,52 @@ return (
                         </p>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-72 overflow-y-auto custom-scrollbar">
-                          {(optionsByCategory[categoryId] || []).map((part) => (
-                            <button
-                              key={part.id_pieza}
-                              onClick={() => handleInstallPart(part.id_pieza)}
-                              disabled={saving || finalizing || !!selectedCar?.finalizado}
-                              className={`text-left p-3 rounded-lg transition-all group ${
-                                selectedPartId === Number(part.id_pieza)
-                                  ? 'bg-primary/20 border border-primary'
-                                  : 'border border-light/10 bg-[#1a1f3a]/50 hover:border-primary/40 hover:bg-[#1a1f3a]'
-                              } ${saving || finalizing || selectedCar?.finalizado ? 'opacity-60 cursor-not-allowed' : ''}`}
-                            >
-                              <div className="flex items-start justify-between mb-2">
-                                <span className="text-sm font-bold text-light/80 group-hover:text-white">{part.nombre}</span>
-                                <span className="text-xs text-light/50 font-bold">x{part.cantidad}</span>
-                              </div>
+                          {(optionsByCategory[categoryId] || []).map((part) => {
+                            const nombre = part?.nombre ?? part?.parte ?? part?.pieza ?? 'Parte';
+                            const qty = Number(part?.cantidad ?? 0);
 
-                              <div className="flex gap-2 text-xs">
-                                <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded font-bold">
-                                  P:{safeNum(part.p)}
-                                </span>
-                                <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded font-bold">
-                                  A:{safeNum(part.a)}
-                                </span>
-                                <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded font-bold">
-                                  M:{safeNum(part.m)}
-                                </span>
-                              </div>
-                            </button>
-                          ))}
+                            const p = part?.p ?? part?.P ?? part?.rendimiento_p ?? 0;
+                            const a = part?.a ?? part?.A ?? part?.rendimiento_a ?? 0;
+                            const m = part?.m ?? part?.M ?? part?.rendimiento_m ?? 0;
+
+                            const noStock = qty <= 0;
+
+                            return (
+                              <button
+                                key={part.id_pieza}
+                                onClick={() => handleInstallPart(part.id_pieza)}
+                                disabled={saving || finalizing || !!selectedCar?.finalizado || noStock}
+                                className={`text-left p-3 rounded-lg transition-all group ${
+                                  selectedPartId === Number(part.id_pieza)
+                                    ? 'bg-primary/20 border border-primary'
+                                    : 'border border-light/10 bg-[#1a1f3a]/50 hover:border-primary/40 hover:bg-[#1a1f3a]'
+                                } ${saving || finalizing || selectedCar?.finalizado || noStock ? 'opacity-60 cursor-not-allowed' : ''}`}
+                              >
+                                <div className="flex items-start justify-between mb-2">
+                                  <span className="text-sm font-bold text-light/80 group-hover:text-white">
+                                    {nombre}
+                                  </span>
+                                  <span className="text-xs text-light/50 font-bold">x{qty}</span>
+                                </div>
+
+                                <div className="flex gap-2 text-xs">
+                                  <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded font-bold">
+                                    P:{safeNum(p)}
+                                  </span>
+                                  <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded font-bold">
+                                    A:{safeNum(a)}
+                                  </span>
+                                  <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded font-bold">
+                                    M:{safeNum(m)}
+                                  </span>
+                                </div>
+
+                                {noStock && (
+                                  <div className="mt-2 text-xs text-red-300 font-bold">Sin stock</div>
+                                )}
+                              </button>
+                            );
+                          })}
 
                           {(optionsByCategory[categoryId] || []).length === 0 && !loadingOptions && (
                             <div className="text-light/50 text-sm p-3">
