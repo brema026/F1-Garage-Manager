@@ -535,7 +535,9 @@ return (
               </div>
               <div className="text-right">
                 <FiTrendingUp className="text-accent text-3xl mb-1" />
-                <div className="text-2xl font-black text-accent">{Math.round(progressPercentage)}%</div>
+                <div className="text-2xl font-black text-accent">
+                  {Math.round(progressPercentage)}%
+                </div>
               </div>
             </div>
             <div className="w-full h-3 bg-[#1a1f3a] rounded-full overflow-hidden">
@@ -694,12 +696,13 @@ return (
                               <button
                                 key={part.id_pieza}
                                 onClick={() => handleInstallPart(part.id_pieza)}
-                                disabled={saving || finalizing || !!selectedCar?.finalizado || noStock}
+                                // ✅ AQUÍ está el cambio: ya NO bloquea por selectedCar.finalizado
+                                disabled={saving || finalizing || noStock}
                                 className={`text-left p-3 rounded-lg transition-all group ${
                                   selectedPartId === Number(part.id_pieza)
                                     ? 'bg-primary/20 border border-primary'
                                     : 'border border-light/10 bg-[#1a1f3a]/50 hover:border-primary/40 hover:bg-[#1a1f3a]'
-                                } ${saving || finalizing || selectedCar?.finalizado || noStock ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                } ${saving || finalizing || noStock ? 'opacity-60 cursor-not-allowed' : ''}`}
                               >
                                 <div className="flex items-start justify-between mb-2">
                                   <span className="text-sm font-bold text-light/80 group-hover:text-white">
@@ -759,6 +762,7 @@ return (
 
             <button
               onClick={handleFinalizeCar}
+              // (si querés que finalizado no bloquee el botón, quitá "|| !!selectedCar.finalizado")
               disabled={!allRequirementsMet || finalizing || saving || !!selectedCar.finalizado}
               className={`w-full py-4 px-6 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 text-lg ${
                 allRequirementsMet && !selectedCar.finalizado
@@ -776,7 +780,7 @@ return (
           </div>
         )}
 
-        {/* ===== NUEVO: Generar Carros (abajo del todo) ===== */}
+        {/* Generar Carros (abajo del todo) */}
         <div className="pt-6">
           <div className="bg-[#0f1419]/50 border border-light/5 backdrop-blur rounded-2xl p-6">
             <div className="flex items-center justify-between gap-4 mb-2">
