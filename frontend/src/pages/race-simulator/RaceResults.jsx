@@ -450,17 +450,15 @@ function ResultRowDesktop({ result, isExpanded, onToggleExpand, onGrafanaClick }
               {/* SEGUNDA SECCIÓN: BOTÓN VER GRAFANA */}
               <div className="p-4 border-b border-white/[0.04]">
                 <div className="flex items-center justify-center">
-                  <motion.button
-                    onClick={onGrafanaClick}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-200 backdrop-blur-md bg-gradient-to-r from-orange-900/20 to-yellow-800/10 text-orange-300 border-orange-800/30 hover:bg--900/30 hover:border-orange-700/50 hover:text-orange-200"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                  <button
+                    onClick={() => window.open('http://localhost:3003/d/adv5dh8', '_blank')}
+                    className="flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-200 backdrop-blur-md bg-gradient-to-r from-orange-900/20 to-yellow-800/10 text-orange-300 border-orange-800/30 hover:bg-orange-900/30 hover:border-orange-700/50 hover:text-orange-200"
                   >
                     <FiBarChart2 className="text-sm" />
                     <span className="text-[13px] font-medium uppercase tracking-[0.15em]">
                       VER GRAFANA
                     </span>
-                  </motion.button>
+                  </button>
                 </div>
                 <p className="text-center text-[10px] text-gray-400 mt-2 uppercase tracking-[0.2em]">
                   Análisis detallado de telemetría

@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: f1_garage_grafana
+    ports:
+      - "3004:3000"  # Cambia el puerto si 3004 está ocupado
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_INSTALL_PLUGINS=grafana-simple-json-datasource,grafana-clock-panel,marcusolsson-dynamictext-panel
+      - GF_FEATURE_TOGGLES_ENABLE=publicDashboards
+    volumes:
+      - ./grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    restart: unless-stopped
+    networks:
+      - f1-network
+
+networks:
+  f1-network:
+    driver: bridge
