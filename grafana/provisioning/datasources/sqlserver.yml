@@ -1,0 +1,19 @@
+apiVersion: 1
+
+datasources:
+  - name: F1_Garage_SQL_Server
+    type: mssql
+    access: proxy
+    url: host.docker.internal:1433
+    database: f1_garage_tec
+    user: f1_app_user
+    secureJsonData:
+      password: 'F1Garage!2025'
+    jsonData:
+      sslmode: 'disable'
+      encrypt: 'false'
+      maxOpenConns: 100
+      maxIdleConns: 100
+      connMaxLifetime: 14400
+    editable: true
+    isDefault: true

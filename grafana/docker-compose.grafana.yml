@@ -5,11 +5,12 @@ services:
     image: grafana/grafana:latest
     container_name: f1_garage_grafana
     ports:
-      - "3004:3000"  # Cambia el puerto si 3004 está ocupado
+      - "3004:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_INSTALL_PLUGINS=grafana-simple-json-datasource,grafana-clock-panel,marcusolsson-dynamictext-panel
+      # Agregamos el plugin de SQL Server
+      - GF_INSTALL_PLUGINS=grafana-simple-json-datasource,grafana-clock-panel,marcusolsson-dynamictext-panel,frser-sqlite-datasource,grafana-mssql-datasource
       - GF_FEATURE_TOGGLES_ENABLE=publicDashboards
     volumes:
       - ./grafana-data:/var/lib/grafana
@@ -17,6 +18,9 @@ services:
     restart: unless-stopped
     networks:
       - f1-network
+    # Agregamos extra_hosts para conectar a SQL Server local
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 networks:
   f1-network:
