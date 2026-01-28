@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import Logo from '../assets/logo/logo.png';
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
-
 
 function Navbar({ setView, setIsLoggedIn, user }) {
   // State management
@@ -10,30 +9,13 @@ function Navbar({ setView, setIsLoggedIn, user }) {
   const [activeView, setActiveView] = useState("teams");
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const profileRef = useRef(null);
-  const mobileMenuRef = useRef(null);
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (profileOpen && profileRef.current && !profileRef.current.contains(event.target)) {
-        setProfileOpen(false);
-      }
-
-      if (mobileMenuOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
-        setMobileMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [profileOpen, mobileMenuOpen]);
 
   // Handle navigation click
   const handleNavClick = (view) => {
     setView(view);
     setActiveView(view);
     setMobileMenuOpen(false);
+    setProfileOpen(false);
   };
 
   const role = user?.rol?.toLowerCase();
@@ -78,9 +60,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
       await api.post('/auth/logout');
       setIsLoggedIn(false);
       navigate('/login');
-    }
-
-    catch (e) {
+    } catch (e) {
       console.error('Error during logout:', e);
       setIsLoggedIn(false);
       navigate('/login');
@@ -111,7 +91,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
       <span className={`relative z-10 flex items-center tracking-[-0.08em] uppercase italic
         ${isMobile 
           ? "text-xs font-medium tracking-widest uppercase" 
-          : "text-[1.5rem] font-[1000]"}`}>
+          : "text-[1.2rem] font-[1000]"}`}>
         
         <span className="relative inline-block overflow-visible">
           <span className="text-slate-300 transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:text-[#E10600] group-hover:drop-shadow-[0_0_15px_rgba(225,6,0,0.5)]">
@@ -134,26 +114,16 @@ function Navbar({ setView, setIsLoggedIn, user }) {
             </div>
           )}
         </span>
-
-        <div className="relative ml-3 flex items-center">
-          <svg 
-            className={`transition-all duration-[1s] ease-[cubic-bezier(0.23,1,0.32,1)]
-              ${isMobile 
-                ? "w-9 h-9 text-[#E10600]" 
-                : "w-11 h-11 text-slate-500 group-hover:text-[#E10600] group-hover:scale-110 group-hover:rotate-[10deg]"}`} 
-            fill="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-          </svg>
-          
-          {!isMobile && (
-            <div className="absolute top-0 -right-1 w-2 h-2 bg-white rounded-full opacity-0 group-hover:opacity-100 animate-pulse transition-all duration-700 shadow-[0_0_10px_#fff]"></div>
-          )}
-        </div>
       </span>
     </button>
   );
+
+  // Función para abrir perfil
+  const handleOpenProfile = () => {
+    setView("profile");
+    setProfileOpen(false);
+    setMobileMenuOpen(false);
+  };
 
   return (
     <nav className="relative">
@@ -163,7 +133,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
       <div className="relative mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
         
         {/* Mobile Layout */}
-        <div className="min-[1500px]:hidden flex flex-col items-center gap-4">
+        <div className="min-[1300px]:hidden flex flex-col items-center gap-4">
           {/* Logo - Centered */}
           <div className="flex-shrink-0 group cursor-pointer" onClick={() => window.location.reload()}>
             <img 
@@ -177,9 +147,12 @@ function Navbar({ setView, setIsLoggedIn, user }) {
           <div className="flex items-center gap-4">
             
             {/* Menu Button */}
-            <div className="relative" ref={mobileMenuRef}>
+            <div className="relative">
               <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                onClick={() => {
+                  setMobileMenuOpen(!mobileMenuOpen);
+                  setProfileOpen(false);
+                }}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-900/20 hover:bg-slate-900/30 transition-all duration-300 group border border-slate-700/30"
               >
                 <svg className="w-5 h-5 text-red-500 group-hover:text-red-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -211,9 +184,12 @@ function Navbar({ setView, setIsLoggedIn, user }) {
             </div>
 
             {/* Profile Dropdown Button - Mobile */}
-            <div className="relative" ref={profileRef}>
+            <div className="relative">
               <button
-                onClick={() => setProfileOpen(!profileOpen)}
+                onClick={() => {
+                  setProfileOpen(!profileOpen);
+                  setMobileMenuOpen(false);
+                }}
                 className="flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all duration-300 group hover:bg-slate-900/30 active:bg-slate-900/50 border border-slate-700/30"
               >
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-600/90 to-red-700 flex items-center justify-center shadow-lg opacity-85 group-hover:opacity-100 transition-opacity duration-300">
@@ -233,11 +209,14 @@ function Navbar({ setView, setIsLoggedIn, user }) {
 
               {/* Profile Dropdown Menu - Mobile */}
               {profileOpen && (
-                <div className="absolute right-1/2 translate-x-1/2 mt-3 w-48 rounded-xl bg-slate-950/95 backdrop-blur-2xl border border-slate-800/50 shadow-2xl shadow-black/60 py-1 z-50 overflow-hidden animate-in fade-in slide-in-from-top-3 duration-300">
+                <div className="absolute right-0 mt-3 w-48 rounded-xl bg-slate-950/95 backdrop-blur-2xl border border-slate-800/50 shadow-2xl shadow-black/60 py-1 z-50 overflow-hidden animate-in fade-in slide-in-from-top-3 duration-300">
                   
                   {/* Mi Perfil Option */}
                   <div className="py-2">
-                    <button className="w-full px-6 py-3 text-left text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-900/40 transition-all duration-200 uppercase tracking-widest">
+                    <button
+                      onClick={handleOpenProfile}
+                      className="w-full px-6 py-3 text-left text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-900/40 transition-all duration-200 uppercase tracking-widest"
+                    >
                       Mi Perfil
                     </button>
                   </div>
@@ -246,8 +225,11 @@ function Navbar({ setView, setIsLoggedIn, user }) {
                   <div className="h-px bg-gradient-to-r from-transparent via-slate-700/20 to-transparent"></div>
 
                   {/* Log out Option */}
-                  <div className="py-2 ">
-                    <button className="w-full px-6 py-3 text-left text-xs font-medium text-red-500/90 hover:text-red-400 hover:bg-red-950/20 transition-all duration-200 uppercase tracking-widest" onClick={handleLogout}>
+                  <div className="py-2">
+                    <button 
+                      onClick={handleLogout}
+                      className="w-full px-6 py-3 text-left text-xs font-medium text-red-500/90 hover:text-red-400 hover:bg-red-950/20 transition-all duration-200 uppercase tracking-widest"
+                    >
                       Cerrar Sesión
                     </button>
                   </div>
@@ -258,7 +240,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
         </div>
 
         {/* Desktop Layout */}
-        <div className="hidden min-[1500px]:flex items-center justify-between px-4 lg:px-8 xl:px-12 2xl:px-16">
+        <div className="hidden min-[1300px]:flex items-center justify-between px-4 lg:px-8 xl:px-12 2xl:px-16">
           
           {/* Logo */}
           <div className="flex justify-start">
@@ -272,7 +254,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-6 xl:gap-12 flex-1 justify-center">
+          <div className="hidden lg:flex items-center gap-6 xl:gap-8 flex-1 justify-center">
 
               {role === 'driver' && (
                 <div className="animate-in fade-in zoom-in duration-700">
@@ -314,7 +296,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
           <div className="flex items-center gap-6 justify-end">
 
             {/* Profile Dropdown - Desktop */}
-            <div className="relative" ref={profileRef}>
+            <div className="relative">
               <button
                 onClick={() => setProfileOpen(!profileOpen)}
                 className="flex items-center gap-3 px-6 py-2.5 rounded-lg transition-all duration-300 group hover:bg-slate-900/30 active:bg-slate-900/50"
@@ -343,10 +325,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
                   {/* Mi Perfil */}
                   <div className="py-2">
                     <button 
-                      onClick={() => {
-                        setView("profile");
-                        setProfileOpen(false);
-                      }}
+                      onClick={handleOpenProfile}
                       className="w-full px-6 py-3 text-left text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-900/40 transition-all duration-200 uppercase tracking-widest">
                       Mi Perfil
                     </button>
@@ -356,8 +335,10 @@ function Navbar({ setView, setIsLoggedIn, user }) {
                   <div className="h-px bg-gradient-to-r from-transparent via-slate-700/20 to-transparent"></div>
 
                   {/* Cerrar Sesión */}
-                  <div className="py-2" onClick={handleLogout}>
-                    <button className="w-full px-6 py-3 text-left text-xs font-medium text-red-500/90 hover:text-red-400 hover:bg-red-950/20 transition-all duration-200 uppercase tracking-widest">
+                  <div className="py-2">
+                    <button 
+                      onClick={handleLogout}
+                      className="w-full px-6 py-3 text-left text-xs font-medium text-red-500/90 hover:text-red-400 hover:bg-red-950/20 transition-all duration-200 uppercase tracking-widest">
                       Cerrar Sesión
                     </button>
                   </div>
