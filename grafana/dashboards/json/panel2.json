@@ -1,0 +1,121 @@
+{
+  "id": 2,
+  "type": "timeseries",
+  "title": "Historial del carro (Tiempo por simulación)",
+  "description": "Este panel muestra la evolución del tiempo del mismo carro a lo largo de distintas simulaciones, permitiendo comparar su desempeño en diferentes condiciones de pista y momentos de simulación.",
+  "gridPos": {
+    "x": 12,
+    "y": 0,
+    "h": 13,
+    "w": 12
+  },
+  "fieldConfig": {
+    "defaults": {
+      "custom": {
+        "drawStyle": "line",
+        "lineInterpolation": "linear",
+        "barAlignment": 0,
+        "barWidthFactor": 0.6,
+        "lineWidth": 2,
+        "fillOpacity": 35,
+        "gradientMode": "opacity",
+        "spanNulls": true,
+        "insertNulls": false,
+        "showPoints": "always",
+        "showValues": false,
+        "pointSize": 6,
+        "stacking": {
+          "mode": "none",
+          "group": "A"
+        },
+        "axisPlacement": "auto",
+        "axisLabel": "Tiempo (s)",
+        "axisColorMode": "text",
+        "axisBorderShow": false,
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "axisCenteredZero": false,
+        "hideFrom": {
+          "tooltip": false,
+          "viz": false,
+          "legend": false
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "color": {
+        "mode": "palette-classic"
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "tiempo": null,
+            "color": "green",
+            "value": null
+          },
+          {
+            "value": 80,
+            "color": "red"
+          }
+        ]
+      },
+      "unit": "s",
+      "decimals": 3,
+      "displayName": "Tiempo"
+    },
+    "overrides": []
+  },
+  "pluginVersion": "12.3.1",
+  "targets": [
+    {
+      "refId": "A",
+      "format": "table",
+      "rawSql": "SELECT\r\n  fecha_simulacion AS time,\r\n  CAST(tiempo_segundos AS DECIMAL(12,3)) AS value,\r\n  CONCAT('Sim ', CAST(id_simulacion AS VARCHAR(10))) AS sim_label,\r\n  circuito AS circuito_label\r\nFROM dbo.v_grafana_carro_historial\r\nWHERE carro = '$carro'\r\nORDER BY fecha_simulacion;\r\n",
+      "editorMode": "code",
+      "sql": {
+        "columns": [
+          {
+            "type": "function",
+            "parameters": []
+          }
+        ],
+        "groupBy": [
+          {
+            "type": "groupBy",
+            "property": {
+              "type": "string"
+            }
+          }
+        ],
+        "limit": 500
+      },
+      "dataset": "f1_garage_tec",
+      "rawQuery": true
+    }
+  ],
+  "datasource": {
+    "uid": "ffblaxvmd81s0f",
+    "type": "mssql"
+  },
+  "options": {
+    "tooltip": {
+      "mode": "multi",
+      "sort": "asc",
+      "hideZeros": false
+    },
+    "legend": {
+      "showLegend": true,
+      "displayMode": "table",
+      "placement": "bottom",
+      "calcs": [
+        "last",
+        "min",
+        "max"
+      ]
+    }
+  }
+}
