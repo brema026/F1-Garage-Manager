@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   FiArrowLeft,
   FiCheck,
@@ -31,7 +31,12 @@ const MIN_CARS = 2;
 const MAX_CARS = 26;
 
 export default function VehicleSelection({ circuit, onBack, onStartRace, user }) {
+  // IDs de carros seleccionados (solo números)
   const [selectedCars, setSelectedCars] = useState([]);
+
+  // Guardamos la selección usada para ejecutar la simulación (snapshot inmutable)
+  const selectedForRunRef = useRef([]);
+
   const [randomBackground, setRandomBackground] = useState(null);
 
   const [isSimulating, setIsSimulating] = useState(false);
@@ -48,35 +53,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace, user })
   const [simulationResults, setSimulationResults] = useState([]);
 
   // Control de rol (tu backend permite ejecutar simulaciones solo Admin)
-  const resolvedUser = useMemo(() => {
-  if (user) return user;
-
-  try {
-    const raw =
-      localStorage.getItem("user") ||
-      localStorage.getItem("authUser") ||
-      localStorage.getItem("usuario") ||
-      sessionStorage.getItem("user") ||
-      sessionStorage.getItem("authUser") ||
-      sessionStorage.getItem("usuario");
-
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}, [user]);
-
-const role = String(resolvedUser?.rol ?? resolvedUser?.role ?? "")
-  .trim()
-  .toLowerCase();
-
-const isAdmin = role === "admin";
-
-
-  useEffect(() => {
-    console.log("VehicleSelection user =", user);
-    console.log("rol raw =", user?.rol, "type =", typeof user?.rol);
-  }, [user]);
+  const isAdmin = (user?.rol || "").toLowerCase() === "admin";
 
   // Usar circuito pasado como prop
   const currentCircuit = circuit;
@@ -87,19 +64,21 @@ const isAdmin = role === "admin";
     setRandomBackground(randomBackgrounds[randomIndex]);
   }, []);
 
+  // Helpers
+  const toInt = (x) => {
+    const n = Number(x);
+    return Number.isInteger(n) ? n : null;
+  };
+
   // Cargar carros elegibles desde backend
   const fetchCars = async () => {
     setLoadingCars(true);
     setCarsError("");
 
     try {
-      // Endpoint real:
-      // GET /api/simulations/eligible-cars
-      // Retorna carros elegibles: finalizado + setup completo (5) + conductor asignado
       const res = await api.get("/simulations/eligible-cars");
       const rows = Array.isArray(res.data) ? res.data : [];
 
-      // Normalización (backend devuelve plano)
       const normalized = rows.map((c) => ({
         id_carro: Number(c.id_carro),
         nombre: c.nombre ?? "Carro",
@@ -121,17 +100,15 @@ const isAdmin = role === "admin";
       setCarrosDisponibles(normalized);
 
       // Si ya tenías seleccionados que ya no existen, limpiar
-      setSelectedCars((prev) => prev.filter((id) => normalized.some((x) => x.id_carro === id)));
+      setSelectedCars((prev) =>
+        prev.filter((id) => normalized.some((x) => x.id_carro === id))
+      );
     } catch (e) {
-      console.log("eligible-cars URL DEBUG:", {
-        baseURL: e?.config?.baseURL,
-        url: e?.config?.url,
-        full: (e?.config?.baseURL || "") + (e?.config?.url || ""),
-      });
-
       setCarsError(
         e?.response?.data?.error ||
-          `No se pudieron cargar los carros elegibles (status ${e?.response?.status || "?"}).`
+          `No se pudieron cargar los carros elegibles (status ${
+            e?.response?.status || "?"
+          }).`
       );
       setCarrosDisponibles([]);
       setSelectedCars([]);
@@ -145,8 +122,10 @@ const isAdmin = role === "admin";
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const toggleCarSelection = (carId) => {
+  const toggleCarSelection = (carIdRaw) => {
     if (isSimulating) return;
+    const carId = toInt(carIdRaw);
+    if (!carId || carId <= 0) return;
 
     setSelectedCars((prev) => {
       if (prev.includes(carId)) return prev.filter((id) => id !== carId);
@@ -157,8 +136,17 @@ const isAdmin = role === "admin";
 
   const selectAll = () => {
     if (isSimulating) return;
-    if (selectedCars.length === carrosDisponibles.length) setSelectedCars([]);
-    else setSelectedCars(carrosDisponibles.map((c) => c.id_carro));
+    if (loadingCars || carrosDisponibles.length === 0) return;
+
+    // toggle all
+    if (selectedCars.length === Math.min(carrosDisponibles.length, MAX_CARS)) {
+      setSelectedCars([]);
+      return;
+    }
+
+    // respeta MAX_CARS
+    const all = carrosDisponibles.map((c) => c.id_carro).slice(0, MAX_CARS);
+    setSelectedCars(all);
   };
 
   const canStartRace =
@@ -171,7 +159,7 @@ const isAdmin = role === "admin";
   const startFakeProgress = () => {
     setSimulationProgress(0);
     const startTime = Date.now();
-    const duration = 1800; // visual
+    const duration = 1800;
 
     const update = () => {
       const elapsed = Date.now() - startTime;
@@ -186,6 +174,10 @@ const isAdmin = role === "admin";
   const handleStartRace = async () => {
     if (!canStartRace) return;
 
+    // Congelamos selección (lo que se manda al backend)
+    const selectedSnapshot = [...selectedCars].map(Number);
+    selectedForRunRef.current = selectedSnapshot;
+
     // Reset UI states
     setIsSimulating(true);
     setShowResultsButton(false);
@@ -193,57 +185,65 @@ const isAdmin = role === "admin";
     setSimulationId(null);
     setSimulationResults([]);
 
-    // Progreso visual
     startFakeProgress();
 
     try {
       const circuitId = Number(
-        currentCircuit?.id_circuito ?? currentCircuit?.id ?? currentCircuit?.circuitId ?? 0
+        currentCircuit?.id_circuito ??
+          currentCircuit?.id ??
+          currentCircuit?.circuitId ??
+          0
       );
 
-      if (!circuitId) {
-        throw new Error("Circuito inválido: falta id_circuito.");
-      }
+      if (!circuitId) throw new Error("Circuito inválido: falta id_circuito.");
 
-      // Backend real:
-      // POST /api/simulations { id_circuito, carros: [ids...] }
-      // (si el backend aún no filtra por carros, agregá el filtro como te indiqué)
+      // POST /api/simulations { id_circuito, carros }
       const res = await api.post("/simulations", {
         id_circuito: circuitId,
-        carros: selectedCars, // ✅ ahora concuerda con la selección del UI
+        carros: selectedSnapshot,
       });
 
       const id_simulacion = Number(res?.data?.id_simulacion ?? 0);
-      const resultados = Array.isArray(res?.data?.resultados) ? res.data.resultados : [];
+      const resultados = Array.isArray(res?.data?.resultados)
+        ? res.data.resultados
+        : [];
 
-      if (!id_simulacion) {
-        throw new Error("El backend no devolvió id_simulacion.");
-      }
+      if (!id_simulacion) throw new Error("El backend no devolvió id_simulacion.");
 
       setSimulationId(id_simulacion);
       setSimulationResults(resultados);
 
-      // Cuando ya tenemos respuesta real, habilitamos "Ver Resultados"
       setSimulationProgress(100);
       setShowResultsButton(true);
+
+      // Importante: permitimos click en "Ver resultados"
+      setIsSimulating(false);
     } catch (e) {
       const msg =
         e?.response?.data?.error ||
         e?.message ||
-        "Error ejecutando la simulación. Revisa que existan carros elegibles y setups completos.";
+        "Error ejecutando la simulación. Revisa carros elegibles y setups completos.";
       setCarsError(msg);
 
-      // Volver a permitir interacción
       setIsSimulating(false);
       setShowResultsButton(false);
       setSimulationProgress(0);
+
+      // Si querés: refrescar elegibles cuando falle
+      // await fetchCars();
+
       return;
     }
   };
 
   const handleSeeResults = () => {
-    // Carros seleccionados (para la UI de resultados)
-    const selectedCarsData = carrosDisponibles.filter((c) => selectedCars.includes(c.id_carro));
+    const ids = selectedForRunRef.current?.length
+      ? selectedForRunRef.current
+      : selectedCars;
+
+    const selectedCarsData = carrosDisponibles.filter((c) =>
+      ids.includes(c.id_carro)
+    );
 
     onStartRace({
       id_simulacion: simulationId,
@@ -279,7 +279,9 @@ const isAdmin = role === "admin";
         >
           <FiArrowLeft
             className={`text-xl transition-colors duration-200 ${
-              isSimulating ? "text-gray-500" : "text-gray-400 group-hover:text-red-500"
+              isSimulating
+                ? "text-gray-500"
+                : "text-gray-400 group-hover:text-red-500"
             }`}
           />
           {isSimulating && (
@@ -291,7 +293,9 @@ const isAdmin = role === "admin";
         <div className="relative">
           <span
             className={`text-sm font-black uppercase tracking-[0.2em] transition-colors duration-200 ${
-              isSimulating ? "text-gray-500" : "text-gray-400 group-hover:text-red-500"
+              isSimulating
+                ? "text-gray-500"
+                : "text-gray-400 group-hover:text-red-500"
             }`}
           >
             Volver
@@ -344,7 +348,7 @@ const isAdmin = role === "admin";
         </motion.div>
       )}
 
-      {/* OVERLAY - ESCRITORIO */}
+      {/* OVERLAYS */}
       <div
         className="absolute inset-0 z-[1] hidden md:block"
         style={{
@@ -356,7 +360,6 @@ const isAdmin = role === "admin";
         }}
       />
 
-      {/* OVERLAY - MÓVIL */}
       <div
         className="absolute inset-0 z-[1] md:hidden"
         style={{
@@ -369,26 +372,23 @@ const isAdmin = role === "admin";
         }}
       />
 
-      {/* OVERLAY ADICIONAL PARA CONTRASTE */}
       <div className="absolute inset-0 z-[1] bg-gradient-to-t from-neutral-950/60 via-transparent to-neutral-950/40" />
 
-      {/* LÍNEA DIVISORA - SOLO EN ESCRITORIO */}
+      {/* DIVISOR DESKTOP */}
       <div className="absolute top-[10%] bottom-[10%] left-[44%] w-px z-[2] hidden lg:block">
         <div className="w-full h-full bg-gradient-to-b from-transparent via-white/[0.05] to-transparent" />
       </div>
 
-      {/* CONTENIDO PRINCIPAL */}
+      {/* CONTENIDO */}
       <div className="relative z-10 min-h-screen flex flex-col lg:flex-row pt-16 lg:pt-0">
-        {/* PANEL IZQUIERDO - CIRCUITO */}
+        {/* PANEL IZQUIERDO */}
         <motion.div
           className="w-full lg:w-[44%] min-h-[50vh] lg:min-h-screen flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 order-2 lg:order-1"
           initial={{ opacity: 0, x: -60 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         >
-          {/* CONTENIDO CENTRAL */}
           <div className="flex-1 flex flex-col justify-center">
-            {/* LOCATION TAG */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -400,11 +400,12 @@ const isAdmin = role === "admin";
               </div>
               <div className="flex items-center gap-2 text-white/80">
                 <FiMapPin className="text-[10px] lg:text-[15px]" />
-                <span className="text-xl font-medium tracking-widest uppercase">Custom Circuit</span>
+                <span className="text-xl font-medium tracking-widest uppercase">
+                  Custom Circuit
+                </span>
               </div>
             </motion.div>
 
-            {/* NOMBRE CIRCUITO */}
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -414,7 +415,6 @@ const isAdmin = role === "admin";
               {currentCircuit?.name ?? currentCircuit?.nombre ?? "Circuito"}
             </motion.h1>
 
-            {/* STATS */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -430,7 +430,9 @@ const isAdmin = role === "admin";
                 </div>
                 <p className="text-3xl lg:text-4xl font-extralight text-white/90 tracking-tight">
                   {currentCircuit?.distance ?? currentCircuit?.distancia_d ?? 0}
-                  <span className="text-sm text-white/50 ml-1 lg:ml-2 font-normal">km</span>
+                  <span className="text-sm text-white/50 ml-1 lg:ml-2 font-normal">
+                    km
+                  </span>
                 </p>
               </div>
 
@@ -448,14 +450,12 @@ const isAdmin = role === "admin";
             </motion.div>
           </div>
 
-          {/* FOOTER */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.1, duration: 0.6 }}
             className="mt-4 lg:mt-4 pt-4 lg:pt-6 border-t border-white/[0.04]"
           >
-            {/* Mensaje de rol */}
             {!isAdmin && (
               <div className="mb-4 px-4 py-3 border border-white/[0.06] bg-white/[0.02] rounded-lg">
                 <div className="flex items-start gap-3">
@@ -472,7 +472,6 @@ const isAdmin = role === "admin";
               </div>
             )}
 
-            {/* Error */}
             {carsError && (
               <div className="mb-4 px-4 py-3 border border-red-500/20 bg-red-500/5 rounded-lg">
                 <div className="flex items-start gap-3">
@@ -495,7 +494,6 @@ const isAdmin = role === "admin";
             )}
 
             <div className="flex flex-col lg:flex-row items-center lg:items-end justify-between gap-6 lg:gap-0">
-              {/* CONTADOR */}
               <div className="w-full lg:w-auto text-center lg:text-left">
                 <p className="text-[16px] font-medium uppercase tracking-[0.3em] lg:tracking-[0.4em] text-white/80 mb-2">
                   Seleccionados
@@ -518,9 +516,7 @@ const isAdmin = role === "admin";
                 </div>
               </div>
 
-              {/* BOTÓN */}
               <div className="w-full lg:w-auto min-w-[280px] max-w-[280px] flex-shrink-0">
-                {/* BARRA DE PROGRESO */}
                 {isSimulating && (
                   <div className="h-[2px] bg-white/[0.08] rounded-full overflow-hidden mb-2">
                     <motion.div
@@ -533,7 +529,7 @@ const isAdmin = role === "admin";
                 )}
 
                 <AnimatePresence mode="wait">
-                  {!isSimulating ? (
+                  {!isSimulating && !showResultsButton ? (
                     <motion.button
                       key="start"
                       initial={{ opacity: 0, scale: 0.95 }}
@@ -559,7 +555,7 @@ const isAdmin = role === "admin";
                         />
                       </span>
                     </motion.button>
-                  ) : !showResultsButton ? (
+                  ) : isSimulating ? (
                     <motion.button
                       key="simulating"
                       initial={{ opacity: 0, scale: 0.95 }}
@@ -582,11 +578,7 @@ const isAdmin = role === "admin";
                     <motion.button
                       key="results"
                       initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{
-                        opacity: 1,
-                        scale: 1,
-                        scale: [1, 1.02, 1],
-                      }}
+                      animate={{ opacity: 1, scale: 1, scale: [1, 1.02, 1] }}
                       transition={{
                         scale: { duration: 1.5, repeat: Infinity, repeatType: "reverse" },
                       }}
@@ -609,58 +601,13 @@ const isAdmin = role === "admin";
           </motion.div>
         </motion.div>
 
-        {/* PANEL DERECHO - SELECCIÓN DE CARROS */}
+        {/* PANEL DERECHO */}
         <motion.div
           className="flex-1 w-full lg:w-auto min-h-[50vh] lg:min-h-screen p-6 sm:p-8 md:p-10 lg:p-14 lg:pl-10 order-1 lg:order-2"
           initial={{ opacity: 0, x: 60 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
         >
-          {/* BOTÓN VOLVER - ESCRITORIO */}
-          <motion.button
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            onClick={isSimulating ? undefined : onBack}
-            disabled={isSimulating}
-            className={`absolute top-6 right-6 z-50 hidden lg:flex items-center gap-2 group p-3 ${
-              isSimulating ? "cursor-not-allowed" : ""
-            }`}
-          >
-            <div
-              className={`relative transition-all duration-300 ${
-                isSimulating ? "opacity-40" : "opacity-100"
-              }`}
-            >
-              <FiArrowLeft
-                className={`text-xl transition-colors duration-200 ${
-                  isSimulating ? "text-gray-500" : "text-gray-400 group-hover:text-red-500"
-                }`}
-              />
-              {isSimulating && (
-                <div className="absolute -top-1 -right-1">
-                  <FiLock className="text-[8px] text-red-500/70" />
-                </div>
-              )}
-            </div>
-            <div className="relative">
-              <span
-                className={`text-sm font-black uppercase tracking-[0.2em] transition-colors duration-200 ${
-                  isSimulating ? "text-gray-500" : "text-gray-400 group-hover:text-red-500"
-                }`}
-              >
-                Volver
-              </span>
-              {isSimulating && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="absolute -bottom-1 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-red-500/30 to-transparent"
-                />
-              )}
-            </div>
-          </motion.button>
-
           {/* HEADER */}
           <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-6 lg:mb-10 gap-4 lg:gap-0 pt-0 lg:pt-0">
             <motion.div
@@ -681,7 +628,6 @@ const isAdmin = role === "admin";
               </p>
             </motion.div>
 
-            {/* SELECT ALL */}
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -694,11 +640,12 @@ const isAdmin = role === "admin";
                   : "border-white/[0.06] text-white/25 hover:text-white/60 hover:border-white/15 hover:bg-white/[0.02]"
               }`}
             >
-              {selectedCars.length === carrosDisponibles.length ? "Limpiar" : "Seleccionar todos"}
+              {selectedCars.length === Math.min(carrosDisponibles.length, MAX_CARS)
+                ? "Limpiar"
+                : "Seleccionar todos"}
             </motion.button>
           </div>
 
-          {/* SCROLL CONTAINER */}
           <div className="relative h-[calc(45vh-120px)] lg:h-[calc(85vh-130px)] rounded-lg border border-white/[0.03] overflow-hidden bg-white/[0.005] backdrop-blur-sm">
             <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-neutral-950 to-transparent z-10 pointer-events-none" />
             <div
@@ -736,7 +683,6 @@ const isAdmin = role === "admin";
         </motion.div>
       </div>
 
-      {/* SCROLLBAR STYLES */}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 3px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -757,7 +703,10 @@ function LoadingCars() {
       animate={{ opacity: 1 }}
       className="col-span-full flex items-center justify-center py-16 text-white/60"
     >
-      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+      >
         <FiLoader className="text-lg" />
       </motion.div>
       <span className="ml-3 text-sm uppercase tracking-[0.2em]">Cargando...</span>
@@ -767,15 +716,22 @@ function LoadingCars() {
 
 function EmptyCars() {
   return (
-    <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="col-span-full px-4 py-10">
+    <motion.div
+      key="empty"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="col-span-full px-4 py-10"
+    >
       <div className="border border-white/[0.06] bg-white/[0.02] rounded-xl p-6">
         <div className="flex items-start gap-3">
           <FiAlertTriangle className="text-red-400/70 mt-0.5" />
           <div>
-            <p className="text-white/80 font-semibold uppercase tracking-[0.15em] text-sm">No hay carros elegibles</p>
+            <p className="text-white/80 font-semibold uppercase tracking-[0.15em] text-sm">
+              No hay carros elegibles
+            </p>
             <p className="text-white/45 text-sm mt-1">
-              Para simular: el carro debe estar <b>finalizado</b>, tener <b>setup actual completo (5 piezas)</b> y un{" "}
-              <b>conductor asignado</b>.
+              Para simular: el carro debe estar <b>finalizado</b>, tener{" "}
+              <b>setup actual completo (5 piezas)</b> y un <b>conductor asignado</b>.
             </p>
           </div>
         </div>
@@ -815,7 +771,6 @@ function CarCard({ carro, index, isSelected, onToggle, disabled = false }) {
         transition={{ duration: 0.3 }}
       >
         <div className="p-4 sm:p-5">
-          {/* HEADER */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-medium uppercase tracking-[0.2em] text-white/40 mb-1.5 truncate">
@@ -826,12 +781,13 @@ function CarCard({ carro, index, isSelected, onToggle, disabled = false }) {
               </h3>
             </div>
 
-            {/* CHECKBOX */}
             <motion.div
               className={`w-5 h-5 rounded-md border flex items-center justify-center 
                 transition-all duration-400 flex-shrink-0 ml-4
                 ${
-                  isSelected ? "bg-red-500/90 border-red-500/90" : "border-white/[0.06] group-hover:border-white/15"
+                  isSelected
+                    ? "bg-red-500/90 border-red-500/90"
+                    : "border-white/[0.06] group-hover:border-white/15"
                 } ${disabled ? "group-hover:border-white/[0.06]" : ""}`}
               whileTap={disabled ? {} : { scale: 0.85 }}
             >
@@ -850,7 +806,6 @@ function CarCard({ carro, index, isSelected, onToggle, disabled = false }) {
             </motion.div>
           </div>
 
-          {/* CONDUCTOR */}
           <div className="flex items-center gap-3 mb-5 pb-4 border-b border-white/[0.025]">
             <div
               className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center transition-all duration-400
@@ -887,7 +842,6 @@ function CarCard({ carro, index, isSelected, onToggle, disabled = false }) {
             </div>
           </div>
 
-          {/* STATS */}
           <div className="grid grid-cols-3 gap-3 sm:gap-4">
             <StatItem icon={<FiZap />} label="POT" value={carro.P} maxValue={45} isSelected={isSelected} delay={index * 0.03} />
             <StatItem icon={<FiWind />} label="AERO" value={carro.A} maxValue={45} isSelected={isSelected} delay={index * 0.03 + 0.1} />
@@ -895,7 +849,6 @@ function CarCard({ carro, index, isSelected, onToggle, disabled = false }) {
           </div>
         </div>
 
-        {/* LINE */}
         <motion.div
           className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-red-500/60 via-red-500/40 to-red-500/60"
           initial={{ scaleX: 0 }}

@@ -206,3 +206,6 @@ BEGIN
     WHERE u.id_usuario = @id_usuario;
 END;
 GO
+
+CREATE TYPE dbo.IntList AS TABLE (id INT NOT NULL PRIMARY KEY);
+GO

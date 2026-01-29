@@ -9,6 +9,21 @@ function normalizeUser(req) {
   };
 }
 
+function normalizeCarIds(input) {
+  if (!Array.isArray(input)) return [];
+  const out = [];
+  const seen = new Set();
+
+  for (const x of input) {
+    const id = Number(x);
+    if (Number.isInteger(id) && id > 0 && !seen.has(id)) {
+      seen.add(id);
+      out.push(id);
+    }
+  }
+  return out;
+}
+
 const simulationController = {
   // POST /api/simulations  (Admin only)
   async run(req, res) {
@@ -21,20 +36,22 @@ const simulationController = {
       const id_circuito = Number(req.body?.id_circuito);
       if (!id_circuito) return res.status(400).json({ error: 'id_circuito es requerido' });
 
-      const result = await simulationModel.runSimulation(id_circuito, u.id_usuario);
+      const carros = normalizeCarIds(req.body?.carros);
+      if (carros.length === 0) {
+        return res.status(400).json({ error: 'Debe seleccionar al menos 1 carro (carros: [id_carro, ...])' });
+      }
 
-      // SP debe devolver recordset con ranking + id_simulacion
+      const result = await simulationModel.runSimulation(id_circuito, u.id_usuario, carros);
+
       const rows = result?.recordset || [];
       const id_simulacion = rows?.[0]?.id_simulacion != null ? Number(rows[0].id_simulacion) : null;
 
       if (!id_simulacion) {
-        // Esto es la causa típica de tu “id_simulacion inválido” después:
-        // el SP no está devolviendo id_simulacion en recordset.
         logger.error('SP sp_ejecutar_simulacion no devolvió id_simulacion en el recordset.');
-        return res.status(500).json({ error: 'El SP no devolvió id_simulacion. Asegúrate que el recordset incluya id_simulacion.' });
+        return res.status(500).json({ error: 'El SP no devolvió id_simulacion. Verifica el SELECT final del SP.' });
       }
 
-      logger.info(`Simulación ejecutada por usuario ${u.id_usuario} en circuito ${id_circuito}. SimID=${id_simulacion}`);
+      logger.info(`Simulación ejecutada por usuario ${u.id_usuario} en circuito ${id_circuito}. SimID=${id_simulacion}. Carros=${carros.join(',')}`);
 
       return res.status(201).json({
         id_simulacion,
@@ -83,23 +100,17 @@ const simulationController = {
       const id_simulacion = Number(req.params.id);
       if (!id_simulacion) return res.status(400).json({ error: 'id_simulacion inválido' });
 
-      // Traer resultados para validar existencia y acceso por equipo (tu schema no permite por conductor)
       const results = await simulationModel.getSimulationResults(id_simulacion);
       const participantes = results.recordset || [];
 
       if (participantes.length === 0) return res.status(404).json({ error: 'Simulación no encontrada o sin participantes' });
 
-      // Acceso:
-      // Admin: ok
-      // Engineer: si su equipo participó
-      // Driver: si su equipo (del conductor) participó
       if (u.rol === 'Engineer') {
         const ok = participantes.some(r => Number(r.id_equipo) === Number(u.id_equipo));
         if (!ok) return res.status(403).json({ error: 'No autorizado' });
       }
 
       if (u.rol === 'Driver') {
-        // resolvemos el equipo del driver por conductor.id_usuario
         const con = await simulationModel.getConductorByUser(u.id_usuario);
         const row = con.recordset?.[0];
         const equipoDriver = row?.id_equipo != null ? Number(row.id_equipo) : null;
@@ -195,5 +206,4 @@ const simulationController = {
 };
 
 module.exports = simulationController;
-
 

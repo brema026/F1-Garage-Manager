@@ -2,11 +2,22 @@ const { getPool } = require('../config/database');
 const sql = require('mssql');
 
 const simulationModel = {
-  async runSimulation(id_circuito, id_usuario) {
+  async runSimulation(id_circuito, id_usuario, carros = []) {
     const pool = await getPool();
+
+    // TVP: debe existir en SQL Server como dbo.IntList(id INT PRIMARY KEY)
+    const tvp = new sql.Table('dbo.IntList');
+    tvp.columns.add('id', sql.Int, { nullable: false });
+
+    for (const c of carros) {
+      const id = Number(c);
+      if (Number.isInteger(id) && id > 0) tvp.rows.add(id);
+    }
+
     return pool.request()
       .input('id_circuito', sql.Int, Number(id_circuito))
       .input('id_usuario', sql.Int, id_usuario != null ? Number(id_usuario) : null)
+      .input('carros_seleccionados', tvp) // <-- clave
       .execute('dbo.sp_ejecutar_simulacion');
   },
 
@@ -25,10 +36,6 @@ const simulationModel = {
       `);
   },
 
-  // Listar simulaciones con rol:
-  // Admin: todas
-  // Engineer: simulaciones donde su equipo participó (simulacion_participante)
-  // Driver: simulaciones donde participó su equipo (equipo del conductor del user)
   async listSimulations({ id_usuario, rol, id_equipo, limit = 50, offset = 0 }) {
     const pool = await getPool();
 
@@ -177,6 +184,5 @@ const simulationModel = {
 };
 
 module.exports = simulationModel;
-
 
 

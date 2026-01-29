@@ -40,18 +40,17 @@ app.use(cors({
       const hostname = url.hostname; // ej: localhost, 192.168.1.40
       const port = url.port || (url.protocol === 'https:' ? '443' : '80');
 
-      // Puerto permitido del frontend (ajusta si usas otro)
-      const FRONTEND_PORT = process.env.FRONTEND_PORT || 3002;;
+      // Puerto permitido del frontend (string para comparar con `port`)
+      const FRONTEND_PORT = String(process.env.FRONTEND_PORT || '3002');
 
-      // Solo hosts de red local (LAN)
       const isLocalHost =
         hostname === 'localhost' ||
         hostname === '127.0.0.1';
 
       const isPrivateIp =
-        /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||                  // 192.168.x.x
-        /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||               // 10.x.x.x
-        /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname);    // 172.16–31.x.x
+        /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+        /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+        /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname);
 
       // Permite localhost o IP privada + puerto correcto
       if ((isLocalHost || isPrivateIp) && port === FRONTEND_PORT) {
@@ -63,8 +62,14 @@ app.use(cors({
       return callback(new Error(`Invalid Origin: ${origin}`));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// (opcional pero recomendado)
+app.options('*', cors());
+
 
 app.use(bodyParser.json()); // Parse JSON request bodies
 app.use(bodyParser.urlencoded({ extended: true })); // Parse URL-encoded request bodies
@@ -101,8 +106,14 @@ app.use('/api/simulations', simulationsRoutes);
 // Error handling middleware - catches errors from routes and middlewares
 app.use((err, req, res, next) => {
   logger.error(`Error: ${err.message}`);
+
+  if (String(err.message || '').includes('Not allowed by CORS')) {
+    return res.status(403).json({ error: err.message });
+  }
+
   res.status(500).json({ error: 'Internal server error' });
 });
+
 
 // Export Express application for use in server.js
 module.exports = app;

@@ -139,7 +139,8 @@ GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_ejecutar_simulacion
   @id_circuito INT,
-  @id_usuario  INT = NULL
+  @id_usuario  INT = NULL,
+  @carros_seleccionados dbo.IntList READONLY
 AS
 BEGIN
   SET NOCOUNT ON;
@@ -147,6 +148,13 @@ BEGIN
 
   BEGIN TRY
     BEGIN TRAN;
+
+    /* ===== Validar que haya selección ===== */
+    IF NOT EXISTS (SELECT 1 FROM @carros_seleccionados)
+    BEGIN
+      RAISERROR('Debe seleccionar al menos 1 carro para simular.', 16, 1);
+      ROLLBACK; RETURN;
+    END;
 
     /* ===== Validar circuito ===== */
     DECLARE @D DECIMAL(10,3), @C INT;
@@ -187,12 +195,15 @@ BEGIN
 
     DECLARE @id_simulacion INT = SCOPE_IDENTITY();
 
-    /* ===== Carros elegibles =====
+    /* =========================================================
+       Carros elegibles (PERO SOLO los seleccionados)
+       - Debe estar en @carros_seleccionados
        - finalizado=1
-       - id_conductor NOT NULL (carro)
+       - id_conductor NOT NULL
        - setup actual es_actual=1
        - setup tiene exactamente 5 categorías
-    */
+       ========================================================= */
+
     ;WITH setup_actual AS (
       SELECT cs.setup_id, cs.car_id
       FROM dbo.car_setup cs
@@ -213,6 +224,7 @@ BEGIN
         c.id_conductor,
         con.habilidad_h
       FROM dbo.carro c
+      JOIN @carros_seleccionados sel ON sel.id = c.id_carro
       JOIN setup_completo sc ON sc.car_id = c.id_carro
       JOIN dbo.conductor con ON con.id_conductor = c.id_conductor
       WHERE c.finalizado = 1
@@ -284,9 +296,10 @@ BEGIN
       NULL
     FROM totales t;
 
+    /* ===== Si no insertó nada, fallar con mensaje claro ===== */
     IF NOT EXISTS (SELECT 1 FROM dbo.simulacion_participante WHERE id_simulacion = @id_simulacion)
     BEGIN
-      RAISERROR('No hay carros elegibles: revise finalizado, setup completo y conductor asignado.', 16, 1);
+      RAISERROR('Ninguno de los carros seleccionados es elegible: revise finalizado, setup completo (5 categorías) y conductor asignado.', 16, 1);
       ROLLBACK; RETURN;
     END;
 
@@ -325,7 +338,6 @@ BEGIN
 
     /* =========================================================
        SALIDA "LISTA PARA UI"
-       - Nombres compatibles con tu RaceResults.jsx
        ========================================================= */
     ;WITH base AS (
       SELECT
@@ -387,7 +399,6 @@ BEGIN
 END;
 GO
 
-
 CREATE OR ALTER PROCEDURE dbo.sp_listar_carros_elegibles
 AS
 BEGIN
@@ -441,4 +452,14 @@ BEGIN
 END;
 GO
 
+ USE f1_garage_tec
+ GO
 
+IF TYPE_ID('dbo.IntList') IS NOT NULL
+  DROP TYPE dbo.IntList;
+GO
+
+CREATE TYPE dbo.IntList AS TABLE (
+  id INT NOT NULL PRIMARY KEY
+);
+GO
