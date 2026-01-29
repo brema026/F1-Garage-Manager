@@ -18,7 +18,7 @@ const sponsorRoutes = require('./routes/sponsorRoutes');
 const cirucuitRoutes = require('./routes/circuits');
 const carSetupRoutes = require('./routes/carSetup');
 const carsRoutes = require('./routes/cars');
-
+const simulationsRoutes = require('./routes/simulations'); // ✅ NUEVO
 
 const app = express(); // Initialize Express application
 
@@ -28,7 +28,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Application middlewares
 // Application middlewares
 app.use(cors({
   origin: function (origin, callback) {
@@ -97,7 +96,7 @@ app.use('/api/sponsors', sponsorRoutes);
 app.use('/api/circuits', cirucuitRoutes);
 app.use('/api/car-setup', carSetupRoutes);
 app.use('/api/cars', carsRoutes);
-
+app.use('/api/simulations', simulationsRoutes); // ✅ NUEVO
 
 // Error handling middleware - catches errors from routes and middlewares
 app.use((err, req, res, next) => {
