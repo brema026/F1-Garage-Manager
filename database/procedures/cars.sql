@@ -337,7 +337,7 @@ BEGIN
     BEGIN
       RAISERROR('No se puede finalizar: el carro no tiene conductor asignado', 16, 1);
       RETURN;
-    END;
+  END;
 
   UPDATE dbo.carro
   SET finalizado = 1
