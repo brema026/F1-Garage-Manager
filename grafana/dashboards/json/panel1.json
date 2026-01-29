@@ -1,0 +1,204 @@
+{
+  "id": 1,
+  "type": "table",
+  "title": "Ranking de Resultados",
+  "description": "Clasificación final de los carros en la simulación seleccionada. Incluye equipo, carro, velocidades, penalizaciones y tiempo final, ordenado por posición.",
+  "gridPos": {
+    "x": 0,
+    "y": 13,
+    "h": 18,
+    "w": 24
+  },
+  "fieldConfig": {
+    "defaults": {
+      "custom": {
+        "align": "auto",
+        "footer": {
+          "reducers": []
+        },
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "value": null,
+            "color": "green"
+          },
+          {
+            "value": 80,
+            "color": "red"
+          }
+        ]
+      },
+      "color": {
+        "mode": "fixed"
+      }
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "posicion"
+        },
+        "properties": [
+          {
+            "id": "custom.align",
+            "value": "center"
+          },
+          {
+            "id": "decimals",
+            "value": 0
+          },
+          {
+            "id": "custom.cellOptions",
+            "value": {
+              "type": "color-text"
+            }
+          },
+          {
+            "id": "color",
+            "value": {
+              "mode": "thresholds"
+            }
+          },
+          {
+            "id": "thresholds",
+            "value": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "green",
+                  "value": 1
+                },
+                {
+                  "color": "yellow",
+                  "value": 2
+                },
+                {
+                  "color": "orange",
+                  "value": 3
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "tiempo_segundos"
+        },
+        "properties": [
+          {
+            "id": "unit",
+            "value": "s"
+          },
+          {
+            "id": "decimals",
+            "value": 3
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "penalizacion"
+        },
+        "properties": [
+          {
+            "id": "unit",
+            "value": "s"
+          },
+          {
+            "id": "decimals",
+            "value": 3
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "vrecta"
+        },
+        "properties": [
+          {
+            "id": "unit",
+            "value": "kmh"
+          },
+          {
+            "id": "decimals",
+            "value": 3
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "vcurva"
+        },
+        "properties": [
+          {
+            "id": "unit",
+            "value": "kmh"
+          },
+          {
+            "id": "decimals",
+            "value": 3
+          }
+        ]
+      }
+    ]
+  },
+  "pluginVersion": "12.3.1",
+  "targets": [
+    {
+      "refId": "A",
+      "format": "table",
+      "editorMode": "code",
+      "rawQuery": true,
+      "dataset": "f1_garage_tec",
+      "datasource": {
+        "type": "mssql",
+        "uid": "ffblaxvmd81s0f"
+      },
+      "rawSql": "SELECT\r\n  posicion,\r\n  equipo,\r\n  carro,\r\n  vrecta,\r\n  vcurva,\r\n  penalizacion,\r\n  tiempo_segundos\r\nFROM dbo.v_grafana_ranking_simulacion\r\nWHERE circuito = '$circuito'\r\n  AND id_simulacion = $simulation_id \r\nORDER BY posicion;\r\n",
+      "sql": {
+        "columns": [
+          {
+            "type": "function",
+            "parameters": []
+          }
+        ],
+        "groupBy": [
+          {
+            "type": "groupBy",
+            "property": {
+              "type": "string"
+            }
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "datasource": {
+    "uid": "ffblaxvmd81s0f",
+    "type": "mssql"
+  },
+  "options": {
+    "showHeader": true,
+    "cellHeight": "sm",
+    "footer": {
+      "show": false
+    }
+  }
+}

@@ -40,10 +40,10 @@ app.use(cors({
       const hostname = url.hostname; // ej: localhost, 192.168.1.40
       const port = url.port || (url.protocol === 'https:' ? '443' : '80');
 
-      // ✅ Puerto permitido del frontend (ajusta si usas otro)
+      // Puerto permitido del frontend (ajusta si usas otro)
       const FRONTEND_PORT = process.env.FRONTEND_PORT || 3002;;
 
-      // ✅ Solo hosts de red local (LAN)
+      // Solo hosts de red local (LAN)
       const isLocalHost =
         hostname === 'localhost' ||
         hostname === '127.0.0.1';
@@ -53,7 +53,7 @@ app.use(cors({
         /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||               // 10.x.x.x
         /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname);    // 172.16–31.x.x
 
-      // ✅ Permite localhost o IP privada + puerto correcto
+      // Permite localhost o IP privada + puerto correcto
       if ((isLocalHost || isPrivateIp) && port === FRONTEND_PORT) {
         return callback(null, true);
       }

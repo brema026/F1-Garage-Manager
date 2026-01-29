@@ -18,6 +18,14 @@ function Navbar({ setView, setIsLoggedIn, user }) {
     setProfileOpen(false);
   };
 
+  // Función para manejar clic en botón Grafana
+  const handleGrafanaClick = () => {
+    console.log("Abriendo Grafana para todos los resultados");
+    window.open('http://localhost:3003/d/adxgd9d', '_blank');
+    if (mobileMenuOpen) setMobileMenuOpen(false);
+    if (profileOpen) setProfileOpen(false);
+  };
+
   const role = user?.rol?.toLowerCase();
 
   // Navigation items
@@ -221,6 +229,16 @@ function Navbar({ setView, setIsLoggedIn, user }) {
                     </button>
                   </div>
 
+                  {/* Grafana Option */}
+                  <div className="py-2">
+                    <button 
+                      onClick={handleGrafanaClick}
+                      className="w-full px-6 py-3 text-left text-xs font-medium text-orange-400/90 hover:text-orange-300 hover:bg-orange-950/20 transition-all duration-200 uppercase tracking-widest"
+                    >
+                      Grafana
+                    </button>
+                  </div>
+
                   {/* Divider */}
                   <div className="h-px bg-gradient-to-r from-transparent via-slate-700/20 to-transparent"></div>
 
@@ -328,6 +346,16 @@ function Navbar({ setView, setIsLoggedIn, user }) {
                       onClick={handleOpenProfile}
                       className="w-full px-6 py-3 text-left text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-900/40 transition-all duration-200 uppercase tracking-widest">
                       Mi Perfil
+                    </button>
+                  </div>
+
+                  {/* Grafana */}
+                  <div className="py-2">
+                    <button 
+                      onClick={handleGrafanaClick}
+                      className="w-full px-6 py-3 text-left text-xs font-medium text-orange-400/90 hover:text-orange-300 hover:bg-orange-950/20 transition-all duration-200 uppercase tracking-widest"
+                    >
+                      Grafana
                     </button>
                   </div>
 

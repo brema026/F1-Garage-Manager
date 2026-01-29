@@ -53,6 +53,37 @@ backend/*.swo
 backend/*~
 
 # ============================================================================
+# GRAFANA / DOCKER
+# ============================================================================
+
+# Grafana persistent data (DO NOT COMMIT)
+grafana/grafana-data/
+grafana-data/
+
+# Docker Compose environment variables
+.env
+.env.local
+.env.*
+!.env.example
+
+# Docker volumes (general)
+**/data/
+**/volumes/
+
+# Grafana database files
+*.db
+grafana.db
+
+# Docker logs and temp files
+docker-log*.log
+docker-compose.override.yml
+
+# Docker build artifacts
+**/Dockerfile
+!**/Dockerfile.prod
+**/.dockerignore
+
+# ============================================================================
 # REACT / NODE.JS (frontend)
 # ============================================================================
 

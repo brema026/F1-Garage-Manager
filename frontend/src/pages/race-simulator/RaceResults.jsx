@@ -172,8 +172,10 @@ export default function RaceResults({ onBack, circuit, cars, simulationData }) {
     setExpandedRow((prev) => (prev === id ? null : id));
   };
 
-  const handleGrafanaClick = (result) => {
-    console.log(`Abriendo Grafana para: ${result.driver} - ${result.car}`);
+  // Función para manejar clic en botón Grafana
+  const handleGrafanaClick = () => {
+    console.log("Abriendo Grafana para todos los resultados");
+    window.open('http://localhost:3003/d/adxgd9d', '_blank');
   };
 
   const hasResults = results && results.length > 0;
@@ -242,18 +244,35 @@ export default function RaceResults({ onBack, circuit, cars, simulationData }) {
                     <p className="text-sm font-medium text-white">{circuitName}</p>
                   </div>
                 </div>
-
-                <motion.button
-                  onClick={handleBack}
-                  className="flex items-center gap-1.5 group px-3 py-1.5 bg-white/[0.02] border border-white/[0.06] rounded-md hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-200 mr-1"
-                  whileHover={{ x: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <FiChevronLeft className="text-gray-400 group-hover:text-red-400 transition-colors duration-200 text-xs " />
-                  <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-gray-300 group-hover:text-white transition-colors duration-200">
-                    Volver al inicio
-                  </span>
-                </motion.button>
+                
+                {/* CONTENEDOR DE BOTONES */}
+                <div className="flex items-center gap-2">
+                  {/* BOTÓN VER GRAFANA */}
+                  <motion.button
+                    onClick={handleGrafanaClick}
+                    className="flex items-center gap-1.5 group px-3 py-1.5 bg-gradient-to-r from-orange-900/20 to-yellow-800/10 border border-orange-800/30 rounded-md hover:bg-orange-900/30 hover:border-orange-700/50 transition-all duration-200"
+                    whileHover={{ x: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <FiBarChart2 className="text-orange-300 group-hover:text-orange-200 transition-colors duration-200 text-xs" />
+                    <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-orange-300 group-hover:text-orange-200 transition-colors duration-200">
+                      Ver Grafana
+                    </span>
+                  </motion.button>
+                  
+                  {/* BOTÓN VOLVER */}
+                  <motion.button
+                    onClick={handleBack}
+                    className="flex items-center gap-1.5 group px-3 py-1.5 bg-white/[0.02] border border-white/[0.06] rounded-md hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-200"
+                    whileHover={{ x: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <FiChevronLeft className="text-gray-400 group-hover:text-red-400 transition-colors duration-200 text-xs" />
+                    <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-gray-300 group-hover:text-white transition-colors duration-200">
+                      Volver al inicio
+                    </span>
+                  </motion.button>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -369,7 +388,7 @@ export default function RaceResults({ onBack, circuit, cars, simulationData }) {
                                 result={result}
                                 isExpanded={expandedRow === result.id}
                                 onToggleExpand={() => toggleRowExpand(result.id)}
-                                onGrafanaClick={() => handleGrafanaClick(result)}
+                                onGrafanaClick={handleGrafanaClick}
                               />
                             </div>
 
@@ -378,7 +397,7 @@ export default function RaceResults({ onBack, circuit, cars, simulationData }) {
                                 result={result}
                                 isExpanded={expandedRow === result.id}
                                 onToggleExpand={() => toggleRowExpand(result.id)}
-                                onGrafanaClick={() => handleGrafanaClick(result)}
+                                onGrafanaClick={handleGrafanaClick}
                               />
                             </div>
                           </motion.div>
