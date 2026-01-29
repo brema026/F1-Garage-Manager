@@ -18,6 +18,7 @@ const sponsorRoutes = require('./routes/sponsorRoutes');
 const cirucuitRoutes = require('./routes/circuits');
 const carSetupRoutes = require('./routes/carSetup');
 const carsRoutes = require('./routes/cars');
+const driversRoutes = require('./routes/drivers');
 
 
 const app = express(); // Initialize Express application
@@ -97,6 +98,7 @@ app.use('/api/sponsors', sponsorRoutes);
 app.use('/api/circuits', cirucuitRoutes);
 app.use('/api/car-setup', carSetupRoutes);
 app.use('/api/cars', carsRoutes);
+app.use('/api/drivers', driversRoutes);
 
 
 // Error handling middleware - catches errors from routes and middlewares

@@ -329,6 +329,16 @@ BEGIN
     RETURN;
   END;
 
+      -- dentro de dbo.sp_finalizar_carro, antes del UPDATE finalizado = 1:
+    IF EXISTS (
+      SELECT 1 FROM dbo.carro
+      WHERE id_carro = @id_carro AND id_equipo = @id_equipo AND id_conductor IS NULL
+    )
+    BEGIN
+      RAISERROR('No se puede finalizar: el carro no tiene conductor asignado', 16, 1);
+      RETURN;
+    END;
+
   UPDATE dbo.carro
   SET finalizado = 1
   WHERE id_carro = @id_carro;
@@ -356,3 +366,127 @@ BEGIN
   ORDER BY id_carro ASC;
 END;
 GO
+
+-- =========================================
+-- Asignacion de conductor al carro
+-- =========================================
+ALTER TABLE dbo.carro
+ADD id_conductor INT NULL;
+
+ALTER TABLE dbo.carro
+ADD CONSTRAINT fk_carro_conductor
+FOREIGN KEY (id_conductor) REFERENCES dbo.conductor(id_conductor);
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_asignar_conductor_a_carro
+  @id_carro INT,
+  @id_equipo INT,
+  @id_conductor INT
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  -- carro existe y pertenece al equipo
+  IF NOT EXISTS (
+    SELECT 1 FROM dbo.carro
+    WHERE id_carro = @id_carro AND id_equipo = @id_equipo
+  )
+  BEGIN
+    RAISERROR('El carro no existe o no pertenece al equipo', 16, 1);
+    RETURN;
+  END;
+
+  -- conductor existe y pertenece al equipo
+  IF NOT EXISTS (
+    SELECT 1 FROM dbo.conductor
+    WHERE id_conductor = @id_conductor AND id_equipo = @id_equipo
+  )
+  BEGIN
+    RAISERROR('El conductor no existe o no pertenece al equipo', 16, 1);
+    RETURN;
+  END;
+
+  -- (Opcional) evitar que el mismo conductor esté asignado a 2 carros del mismo equipo
+  IF EXISTS (
+    SELECT 1 FROM dbo.carro
+    WHERE id_equipo = @id_equipo
+      AND id_conductor = @id_conductor
+      AND id_carro <> @id_carro
+  )
+  BEGIN
+    RAISERROR('Ese conductor ya está asignado a otro carro del equipo', 16, 1);
+    RETURN;
+  END;
+
+  UPDATE dbo.carro
+  SET id_conductor = @id_conductor
+  WHERE id_carro = @id_carro;
+
+  SELECT 'OK' AS resultado, @id_carro AS id_carro, @id_conductor AS id_conductor;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_carros_por_equipo
+  @id_equipo INT
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  SELECT
+    c.id_carro,
+    c.id_equipo,
+    c.nombre,
+    c.finalizado,
+    c.id_conductor,
+    co.nombre AS conductor_nombre,
+    co.habilidad_h
+  FROM dbo.carro c
+  LEFT JOIN dbo.conductor co ON co.id_conductor = c.id_conductor
+  WHERE c.id_equipo = @id_equipo
+  ORDER BY c.id_carro ASC;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_quitar_conductor_de_carro
+  @id_carro INT,
+  @id_equipo INT
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  IF NOT EXISTS (SELECT 1 FROM dbo.carro WHERE id_carro=@id_carro AND id_equipo=@id_equipo)
+  BEGIN
+    RAISERROR('El carro no existe o no pertenece al equipo', 16, 1);
+    RETURN;
+  END;
+
+  UPDATE dbo.carro
+  SET id_conductor = NULL
+  WHERE id_carro = @id_carro;
+
+  SELECT 'OK' AS resultado;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_conductores_por_equipo
+  @id_equipo INT
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  SELECT
+    id_conductor,
+    id_equipo,
+    nombre,
+    habilidad_h,
+    id_usuario
+  FROM dbo.conductor
+  WHERE id_equipo = @id_equipo
+  ORDER BY nombre ASC;
+END;
+GO
+
+
+

@@ -178,7 +178,88 @@ const carSetupController = {
       logger.error(`Error finalizing car: ${e.message}`);
       return res.status(500).json({ error: e.message });
     }
+  },
+
+  // PUT /api/car-setup/car/:id_carro/driver
+  // Body:
+  // - Engineer: { id_conductor }
+  // - Admin: { id_conductor, id_equipo }
+  async assignDriver(req, res) {
+  try {
+    const id_carro = Number(req.params.id_carro);
+    const id_conductor = Number(req.body?.id_conductor);
+
+    if (!isIntPos(id_carro)) return res.status(400).json({ error: 'id_carro inválido' });
+    if (!isIntPos(id_conductor)) return res.status(400).json({ error: 'id_conductor inválido' });
+
+    const rol = req.user?.rol;
+    const myTeam = Number(req.user?.id_equipo);
+
+    if (rol !== 'Admin' && rol !== 'Engineer') {
+      return res.status(403).json({ error: 'Rol no autorizado' });
+    }
+
+    const selectedTeam = Number(req.body?.id_equipo); // Admin lo manda
+    const teamToUse = (rol === 'Admin') ? selectedTeam : myTeam;
+
+    if (!teamToUse || teamToUse === 0) {
+      return res.status(400).json({
+        error: rol === 'Admin'
+          ? 'Admin debe enviar id_equipo en el body'
+          : 'No tienes equipo asignado'
+      });
+    }
+
+    const result = await carSetupModel.assignDriver(id_carro, teamToUse, id_conductor);
+
+    // opcional: devolver setup actualizado para refrescar UI
+    const setup = await carSetupModel.getCarSetupSummary(id_carro);
+    const summary = setup.recordsets?.[0]?.[0] || null;
+    const categories = setup.recordsets?.[1] || [];
+
+    return res.status(200).json({
+      result: result.recordset?.[0] || { resultado: 'OK' },
+      summary,
+      categories
+    });
+  } catch (e) {
+    logger.error(`Error assigning driver: ${e.message}`);
+    return res.status(500).json({ error: e.message });
   }
+},
+
+
+  // (Opcional) PUT /api/car-setup/car/:id_carro/driver/remove
+  async removeDriverFromCar(req, res) {
+    try {
+      const id_carro = Number(req.params.id_carro);
+      if (!isIntPos(id_carro)) return res.status(400).json({ error: 'id_carro inválido' });
+
+      const rol = req.user?.rol;
+      const myTeam = Number(req.user?.id_equipo);
+
+      if (rol !== 'Admin' && rol !== 'Engineer') {
+        return res.status(403).json({ error: 'Rol no autorizado' });
+      }
+
+      const selectedTeam = Number(req.body?.id_equipo); // Admin lo manda
+      const teamToUse = (rol === 'Admin') ? selectedTeam : myTeam;
+
+      if (!teamToUse || teamToUse === 0) {
+        return res.status(400).json({
+          error: rol === 'Admin'
+            ? 'Admin debe enviar id_equipo en el body'
+            : 'No tienes equipo asignado'
+        });
+      }
+
+      const result = await carSetupModel.removeDriverFromCar(id_carro, teamToUse);
+      return res.status(200).json(result.recordset?.[0] || { message: 'OK' });
+    } catch (e) {
+      logger.error(`Error removing driver from car: ${e.message}`);
+      return res.status(500).json({ error: e.message });
+    }
+  },
 };
 
 module.exports = carSetupController;
