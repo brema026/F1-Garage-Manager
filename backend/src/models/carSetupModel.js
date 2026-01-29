@@ -43,6 +43,23 @@ const carSetupModel = {
       .input('id_carro', sql.Int, Number(id_carro))
       .input('id_equipo', sql.Int, Number(id_equipo))
       .execute('dbo.sp_finalizar_carro');
+  },
+
+  async assignDriver(id_carro, id_equipo, id_conductor) {
+  const pool = await getPool();
+  return pool.request()
+    .input('id_carro', sql.Int, Number(id_carro))
+    .input('id_equipo', sql.Int, Number(id_equipo))
+    .input('id_conductor', sql.Int, Number(id_conductor))
+    .execute('dbo.sp_asignar_conductor_a_carro');
+},
+
+  async removeDriverFromCar(id_carro, id_equipo) {
+    const pool = await getPool();
+    return pool.request()
+      .input('id_carro', sql.Int, Number(id_carro))
+      .input('id_equipo', sql.Int, Number(id_equipo))
+      .execute('dbo.sp_quitar_conductor_de_carro');
   }
 };
 

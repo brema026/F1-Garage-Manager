@@ -5,7 +5,7 @@ import RaceResults from "./RaceResults";
 import SimulationsHistory from "./SimulationsHistory";
 import { AnimatePresence, motion } from "framer-motion";
 
-export default function RaceFlow() {
+export default function RaceFlow({ user }) {
   const [selectedCircuit, setSelectedCircuit] = useState(null);
   const [selectedCars, setSelectedCars] = useState([]);
   const [showResults, setShowResults] = useState(false);
@@ -21,31 +21,37 @@ export default function RaceFlow() {
     setSelectedCars([]);
     setShowResults(false);
     setShowHistory(false);
+    setSimulationData(null);
   };
 
-  const handleStartRace = (cars) => {
-    console.log("Simulación completada para:", selectedCircuit.name);
-    console.log("Vehículos:", cars);
-    
-    // Preparar datos de simulación
-    const simulationData = {
-      circuit: selectedCircuit,
-      cars: cars,
+  /**
+   * VehicleSelection debería llamar:
+   * onStartRace({ id_simulacion, resultados, selectedCars, circuit })
+   */
+  const handleStartRace = (payload) => {
+  const resultsFromApi = Array.isArray(payload?.resultados) ? payload.resultados : [];
+
+  const sim = {
+      id_simulacion: payload?.id_simulacion ?? null,
+      circuit: payload?.circuit ?? selectedCircuit,
+      cars: Array.isArray(payload?.selectedCars) ? payload.selectedCars : selectedCars,
       timestamp: new Date().toISOString(),
-      results: null // Se llenaría con datos reales de la API
+      results: resultsFromApi, // 👈 ESTE ES EL PUNTO CLAVE
     };
-    
-    setSelectedCars(cars);
-    setSimulationData(simulationData);
+
+    setSelectedCars(sim.cars);
+    setSimulationData(sim);
     setShowResults(true);
     setShowHistory(false);
   };
+
 
   const handleBackFromResults = () => {
     setShowResults(false);
     setSelectedCircuit(null);
     setSelectedCars([]);
     setShowHistory(false);
+    setSimulationData(null);
   };
 
   const handleShowHistory = () => {
@@ -58,20 +64,22 @@ export default function RaceFlow() {
   };
 
   const handleSimulationClick = (simulation) => {
-    console.log("Simulación seleccionada del historial:", simulation);
+    // OJO: aquí estás armando dummy; cuando ya tengas endpoint detail/results, lo cambiamos
     const dummySimulationData = {
       circuit: {
         id: simulation.id,
         name: simulation.circuit_name,
-        distance: 5.793, 
-        curves: 15
+        distance: 5.793,
+        curves: 15,
       },
       cars: [],
       timestamp: simulation.date + "T" + simulation.time,
-      results: null
+      results: [],
     };
-    
+
     setSimulationData(dummySimulationData);
+    setSelectedCircuit(dummySimulationData.circuit);
+    setSelectedCars(dummySimulationData.cars);
     setShowResults(true);
     setShowHistory(false);
   };
@@ -87,7 +95,7 @@ export default function RaceFlow() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <RaceResults 
+            <RaceResults
               onBack={handleBackFromResults}
               circuit={selectedCircuit}
               cars={selectedCars}
@@ -102,9 +110,10 @@ export default function RaceFlow() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <SimulationsHistory 
+            <SimulationsHistory
               onBack={handleBackFromHistory}
               onSimulationClick={handleSimulationClick}
+              user={user}
             />
           </motion.div>
         ) : !selectedCircuit ? (
@@ -115,9 +124,10 @@ export default function RaceFlow() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <CircuitSelection 
+            <CircuitSelection
               onSelect={handleCircuitSelect}
               onShowHistory={handleShowHistory}
+              user={user}
             />
           </motion.div>
         ) : (
@@ -128,10 +138,11 @@ export default function RaceFlow() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <VehicleSelection 
-              circuit={selectedCircuit} 
-              onBack={handleBack} 
-              onStartRace={handleStartRace} 
+            <VehicleSelection
+              circuit={selectedCircuit}
+              onBack={handleBack}
+              onStartRace={handleStartRace}
+              user={user}
             />
           </motion.div>
         )}
@@ -139,3 +150,4 @@ export default function RaceFlow() {
     </div>
   );
 }
+

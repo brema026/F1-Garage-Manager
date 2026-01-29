@@ -25,4 +25,13 @@ router.put('/car/:id_carro/install', protect, carSetupController.installOrReplac
 // Finalizar carro si tiene 5 categorías instaladas
 router.post('/car/:id_carro/finalize', protect, carSetupController.finalizeCar);
 
+
+// Asignar / cambiar conductor del carro
+// PUT /api/car-setup/car/:id_carro/driver
+router.put('/car/:id_carro/driver', protect, carSetupController.assignDriver);
+
+// (Opcional) quitar conductor
+// PUT /api/car-setup/car/:id_carro/driver/remove
+router.put('/car/:id_carro/driver/remove', protect, carSetupController.removeDriverFromCar);
+
 module.exports = router;
