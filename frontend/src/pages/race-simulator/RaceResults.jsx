@@ -55,7 +55,7 @@ export default function RaceResults({ onBack, circuit, cars, simulationData }) {
   // Función para manejar clic en botón Grafana
   const handleGrafanaClick = () => {
     console.log("Abriendo Grafana para todos los resultados");
-    window.open('http://localhost:3003/d/adv5dh8', '_blank');
+    window.open('http://localhost:3003/d/adxgd9d', '_blank');
   };
 
   return (
@@ -126,7 +126,7 @@ export default function RaceResults({ onBack, circuit, cars, simulationData }) {
                 
                 {/* CONTENEDOR DE BOTONES */}
                 <div className="flex items-center gap-2">
-                  {/* BOTÓN VER GRAFANA (NUEVO) */}
+                  {/* BOTÓN VER GRAFANA */}
                   <motion.button
                     onClick={handleGrafanaClick}
                     className="flex items-center gap-1.5 group px-3 py-1.5 bg-gradient-to-r from-orange-900/20 to-yellow-800/10 border border-orange-800/30 rounded-md hover:bg-orange-900/30 hover:border-orange-700/50 transition-all duration-200"
