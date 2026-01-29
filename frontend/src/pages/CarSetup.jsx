@@ -709,11 +709,6 @@ export function CarSetup({ user }) {
                         </button>
                       </div>
                     </div>
-
-                    <div className="mt-2 text-xs text-light/50">
-                      Tip: los conductores se están leyendo desde <span className="text-white font-bold">/teams</span> (campo{" "}
-                      <span className="text-white font-bold">conductores</span>).
-                    </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-3 mt-6">
