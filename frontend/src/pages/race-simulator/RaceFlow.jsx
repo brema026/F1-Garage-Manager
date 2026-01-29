@@ -24,25 +24,27 @@ export default function RaceFlow({ user }) {
     setSimulationData(null);
   };
 
-  // VehicleSelection te está enviando un objeto con:
-  // { id_simulacion, resultados, selectedCars, circuit }
+  /**
+   * VehicleSelection debería llamar:
+   * onStartRace({ id_simulacion, resultados, selectedCars, circuit })
+   */
   const handleStartRace = (payload) => {
-    console.log("Simulación completada:", payload);
+  const resultsFromApi = Array.isArray(payload?.resultados) ? payload.resultados : [];
 
-    const sim = {
+  const sim = {
       id_simulacion: payload?.id_simulacion ?? null,
       circuit: payload?.circuit ?? selectedCircuit,
-      cars: payload?.selectedCars ?? [],
+      cars: Array.isArray(payload?.selectedCars) ? payload.selectedCars : selectedCars,
       timestamp: new Date().toISOString(),
-      results: payload?.resultados ?? null,
+      results: resultsFromApi, // 👈 ESTE ES EL PUNTO CLAVE
     };
 
-    setSelectedCircuit(sim.circuit);
     setSelectedCars(sim.cars);
     setSimulationData(sim);
     setShowResults(true);
     setShowHistory(false);
   };
+
 
   const handleBackFromResults = () => {
     setShowResults(false);
@@ -62,8 +64,7 @@ export default function RaceFlow({ user }) {
   };
 
   const handleSimulationClick = (simulation) => {
-    console.log("Simulación seleccionada del historial:", simulation);
-
+    // OJO: aquí estás armando dummy; cuando ya tengas endpoint detail/results, lo cambiamos
     const dummySimulationData = {
       circuit: {
         id: simulation.id,
@@ -73,7 +74,7 @@ export default function RaceFlow({ user }) {
       },
       cars: [],
       timestamp: simulation.date + "T" + simulation.time,
-      results: null,
+      results: [],
     };
 
     setSimulationData(dummySimulationData);
@@ -99,7 +100,6 @@ export default function RaceFlow({ user }) {
               circuit={selectedCircuit}
               cars={selectedCars}
               simulationData={simulationData}
-              user={user}
             />
           </motion.div>
         ) : showHistory ? (
@@ -142,7 +142,7 @@ export default function RaceFlow({ user }) {
               circuit={selectedCircuit}
               onBack={handleBack}
               onStartRace={handleStartRace}
-              user={user}   // ✅ ESTE ERA EL PROBLEMA
+              user={user}
             />
           </motion.div>
         )}
@@ -150,3 +150,4 @@ export default function RaceFlow({ user }) {
     </div>
   );
 }
+

@@ -134,6 +134,9 @@ GO
 USE f1_garage_tec;
 GO
 
+USE f1_garage_tec;
+GO
+
 CREATE OR ALTER PROCEDURE dbo.sp_ejecutar_simulacion
   @id_circuito INT,
   @id_usuario  INT = NULL
@@ -287,7 +290,7 @@ BEGIN
       ROLLBACK; RETURN;
     END;
 
-    /* ===== Snapshot piezas ===== */
+    /* ===== Snapshot piezas (5 filas por carro) ===== */
     INSERT INTO dbo.simulacion_participante_pieza (
       id_simulacion, id_carro, category_id, part_id,
       part_nombre, p, a, m
@@ -320,19 +323,59 @@ BEGIN
 
     COMMIT;
 
-    /* ===== Salida para backend ===== */
+    /* =========================================================
+       SALIDA "LISTA PARA UI"
+       - Nombres compatibles con tu RaceResults.jsx
+       ========================================================= */
+    ;WITH base AS (
+      SELECT
+        sp.id_simulacion,
+        sp.id_carro,
+        sp.id_equipo,
+        e.nombre AS team,
+        sp.id_conductor,
+        co.nombre AS driver,
+        sp.setup_id,
+
+        sp.total_p AS P,
+        sp.total_a AS A,
+        sp.total_m AS M,
+        sp.habilidad_h AS H,
+
+        sp.vrecta AS Vrecta,
+        sp.vcurva AS Vcurva,
+
+        sp.penalizacion AS penalty,
+        sp.tiempo_segundos AS timeSeconds,
+        sp.posicion AS position
+      FROM dbo.simulacion_participante sp
+      JOIN dbo.equipo e     ON e.id_equipo = sp.id_equipo
+      JOIN dbo.conductor co ON co.id_conductor = sp.id_conductor
+      WHERE sp.id_simulacion = @id_simulacion
+    ),
+    winner AS (
+      SELECT MIN(timeSeconds) AS bestTime
+      FROM base
+    )
     SELECT
-      sp.id_simulacion,
-      sp.id_carro,
-      sp.id_equipo,
-      sp.id_conductor,
-      sp.setup_id,
-      sp.total_p, sp.total_a, sp.total_m, sp.habilidad_h,
-      sp.vrecta, sp.vcurva, sp.penalizacion, sp.tiempo_segundos,
-      sp.posicion
-    FROM dbo.simulacion_participante sp
-    WHERE sp.id_simulacion = @id_simulacion
-    ORDER BY sp.posicion ASC;
+      b.id_simulacion,
+      b.id_carro,
+      b.id_equipo,
+      b.team,
+      b.id_conductor,
+      b.driver,
+      b.setup_id,
+
+      b.P, b.A, b.M, b.H,
+      b.Vrecta, b.Vcurva,
+      b.penalty,
+      b.timeSeconds,
+
+      CAST(b.timeSeconds - w.bestTime AS DECIMAL(12,3)) AS diff,
+      b.position
+    FROM base b
+    CROSS JOIN winner w
+    ORDER BY b.position ASC;
 
   END TRY
   BEGIN CATCH
@@ -344,10 +387,6 @@ BEGIN
 END;
 GO
 
-
-
-USE f1_garage_tec;
-GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_listar_carros_elegibles
 AS
