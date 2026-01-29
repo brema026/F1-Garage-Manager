@@ -5,12 +5,12 @@ services:
     image: grafana/grafana:latest
     container_name: f1_garage_grafana
     ports:
-      - "3004:3000"
+      - "3003:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_SECURITY_ADMIN_USER=admin
       # Agregamos el plugin de SQL Server
-      - GF_INSTALL_PLUGINS=grafana-simple-json-datasource,grafana-clock-panel,marcusolsson-dynamictext-panel,frser-sqlite-datasource,grafana-mssql-datasource
+      - GF_INSTALL_PLUGINS=grafana-simple-json-datasource,grafana-clock-panel,marcusolsson-dynamictext-panel,frser-sqlite-datasource
       - GF_FEATURE_TOGGLES_ENABLE=publicDashboards
     volumes:
       - ./grafana-data:/var/lib/grafana

@@ -53,9 +53,9 @@ export default function RaceResults({ onBack, circuit, cars, simulationData }) {
   };
 
   // Función para manejar clic en botón Grafana
-  const handleGrafanaClick = (result) => {
-    console.log(`Abriendo Grafana para: ${result.driver} - ${result.car}`);
-    // Por ahora no hace nada, solo log
+  const handleGrafanaClick = () => {
+    console.log("Abriendo Grafana para todos los resultados");
+    window.open('http://localhost:3003/d/adv5dh8', '_blank');
   };
 
   return (
@@ -124,18 +124,34 @@ export default function RaceResults({ onBack, circuit, cars, simulationData }) {
                   </div>
                 </div>
                 
-                {/* BOTÓN VOLVER */}
-                <motion.button
-                  onClick={handleBack}
-                  className="flex items-center gap-1.5 group px-3 py-1.5 bg-white/[0.02] border border-white/[0.06] rounded-md hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-200 mr-1"
-                  whileHover={{ x: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <FiChevronLeft className="text-gray-400 group-hover:text-red-400 transition-colors duration-200 text-xs " />
-                  <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-gray-300 group-hover:text-white transition-colors duration-200">
-                    Volver al inicio
-                  </span>
-                </motion.button>
+                {/* CONTENEDOR DE BOTONES */}
+                <div className="flex items-center gap-2">
+                  {/* BOTÓN VER GRAFANA (NUEVO) */}
+                  <motion.button
+                    onClick={handleGrafanaClick}
+                    className="flex items-center gap-1.5 group px-3 py-1.5 bg-gradient-to-r from-orange-900/20 to-yellow-800/10 border border-orange-800/30 rounded-md hover:bg-orange-900/30 hover:border-orange-700/50 transition-all duration-200"
+                    whileHover={{ x: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <FiBarChart2 className="text-orange-300 group-hover:text-orange-200 transition-colors duration-200 text-xs" />
+                    <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-orange-300 group-hover:text-orange-200 transition-colors duration-200">
+                      Ver Grafana
+                    </span>
+                  </motion.button>
+                  
+                  {/* BOTÓN VOLVER */}
+                  <motion.button
+                    onClick={handleBack}
+                    className="flex items-center gap-1.5 group px-3 py-1.5 bg-white/[0.02] border border-white/[0.06] rounded-md hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-200"
+                    whileHover={{ x: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <FiChevronLeft className="text-gray-400 group-hover:text-red-400 transition-colors duration-200 text-xs" />
+                    <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-gray-300 group-hover:text-white transition-colors duration-200">
+                      Volver al inicio
+                    </span>
+                  </motion.button>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -226,7 +242,6 @@ export default function RaceResults({ onBack, circuit, cars, simulationData }) {
                                 result={result} 
                                 isExpanded={expandedRow === result.id}
                                 onToggleExpand={() => toggleRowExpand(result.id)}
-                                onGrafanaClick={() => handleGrafanaClick(result)}
                               />
                             </div>
                             
@@ -236,7 +251,6 @@ export default function RaceResults({ onBack, circuit, cars, simulationData }) {
                                 result={result} 
                                 isExpanded={expandedRow === result.id}
                                 onToggleExpand={() => toggleRowExpand(result.id)}
-                                onGrafanaClick={() => handleGrafanaClick(result)}
                               />
                             </div>
                           </motion.div>
@@ -298,7 +312,7 @@ export default function RaceResults({ onBack, circuit, cars, simulationData }) {
 }
 
 // FILA DE ESCRITORIO
-function ResultRowDesktop({ result, isExpanded, onToggleExpand, onGrafanaClick }) {
+function ResultRowDesktop({ result, isExpanded, onToggleExpand }) {
   return (
     <motion.div
       className="group relative"
@@ -447,24 +461,6 @@ function ResultRowDesktop({ result, isExpanded, onToggleExpand, onGrafanaClick }
                 </div>
               </div>
               
-              {/* SEGUNDA SECCIÓN: BOTÓN VER GRAFANA */}
-              <div className="p-4 border-b border-white/[0.04]">
-                <div className="flex items-center justify-center">
-                  <button
-                    onClick={() => window.open('http://localhost:3003/d/adv5dh8', '_blank')}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-200 backdrop-blur-md bg-gradient-to-r from-orange-900/20 to-yellow-800/10 text-orange-300 border-orange-800/30 hover:bg-orange-900/30 hover:border-orange-700/50 hover:text-orange-200"
-                  >
-                    <FiBarChart2 className="text-sm" />
-                    <span className="text-[13px] font-medium uppercase tracking-[0.15em]">
-                      VER GRAFANA
-                    </span>
-                  </button>
-                </div>
-                <p className="text-center text-[10px] text-gray-400 mt-2 uppercase tracking-[0.2em]">
-                  Análisis detallado de telemetría
-                </p>
-              </div>
-              
               {/* TERCERA SECCIÓN: SETUP DEL CARRO */}
               <div className="p-4">
                 <p className="text-[11px] uppercase tracking-[0.25em] text-gray-400 mb-3">SETUP DEL CARRO |
@@ -611,7 +607,7 @@ function ResultRowDesktop({ result, isExpanded, onToggleExpand, onGrafanaClick }
 }
 
 // FILA DE MÓVIL - MÁS OSCURA
-function ResultRowMobile({ result, isExpanded, onToggleExpand, onGrafanaClick }) {
+function ResultRowMobile({ result, isExpanded, onToggleExpand }) {
   return (
     <motion.div
       className="group relative"
@@ -735,26 +731,6 @@ function ResultRowMobile({ result, isExpanded, onToggleExpand, onGrafanaClick })
                       {(result.timeSeconds - result.penalty).toFixed(3)} s
                     </div>
                   </div>
-                </div>
-                
-                {/* BOTÓN VER GRAFANA MÓVIL */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-center">
-                    <motion.button
-                      onClick={onGrafanaClick}
-                      className="flex items-center gap-2 px-3 py-2 rounded-full border transition-all duration-200 backdrop-blur-md bg-gradient-to-r from-blue-900/20 to-blue-800/10 text-blue-300 border-blue-800/30 hover:bg-blue-900/30 hover:border-blue-700/50 hover:text-blue-200 w-full max-w-xs"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <FiBarChart2 className="text-sm" />
-                      <span className="text-[12px] font-medium uppercase tracking-[0.15em]">
-                        VER GRAFANA
-                      </span>
-                    </motion.button>
-                  </div>
-                  <p className="text-center text-[9px] text-gray-400 mt-1 uppercase tracking-[0.15em]">
-                    Telemetría detallada
-                  </p>
                 </div>
                 
                 {/* SETUP DEL CARRO */}
