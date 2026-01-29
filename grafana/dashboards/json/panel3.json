@@ -40,17 +40,17 @@
         "mode": "absolute",
         "steps": [
           {
-            "value": null,
-            "color": "green"
+            "color": "green",
+            "value": null
           },
           {
-            "value": 80,
-            "color": "red"
+            "color": "red",
+            "value": 80
           }
         ]
       },
-      "unit": "none",
-      "decimals": 2
+      "decimals": 2,
+      "unit": "none"
     },
     "overrides": [
       {
@@ -110,24 +110,24 @@
   "pluginVersion": "12.3.1",
   "targets": [
     {
-      "refId": "A",
+      "editorMode": "code",
       "format": "table",
       "rawQuery": true,
-      "rawSql": "SELECT \n  carro AS category,\n  CAST(tiempo_segundos AS DECIMAL(12,3)) AS tiempo_segundos,\n  CAST(p_total AS INT) AS p_total,\n  CAST(a_total AS INT) AS a_total,\n  CAST(m_total AS INT) AS m_total,\n  circuito,\n  equipo\nFROM dbo.v_grafana_tiempo_vs_pam\nWHERE circuito = '$circuito'\n  AND id_simulacion = $simulation_id\n  AND carro = '$carro'\nORDER BY tiempo_segundos ASC;",
-      "editorMode": "code",
+      "rawSql": "SELECT \n  CONCAT(equipo, ' - ', carro) AS category, \n  CAST(tiempo_segundos AS DECIMAL(12,3)) AS tiempo_segundos,\n  CAST(p_total AS INT) AS p_total,\n  CAST(a_total AS INT) AS a_total,\n  CAST(m_total AS INT) AS m_total,\n  circuito,\n  equipo\nFROM dbo.v_grafana_tiempo_vs_pam\nWHERE circuito = '$circuito'\n  AND id_simulacion = $simulation_id\n  AND id_carro = $carro \nORDER BY tiempo_segundos ASC;",
+      "refId": "A",
       "sql": {
         "columns": [
           {
-            "type": "function",
-            "parameters": []
+            "parameters": [],
+            "type": "function"
           }
         ],
         "groupBy": [
           {
-            "type": "groupBy",
             "property": {
               "type": "string"
-            }
+            },
+            "type": "groupBy"
           }
         ],
         "limit": 50
@@ -135,8 +135,8 @@
     }
   ],
   "datasource": {
-    "uid": "ffblaxvmd81s0f",
-    "type": "mssql"
+    "type": "mssql",
+    "uid": "ffblaxvmd81s0f"
   },
   "options": {
     "orientation": "vertical",

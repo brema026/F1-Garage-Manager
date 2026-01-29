@@ -19,12 +19,12 @@ SELECT
   CONCAT('Sim ', CAST(id_simulacion AS VARCHAR(10))) AS sim_label,
   circuito AS circuito_label
 FROM dbo.v_grafana_carro_historial
-WHERE carro = '$carro'
+WHERE id_carro = $carro  -- Cambió de carro a id_carro
 ORDER BY fecha_simulacion;
 
 -- PANEL 3
 SELECT 
-  carro AS category,
+  CONCAT(equipo, ' - ', carro) AS category, 
   CAST(tiempo_segundos AS DECIMAL(12,3)) AS tiempo_segundos,
   CAST(p_total AS INT) AS p_total,
   CAST(a_total AS INT) AS a_total,
@@ -34,5 +34,5 @@ SELECT
 FROM dbo.v_grafana_tiempo_vs_pam
 WHERE circuito = '$circuito'
   AND id_simulacion = $simulation_id
-  AND carro = '$carro'
+  AND id_carro = $carro 
 ORDER BY tiempo_segundos ASC;

@@ -26,12 +26,12 @@
         "mode": "absolute",
         "steps": [
           {
-            "value": null,
-            "color": "green"
+            "color": "green",
+            "value": null
           },
           {
-            "value": 80,
-            "color": "red"
+            "color": "red",
+            "value": 80
           }
         ]
       },
@@ -161,29 +161,29 @@
   "pluginVersion": "12.3.1",
   "targets": [
     {
-      "refId": "A",
-      "format": "table",
-      "editorMode": "code",
-      "rawQuery": true,
       "dataset": "f1_garage_tec",
       "datasource": {
         "type": "mssql",
         "uid": "ffblaxvmd81s0f"
       },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
       "rawSql": "SELECT\r\n  posicion,\r\n  equipo,\r\n  carro,\r\n  vrecta,\r\n  vcurva,\r\n  penalizacion,\r\n  tiempo_segundos\r\nFROM dbo.v_grafana_ranking_simulacion\r\nWHERE circuito = '$circuito'\r\n  AND id_simulacion = $simulation_id \r\nORDER BY posicion;\r\n",
+      "refId": "A",
       "sql": {
         "columns": [
           {
-            "type": "function",
-            "parameters": []
+            "parameters": [],
+            "type": "function"
           }
         ],
         "groupBy": [
           {
-            "type": "groupBy",
             "property": {
               "type": "string"
-            }
+            },
+            "type": "groupBy"
           }
         ],
         "limit": 50
@@ -191,8 +191,8 @@
     }
   ],
   "datasource": {
-    "uid": "ffblaxvmd81s0f",
-    "type": "mssql"
+    "type": "mssql",
+    "uid": "ffblaxvmd81s0f"
   },
   "options": {
     "showHeader": true,

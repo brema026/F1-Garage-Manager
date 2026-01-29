@@ -540,26 +540,6 @@ function ResultRowDesktop({ result, isExpanded, onToggleExpand, onGrafanaClick }
                 </div>
               </div>
 
-              <div className="p-4 border-b border-white/[0.04]">
-                <div className="flex items-center justify-center">
-                  <motion.button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onGrafanaClick();
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-200 backdrop-blur-md bg-gradient-to-r from-orange-900/20 to-yellow-800/10 text-orange-300 border-orange-800/30 hover:border-orange-700/50 hover:text-orange-200"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <FiBarChart2 className="text-sm" />
-                    <span className="text-[13px] font-medium uppercase tracking-[0.15em]">VER GRAFANA</span>
-                  </motion.button>
-                </div>
-                <p className="text-center text-[10px] text-gray-400 mt-2 uppercase tracking-[0.2em]">
-                  Análisis detallado de telemetría
-                </p>
-              </div>
-
               <div className="p-4">
                 <p className="text-[11px] uppercase tracking-[0.25em] text-gray-400 mb-3">
                   SETUP DEL CARRO |{" "}
@@ -664,28 +644,6 @@ function ResultRowMobile({ result, isExpanded, onToggleExpand, onGrafanaClick })
                     value={toNum(result.penalty, 0) > 0 ? `${toNum(result.penalty, 0)}s` : "—"}
                   />
                   <MiniStat label="TIEMPO NETO" value={`${safeToFixed(net, 3, "—")} s`} mono />
-                </div>
-
-                <div className="mb-4">
-                  <div className="flex items-center justify-center">
-                    <motion.button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onGrafanaClick();
-                      }}
-                      className="flex items-center gap-2 px-3 py-2 rounded-full border transition-all duration-200 backdrop-blur-md bg-gradient-to-r from-blue-900/20 to-blue-800/10 text-blue-300 border-blue-800/30 hover:border-blue-700/50 hover:text-blue-200 w-full max-w-xs"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <FiBarChart2 className="text-sm" />
-                      <span className="text-[12px] font-medium uppercase tracking-[0.15em]">
-                        VER GRAFANA
-                      </span>
-                    </motion.button>
-                  </div>
-                  <p className="text-center text-[9px] text-gray-400 mt-1 uppercase tracking-[0.15em]">
-                    Telemetría detallada
-                  </p>
                 </div>
 
                 <div className="text-[10px] text-white/60">

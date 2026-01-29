@@ -14,6 +14,7 @@ ORDER BY s.id_simulacion;
 
 -- carro
 SELECT DISTINCT
-  carro AS value
+  CONCAT(equipo, ' - ', carro) AS __text,
+  id_carro AS __value
 FROM dbo.v_grafana_carro_historial
-ORDER BY value;
+ORDER BY __text;

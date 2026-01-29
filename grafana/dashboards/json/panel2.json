@@ -53,53 +53,52 @@
         "mode": "absolute",
         "steps": [
           {
-            "tiempo": null,
             "color": "green",
             "value": null
           },
           {
-            "value": 80,
-            "color": "red"
+            "color": "red",
+            "value": 80
           }
         ]
       },
-      "unit": "s",
       "decimals": 3,
-      "displayName": "Tiempo"
+      "displayName": "Tiempo",
+      "unit": "s"
     },
     "overrides": []
   },
   "pluginVersion": "12.3.1",
   "targets": [
     {
-      "refId": "A",
-      "format": "table",
-      "rawSql": "SELECT\r\n  fecha_simulacion AS time,\r\n  CAST(tiempo_segundos AS DECIMAL(12,3)) AS value,\r\n  CONCAT('Sim ', CAST(id_simulacion AS VARCHAR(10))) AS sim_label,\r\n  circuito AS circuito_label\r\nFROM dbo.v_grafana_carro_historial\r\nWHERE carro = '$carro'\r\nORDER BY fecha_simulacion;\r\n",
+      "dataset": "f1_garage_tec",
       "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT\r\n  fecha_simulacion AS time,\r\n  CAST(tiempo_segundos AS DECIMAL(12,3)) AS value,\r\n  CONCAT('Sim ', CAST(id_simulacion AS VARCHAR(10))) AS sim_label,\r\n  circuito AS circuito_label\r\nFROM dbo.v_grafana_carro_historial\r\nWHERE id_carro = $carro  -- Cambió de carro a id_carro\r\nORDER BY fecha_simulacion;",
+      "refId": "A",
       "sql": {
         "columns": [
           {
-            "type": "function",
-            "parameters": []
+            "parameters": [],
+            "type": "function"
           }
         ],
         "groupBy": [
           {
-            "type": "groupBy",
             "property": {
               "type": "string"
-            }
+            },
+            "type": "groupBy"
           }
         ],
         "limit": 500
-      },
-      "dataset": "f1_garage_tec",
-      "rawQuery": true
+      }
     }
   ],
   "datasource": {
-    "uid": "ffblaxvmd81s0f",
-    "type": "mssql"
+    "type": "mssql",
+    "uid": "ffblaxvmd81s0f"
   },
   "options": {
     "tooltip": {
