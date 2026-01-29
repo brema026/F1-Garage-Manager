@@ -38,8 +38,8 @@ export function Parts({ user }) {
     potencia: 0,
     aerodinamica: 0,
     manejabilidad: 0,
-    precio: 0,
-    stock: 0,
+    precio: '',
+    stock: '',
   });
 
   const userRole = user?.rol?.toLowerCase();
@@ -138,8 +138,8 @@ export function Parts({ user }) {
       potencia: 0,
       aerodinamica: 0,
       manejabilidad: 0,
-      precio: 0,
-      stock: 0,
+      precio: '',
+      stock: '',
     });
     setShowModal(true);
   };
@@ -702,7 +702,7 @@ export function Parts({ user }) {
                     <input
                       type="number"
                       min="0"
-                      step="10000"
+                      step="1"
                       value={formData.precio}
                       onChange={(e) => setFormData({ ...formData, precio: Number(e.target.value) })}
                       className="w-full px-4 py-3 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white placeholder-light/30 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"

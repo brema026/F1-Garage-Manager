@@ -41,7 +41,7 @@ app.use(cors({
       const port = url.port || (url.protocol === 'https:' ? '443' : '80');
 
       // ✅ Puerto permitido del frontend (ajusta si usas otro)
-      const FRONTEND_PORT = '3002';
+      const FRONTEND_PORT = process.env.FRONTEND_PORT || 3002;;
 
       // ✅ Solo hosts de red local (LAN)
       const isLocalHost =
