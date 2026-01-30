@@ -164,7 +164,7 @@ const sponsorContributionController = {
 
   async getTeams(req, res) {
     try {
-      const result = await sponsorContributionModel.getTeams();
+      const result = await model.getTeams();
       return res.status(200).json(result.recordset);
     } catch (e) {
       logger.error(`Error fetching teams: ${e.message}`);

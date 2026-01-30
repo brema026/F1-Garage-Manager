@@ -109,13 +109,14 @@ function App() {
         <Route 
           path="/simulation" 
           element={
-            isLoggedIn ? (
-              <RaceFlow />
+            isLoggedIn && user ? (
+              <RaceFlow user={user} />
             ) : (
               <Navigate to="/login" replace />
             )
           } 
         />
+
         
         {/* Protected Dashboard Route */}
         <Route

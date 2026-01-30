@@ -1,0 +1,7 @@
+cd grafana
+
+# Esto crea el contenedor con el grafana en docker
+docker-compose -f docker-compose.grafana.yml up -d
+
+# Esto comprueba que esté levantado
+docker ps

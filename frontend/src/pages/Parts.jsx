@@ -38,8 +38,8 @@ export function Parts({ user }) {
     potencia: 0,
     aerodinamica: 0,
     manejabilidad: 0,
-    precio: 0,
-    stock: 0,
+    precio: '',
+    stock: '',
   });
 
   const userRole = user?.rol?.toLowerCase();
@@ -138,8 +138,8 @@ export function Parts({ user }) {
       potencia: 0,
       aerodinamica: 0,
       manejabilidad: 0,
-      precio: 0,
-      stock: 0,
+      precio: '',
+      stock: '',
     });
     setShowModal(true);
   };
@@ -410,13 +410,15 @@ export function Parts({ user }) {
             {/* Sidebar */}
             <div className="lg:col-span-1">
               <div className="sticky top-8 space-y-4">
-                <button
-                  onClick={handleCreatePart}
-                  className="w-full bg-gradient-to-r from-primary to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg shadow-primary/30 hover:shadow-primary/50 flex items-center justify-center gap-2 md:text-sm"
-                >
-                  <FiPlus className="text-lg" />
-                  NUEVA PARTE
-                </button>
+                {userRole !== 'engineer' && (
+                  <button
+                    onClick={handleCreatePart}
+                    className="w-full bg-gradient-to-r from-primary to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg shadow-primary/30 hover:shadow-primary/50 flex items-center justify-center gap-2 md:text-sm"
+                  >
+                    <FiPlus className="text-lg" />
+                    NUEVA PARTE
+                  </button>
+                )}
 
                 {/* Filtros */}
                 <div className="bg-[#0f1419]/80 border border-light/5 backdrop-blur rounded-2xl overflow-hidden p-4 space-y-4">
@@ -507,14 +509,15 @@ export function Parts({ user }) {
                       </h2>
                       <p className="text-light/60 text-sm">{selectedPart?.categoria}</p>
                     </div>
-
-                    <button
-                      onClick={handleEditPart}
-                      className="flex items-center gap-2 bg-primary/20 hover:bg-primary/40 border border-primary/40 text-primary px-4 py-2 rounded-lg transition-all font-bold text-sm md:text-base"
-                    >
-                      <FiEdit />
-                      AGREGAR STOCK
-                    </button>
+                    {userRole !== 'engineer' && (
+                      <button
+                        onClick={handleEditPart}
+                        className="flex items-center gap-2 bg-primary/20 hover:bg-primary/40 border border-primary/40 text-primary px-4 py-2 rounded-lg transition-all font-bold text-sm md:text-base"
+                      >
+                        <FiEdit />
+                        AGREGAR STOCK
+                      </button>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-3 gap-3 md:gap-4">
@@ -578,13 +581,15 @@ export function Parts({ user }) {
                   COMPRAR
                 </button>
 
-                <button
-                  onClick={handleDeleteClick}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 font-bold hover:bg-red-500/20 transition-all"
-                >
-                  <FiTrash2 />
-                  ELIMINAR
-                </button>
+                {userRole !== 'engineer' && (
+                  <button
+                    onClick={handleDeleteClick}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 font-bold hover:bg-red-500/20 transition-all"
+                  >
+                    <FiTrash2 />
+                    ELIMINAR
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -697,7 +702,7 @@ export function Parts({ user }) {
                     <input
                       type="number"
                       min="0"
-                      step="10000"
+                      step="1"
                       value={formData.precio}
                       onChange={(e) => setFormData({ ...formData, precio: Number(e.target.value) })}
                       className="w-full px-4 py-3 bg-[#1a1f3a]/50 border border-light/10 rounded-lg text-white placeholder-light/30 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"

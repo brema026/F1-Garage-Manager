@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: f1_garage_grafana
+    ports:
+      - "3003:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=admin
+      # Agregamos el plugin de SQL Server
+      - GF_INSTALL_PLUGINS=grafana-simple-json-datasource,grafana-clock-panel,marcusolsson-dynamictext-panel,frser-sqlite-datasource
+      - GF_FEATURE_TOGGLES_ENABLE=publicDashboards
+    volumes:
+      - ./grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    restart: unless-stopped
+    networks:
+      - f1-network
+    # Agregamos extra_hosts para conectar a SQL Server local
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  f1-network:
+    driver: bridge

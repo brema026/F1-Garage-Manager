@@ -1,0 +1,163 @@
+{
+  "id": 3,
+  "type": "barchart",
+  "title": "Tiempo vs P / A / M del carro (Simulación)",
+  "description": "Este panel relaciona el tiempo final del carro con los valores acumulados de Potencia (P), Aerodinámica (A) y Manejo (M) del setup utilizado en una simulación y circuito específicos.",
+  "gridPos": {
+    "x": 0,
+    "y": 0,
+    "h": 13,
+    "w": 12
+  },
+  "fieldConfig": {
+    "defaults": {
+      "custom": {
+        "lineWidth": 1,
+        "fillOpacity": 50,
+        "gradientMode": "opacity",
+        "axisPlacement": "auto",
+        "axisLabel": "",
+        "axisColorMode": "text",
+        "axisBorderShow": false,
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "axisCenteredZero": false,
+        "hideFrom": {
+          "tooltip": false,
+          "viz": false,
+          "legend": false
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "color": {
+        "mode": "palette-classic"
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      },
+      "decimals": 2,
+      "unit": "none"
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "tiempo_segundos"
+        },
+        "properties": [
+          {
+            "id": "unit",
+            "value": "s"
+          },
+          {
+            "id": "displayName",
+            "value": "Tiempo (s)"
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "p_total"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "Potencia (P)"
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "a_total"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "Aerodinámica (A)"
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "m_total"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "Manejo (M)"
+          }
+        ]
+      }
+    ]
+  },
+  "pluginVersion": "12.3.1",
+  "targets": [
+    {
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT \n  CONCAT(equipo, ' - ', carro) AS category, \n  CAST(tiempo_segundos AS DECIMAL(12,3)) AS tiempo_segundos,\n  CAST(p_total AS INT) AS p_total,\n  CAST(a_total AS INT) AS a_total,\n  CAST(m_total AS INT) AS m_total,\n  circuito,\n  equipo\nFROM dbo.v_grafana_tiempo_vs_pam\nWHERE circuito = '$circuito'\n  AND id_simulacion = $simulation_id\n  AND id_carro = $carro \nORDER BY tiempo_segundos ASC;",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "datasource": {
+    "type": "mssql",
+    "uid": "ffblaxvmd81s0f"
+  },
+  "options": {
+    "orientation": "vertical",
+    "xTickLabelRotation": 0,
+    "xTickLabelSpacing": 0,
+    "showValue": "auto",
+    "stacking": "none",
+    "groupWidth": 0.75,
+    "barWidth": 0.85,
+    "barRadius": 4,
+    "fullHighlight": false,
+    "tooltip": {
+      "mode": "single",
+      "sort": "none",
+      "hideZeros": false
+    },
+    "legend": {
+      "showLegend": true,
+      "displayMode": "list",
+      "placement": "bottom",
+      "calcs": []
+    }
+  }
+}

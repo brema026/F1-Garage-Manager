@@ -18,4 +18,7 @@ router.put('/:id_pieza/reduce-stock', protect, partController.reduceStock);
 // Admin: eliminar pieza completa
 router.delete('/:id_pieza', protect, partController.deletePart);
 
+router.get('/team/:id_equipo/balance', protect, partController.getBalance);
+
+
 module.exports = router;

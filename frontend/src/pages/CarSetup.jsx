@@ -1,583 +1,932 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  EQUIPOS,
-  CARS_BY_TEAM,
-  CATEGORIES,
-  DRIVERS,
-  POTENCIA_PARTS,
-  AERODINAMICA_PARTS,
-  NEUMATICOS_PARTS,
-  SUSPENSION_PARTS,
-  CAJA_CAMBIOS_PARTS
-} from '../data/CarSetupData';
-import {
-  getPartsByCategory,
-  getPartById,
-  calculateCarStats,
-  isCarComplete
-} from '../utils/helpers';
-import { FiCheck, FiChevronDown, FiCheckCircle, FiFlag, FiTrendingUp, FiChevronRight } from 'react-icons/fi';
+  FiCheck,
+  FiChevronDown,
+  FiCheckCircle,
+  FiFlag,
+  FiTrendingUp,
+  FiChevronRight,
+} from 'react-icons/fi';
+import api from '../api/axios';
+
 import carImage1 from '../assets/f1-car-1.png';
 import carImage2 from '../assets/f1-car-2.png';
 
-// Combinar todas las partes en un array
-const ALL_PARTS = [
-  ...POTENCIA_PARTS,
-  ...AERODINAMICA_PARTS,
-  ...NEUMATICOS_PARTS,
-  ...SUSPENSION_PARTS,
-  ...CAJA_CAMBIOS_PARTS
-];
+const REQUIRED_CATEGORIES_COUNT = 5;
 
-export function CarSetup( { user } ) {
-  const [selectedEquipoId, setSelectedEquipoId] = useState(EQUIPOS[0]?.id_equipo || null);
+function isPosInt(n) {
+  return Number.isInteger(n) && n > 0;
+}
+function safeNum(n) {
+  const x = Number(n);
+  return Number.isFinite(x) ? x : 0;
+}
+
+export function CarSetup({ user }) {
+  const userRole = (user?.rol || '').toLowerCase();
+  const hasNoTeam = !user?.id_equipo || String(user?.id_equipo) === '0';
+
+  const canUsePage = userRole === 'admin' || userRole === 'engineer';
+  const showEngineerNoTeamView = hasNoTeam && userRole === 'engineer';
+
+  // ===== State =====
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Teams
+  const [teams, setTeams] = useState([]);
+  const [selectedTeamId, setSelectedTeamId] = useState(null);
+
+  // Cars
+  const [cars, setCars] = useState([]);
   const [selectedCarId, setSelectedCarId] = useState(null);
-  const [carSetups, setCarSetups] = useState({});
-  const [expandedCategory, setExpandedCategory] = useState('Unidad de Potencia');
+
+  // Setup
+  const [setupSummary, setSetupSummary] = useState(null);
+  const [setupCategories, setSetupCategories] = useState([]);
+
+  // ===== Conductores =====
+  const [drivers, setDrivers] = useState([]);
+  const [selectedDriverId, setSelectedDriverId] = useState(null);
+  const [loadingDrivers, setLoadingDrivers] = useState(false);
+  const [assigningDriver, setAssigningDriver] = useState(false);
+
+  // UI
+  const [expandedCategoryId, setExpandedCategoryId] = useState(null);
+  const [optionsByCategory, setOptionsByCategory] = useState({});
+  const [loadingOptions, setLoadingOptions] = useState(false);
+
+  const [saving, setSaving] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
-  const carsForTeam = CARS_BY_TEAM[selectedEquipoId] || [];
-  const currentTeam = EQUIPOS.find((e) => e.id_equipo === selectedEquipoId);
+  // ===== API helpers =====
+  async function fetchTeams() {
+    const r = await api.get('/teams');
+    return Array.isArray(r.data) ? r.data : [];
+  }
 
-  // Inicializar setups del equipo actual
-  useMemo(() => {
-    if (!carSetups[selectedEquipoId] && carsForTeam.length > 0) {
-      const newSetups = {};
-      carsForTeam.forEach((car) => {
-        newSetups[car.id_carro] = carSetups[car.id_carro] || { ...car.setup };
-      });
-      setCarSetups((prev) => ({
-        ...prev,
-        ...newSetups,
-      }));
+  async function fetchCarsForTeam(id_equipo) {
+    if (userRole === 'engineer') {
+      const r = await api.get('/cars/my');
+      return Array.isArray(r.data) ? r.data : [];
     }
-    if (!selectedCarId && carsForTeam.length > 0) {
-      setSelectedCarId(carsForTeam[0].id_carro);
+    const r = await api.get(`/cars/team/${id_equipo}`);
+    return Array.isArray(r.data) ? r.data : [];
+  }
+
+  async function fetchCarSetup(id_carro) {
+    const r = await api.get(`/car-setup/car/${id_carro}`);
+    return r.data; // { summary, categories }
+  }
+
+  // ❌ ELIMINADO: fetchDriversForTeam()
+  // Ahora los conductores salen desde /teams (team.conductores)
+
+  async function fetchInventoryOptions(category_id) {
+    // Engineer: su propio equipo (del token)
+    if (userRole === 'engineer') {
+      const r = await api.get(`/car-setup/inventory/category/${category_id}`);
+      return Array.isArray(r.data) ? r.data : [];
     }
-  }, [selectedEquipoId]);
 
-  const selectedCar = carsForTeam.find((car) => car.id_carro === selectedCarId);
-  const currentSetup = carSetups[selectedCarId] || {};
-  const carStats = useMemo(() => calculateCarStats(currentSetup, ALL_PARTS), [currentSetup]);
-  const selectedDriver = DRIVERS.find((d) => d.id_conductor === currentSetup.id_conductor);
+    // Admin: usa el equipo seleccionado en UI
+    if (userRole === 'admin') {
+      if (!selectedTeamId) return [];
+      const r = await api.get(`/car-setup/team/${selectedTeamId}/inventory/category/${category_id}`);
+      return Array.isArray(r.data) ? r.data : [];
+    }
 
-  // Verificar requerimientos
-  const hasPotencia = !!currentSetup.id_potencia;
-  const hasAerodinamica = !!currentSetup.id_aerodinamica;
-  const hasNeumaticos = !!currentSetup.id_neumaticos;
-  const hasSuspension = !!currentSetup.id_suspension;
-  const hasCajaCambios = !!currentSetup.id_caja_cambios;
-  const hasConductor = !!currentSetup.id_conductor;
+    return [];
+  }
 
-  const allRequirementsMet = hasPotencia && hasAerodinamica && hasNeumaticos && hasSuspension && hasCajaCambios && hasConductor;
+  // ✅ asignar/cambiar conductor
+  async function assignDriverToCar(id_carro, id_conductor) {
+    if (!isPosInt(Number(id_carro))) return;
+    if (!isPosInt(Number(id_conductor))) return;
 
-  const completedItems = Object.values(currentSetup).filter(Boolean).length;
-  const progressPercentage = (completedItems / 6) * 100;
+    await api.put(
+      `/car-setup/car/${id_carro}/driver`,
+      userRole === 'admin'
+        ? { id_conductor: Number(id_conductor), id_equipo: Number(selectedTeamId) }
+        : { id_conductor: Number(id_conductor) }
+    );
+  }
 
-  const carImage = selectedCar?.imagen === 2 ? carImage2 : carImage1;
+  // ===== Carga inicial (teams + select team) =====
+  useEffect(() => {
+    let cancelled = false;
 
-  const handlePartChange = (category, partId) => {
-    setCarSetups((prev) => ({
-      ...prev,
-      [selectedCarId]: {
-        ...prev[selectedCarId],
-        [`id_${category.toLowerCase().replace(/ /g, '_')}`]: partId,
-      },
-    }));
-  };
+    async function load() {
+      try {
+        setError('');
 
-  const handleDriverChange = (driverId) => {
-    setCarSetups((prev) => ({
-      ...prev,
-      [selectedCarId]: {
-        ...prev[selectedCarId],
-        id_conductor: driverId,
-      },
-    }));
-  };
+        // Si no puede usar la página o engineer sin equipo: no cargar nada
+        if (!canUsePage || showEngineerNoTeamView) {
+          setLoading(false);
+          return;
+        }
 
-  const handleFinalizeCar = () => {
-    if (allRequirementsMet) {
-      setSuccessMessage(`¡Carro ${selectedCar.numero_carro} de ${currentTeam.nombre} finalizado exitosamente!`);
+        setLoading(true);
+
+        const list = await fetchTeams();
+        if (cancelled) return;
+
+        setTeams(list);
+
+        let initialTeamId = null;
+
+        if (userRole === 'engineer') {
+          const myTeam = Number(user?.id_equipo);
+          initialTeamId = isPosInt(myTeam) ? myTeam : null;
+        } else {
+          initialTeamId = list?.[0]?.id_equipo ? Number(list[0].id_equipo) : null;
+        }
+
+        setSelectedTeamId(initialTeamId);
+        setLoading(false);
+      } catch (e) {
+        if (cancelled) return;
+        setLoading(false);
+        setError(e?.response?.data?.error || e.message || 'Error cargando equipos');
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [canUsePage, showEngineerNoTeamView, userRole, user?.id_equipo]);
+
+  // ===== Cargar carros cuando cambia equipo =====
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCars() {
+      try {
+        setError('');
+
+        if (!canUsePage || showEngineerNoTeamView) return;
+
+        // reset UI dependiente
+        setCars([]);
+        setSelectedCarId(null);
+        setSetupSummary(null);
+        setSetupCategories([]);
+        setExpandedCategoryId(null);
+        setOptionsByCategory({});
+
+        // reset drivers dependientes
+        setDrivers([]);
+        setSelectedDriverId(null);
+
+        if (!selectedTeamId) return;
+
+        // Engineer NO puede cambiar a otro equipo
+        if (userRole === 'engineer') {
+          const myTeam = Number(user?.id_equipo);
+          if (!isPosInt(myTeam) || Number(selectedTeamId) !== myTeam) {
+            return;
+          }
+        }
+
+        const list = await fetchCarsForTeam(Number(selectedTeamId));
+        if (cancelled) return;
+
+        setCars(list);
+        if (list.length > 0) setSelectedCarId(list[0].id_carro);
+
+        // ✅ NUEVO: cargar conductores desde /teams (sin endpoint extra)
+        setLoadingDrivers(true);
+        const team = teams.find((t) => Number(t.id_equipo) === Number(selectedTeamId));
+        const d = Array.isArray(team?.conductores) ? team.conductores : [];
+        setDrivers(d);
+      } catch (e) {
+        if (cancelled) return;
+        setError(e?.response?.data?.error || e.message || 'Error cargando carros');
+      } finally {
+        if (!cancelled) setLoadingDrivers(false);
+      }
+    }
+
+    loadCars();
+    return () => {
+      cancelled = true;
+    };
+  }, [canUsePage, showEngineerNoTeamView, selectedTeamId, userRole, user?.id_equipo, teams]);
+
+  // ===== Cargar setup cuando cambia carro =====
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSetup() {
+      try {
+        setError('');
+
+        if (!canUsePage || showEngineerNoTeamView) return;
+
+        setSetupSummary(null);
+        setSetupCategories([]);
+        setExpandedCategoryId(null);
+        setOptionsByCategory({});
+
+        // driver selection will be derived from car/setup when possible
+        setSelectedDriverId(null);
+
+        if (!selectedCarId) return;
+
+        const data = await fetchCarSetup(Number(selectedCarId));
+        if (cancelled) return;
+
+        setSetupSummary(data?.summary || null);
+        setSetupCategories(Array.isArray(data?.categories) ? data.categories : []);
+
+        // ✅ intentar setear conductor actual si el backend lo devuelve
+        const currentDriverId = Number(data?.summary?.id_conductor);
+        if (isPosInt(currentDriverId)) {
+          setSelectedDriverId(currentDriverId);
+        } else {
+          const car = cars.find((c) => Number(c.id_carro) === Number(selectedCarId));
+          const carDriverId = Number(car?.id_conductor);
+          if (isPosInt(carDriverId)) setSelectedDriverId(carDriverId);
+        }
+      } catch (e) {
+        if (cancelled) return;
+        setError(e?.response?.data?.error || e.message || 'Error cargando setup');
+      }
+    }
+
+    loadSetup();
+    return () => {
+      cancelled = true;
+    };
+  }, [canUsePage, showEngineerNoTeamView, selectedCarId, cars]);
+
+  // ===== Derivados =====
+  const selectedTeam = useMemo(
+    () => teams.find((t) => Number(t.id_equipo) === Number(selectedTeamId)) || null,
+    [teams, selectedTeamId]
+  );
+
+  const selectedCar = useMemo(
+    () => cars.find((c) => Number(c.id_carro) === Number(selectedCarId)) || null,
+    [cars, selectedCarId]
+  );
+
+  const completedItems = useMemo(() => setupCategories.filter((c) => !!c.id_pieza).length, [setupCategories]);
+  const progressPercentage = useMemo(() => (completedItems / REQUIRED_CATEGORIES_COUNT) * 100, [completedItems]);
+  const allRequirementsMet = useMemo(() => completedItems === REQUIRED_CATEGORIES_COUNT, [completedItems]);
+
+  const carImage = useMemo(() => {
+    if (selectedCar?.imagen === 2) return carImage2;
+    return carImage1;
+  }, [selectedCar]);
+
+  const P = safeNum(setupSummary?.P_total);
+  const A = safeNum(setupSummary?.A_total);
+  const M = safeNum(setupSummary?.M_total);
+
+  const canChangeDriver = useMemo(() => {
+    return !!selectedCarId && (userRole === 'admin' || userRole === 'engineer');
+  }, [selectedCarId, userRole]);
+
+  const currentDriverName = useMemo(() => {
+    const bySummary = setupSummary?.conductor_nombre;
+    if (bySummary) return String(bySummary);
+
+    const id = Number(selectedDriverId);
+    const found = drivers.find((d) => Number(d.id_conductor) === id);
+    return found?.nombre || '';
+  }, [setupSummary, selectedDriverId, drivers]);
+
+  // ===== Acciones =====
+  async function toggleCategory(category_id) {
+    setError('');
+    const next = expandedCategoryId === category_id ? null : category_id;
+    setExpandedCategoryId(next);
+
+    if (next && !optionsByCategory[next]) {
+      try {
+        setLoadingOptions(true);
+        const opts = await fetchInventoryOptions(next);
+        setOptionsByCategory((prev) => ({ ...prev, [next]: opts }));
+      } catch (e) {
+        setError(e?.response?.data?.error || e.message || 'Error cargando inventario');
+      } finally {
+        setLoadingOptions(false);
+      }
+    }
+  }
+
+  async function handleGenerateCars() {
+    try {
+      setError('');
+      setSaving(true);
+
+      if (userRole === 'engineer') {
+        await api.post('/cars/my/generate', { baseName: 'Carro' });
+        const list = await fetchCarsForTeam(Number(selectedTeamId));
+        setCars(list);
+        if (list.length > 0) setSelectedCarId(list[0].id_carro);
+        return;
+      }
+
+      if (userRole === 'admin') {
+        if (!selectedTeamId) return;
+
+        try {
+          await api.post(`/cars/team/${selectedTeamId}`, { nombre: 'Carro 1' });
+        } catch (_) {}
+        try {
+          await api.post(`/cars/team/${selectedTeamId}`, { nombre: 'Carro 2' });
+        } catch (_) {}
+
+        const list = await fetchCarsForTeam(Number(selectedTeamId));
+        setCars(list);
+        if (list.length > 0) setSelectedCarId(list[0].id_carro);
+      }
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message || 'Error generando carros');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleInstallPart(part_id) {
+    try {
+      setError('');
+      if (!selectedCarId) return;
+      if (!isPosInt(Number(part_id))) return;
+
+      setSaving(true);
+
+      await api.put(
+        `/car-setup/car/${selectedCarId}/install`,
+        userRole === 'admin'
+          ? { part_id: Number(part_id), id_equipo: Number(selectedTeamId) }
+          : { part_id: Number(part_id) }
+      );
+
+      const data = await fetchCarSetup(Number(selectedCarId));
+      setSetupSummary(data?.summary || null);
+      setSetupCategories(Array.isArray(data?.categories) ? data.categories : []);
+
+      if (expandedCategoryId) {
+        const opts = await fetchInventoryOptions(expandedCategoryId);
+        setOptionsByCategory((prev) => ({ ...prev, [expandedCategoryId]: opts }));
+      }
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message || 'Error instalando/reemplazando pieza');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleFinalizeCar() {
+    try {
+      setError('');
+      if (!selectedCarId) return;
+      if (!allRequirementsMet) return;
+
+      if (!isPosInt(Number(selectedDriverId)) && !isPosInt(Number(setupSummary?.id_conductor))) {
+        setError('Debes asignar un conductor antes de finalizar el carro.');
+        return;
+      }
+
+      setFinalizing(true);
+      await api.post(
+        `/car-setup/car/${selectedCarId}/finalize`,
+        userRole === 'admin' ? { id_equipo: Number(selectedTeamId) } : {}
+      );
+
+      setSuccessMessage('¡Carro finalizado exitosamente!');
       setShowSuccessModal(true);
-      
-      setTimeout(() => {
-        setShowSuccessModal(false);
-      }, 3000);
+      setTimeout(() => setShowSuccessModal(false), 2500);
 
-      console.log('Crear carro:', {
-        equipo: currentTeam.nombre,
-        carro: selectedCar.numero_carro,
-        setup: currentSetup,
-        stats: carStats,
-      });
+      if (selectedTeamId) {
+        const list = await fetchCarsForTeam(Number(selectedTeamId));
+        setCars(list);
+      }
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message || 'Error finalizando carro');
+    } finally {
+      setFinalizing(false);
     }
-  };
+  }
 
-  const userRole = user.rol?.toLowerCase();
-  const hasNoTeam = !user?.id_equipo || String(user?.id_equipo) === "0";
-  
-  // Engineer without team assigned
-  if (hasNoTeam && userRole === 'engineer') {
+  async function handleAssignDriver(nextDriverId) {
+    try {
+      setError('');
+      if (!canChangeDriver) return;
+      if (!selectedCarId) return;
+
+      const id_conductor = Number(nextDriverId);
+      if (!isPosInt(id_conductor)) return;
+
+      setAssigningDriver(true);
+      await assignDriverToCar(Number(selectedCarId), id_conductor);
+
+      setSelectedDriverId(id_conductor);
+
+      const data = await fetchCarSetup(Number(selectedCarId));
+      setSetupSummary(data?.summary || null);
+
+      setSuccessMessage('Conductor asignado correctamente.');
+      setShowSuccessModal(true);
+      setTimeout(() => setShowSuccessModal(false), 1800);
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message || 'Error asignando conductor');
+    } finally {
+      setAssigningDriver(false);
+    }
+  }
+
+  // ===== Vistas “tempranas” =====
+  if (!canUsePage) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center p-6">
+        <div className="bg-slate-900/60 border border-yellow-500/20 p-10 rounded-3xl text-center backdrop-blur-2xl max-w-lg shadow-2xl">
+          <h2 className="text-white text-2xl font-bold mb-3">Acceso restringido</h2>
+          <p className="text-slate-400">Tu rol no tiene permiso para armar carros.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (showEngineerNoTeamView) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-6">
         <div className="bg-slate-900/60 border border-red-500/20 p-10 rounded-3xl text-center backdrop-blur-2xl max-w-lg shadow-2xl">
           <div className="flex justify-center mb-6">
             <div className="p-4 bg-red-500/10 rounded-full">
               <svg className="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 15c-.77 1.333.192 3 1.732 3z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 15c-.77 1.333.192 3 1.732 3z"
+                />
               </svg>
             </div>
           </div>
 
           <h2 className="text-white text-2xl font-bold mb-4 tracking-tight">VINCULACIÓN PENDIENTE</h2>
-          
-          <p className="text-slate-400 leading-relaxed">
-            Actualmente no tienes un equipo asignado en el sistema.
-          </p>
+          <p className="text-slate-400 leading-relaxed">Actualmente no tienes un equipo asignado en el sistema.</p>
 
           <div className="mt-8 pt-6 border-t border-slate-800">
-            <p className="text-xs text-slate-500 uppercase tracking-widest">
-              Estado: Esperando asignación de equipo
-            </p>
+            <p className="text-xs text-slate-500 uppercase tracking-widest">Estado: Esperando asignación de equipo</p>
           </div>
         </div>
       </div>
     );
   }
 
-  const getDriversForTeam = () => {
-    return DRIVERS.filter((d) => d.equipo_id === selectedEquipoId);
-  };
+  if (loading) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center p-6">
+        <div className="text-light/70 font-bold">Cargando armado...</div>
+      </div>
+    );
+  }
 
+  // ===== UI normal =====
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#0f1419] to-[#050812] p-4 md:p-8">
-      {/* No Equipos Message */}
-      {EQUIPOS.length === 0 && (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/15 via-[#0f1419] to-transparent border border-primary/30 p-12 backdrop-blur-xl max-w-2xl w-full">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl -z-0"></div>
-            <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl -z-0"></div>
-
-            <div className="relative z-10 text-center">
-              <FiFlag className="text-primary/40 text-8xl mx-auto mb-6" />
-              <h1 className="text-5xl md:text-6xl font-black text-white mb-4">
-                Sin Equipos Registrados
-              </h1>
-              <p className="text-light/60 text-lg mb-3">
-                No hay equipos disponibles en este momento.
-              </p>
-              <p className="text-light/40 text-base">
-                Por favor, registra equipos en la base de datos para comenzar a configurar carros.
-              </p>
-            </div>
-          </div>
-        </div>
+      {error && (
+        <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-200">{error}</div>
       )}
 
       {/* Header */}
-      {EQUIPOS.length > 0 && (
-        <>
-          <div className="mb-12 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/5 to-transparent blur-3xl rounded-full"></div>
-            <div className="relative">
-              <div className="flex items-center gap-3 mb-3">
-                <FiFlag className="text-primary text-3xl" />
-                <h1 className="text-5xl md:text-7xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white to-primary">
-                  ARMADO F1
-                </h1>
+      <div className="mb-12 relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/5 to-transparent blur-3xl rounded-full"></div>
+        <div className="relative">
+          <div className="flex items-center gap-3 mb-3">
+            <FiFlag className="text-primary text-3xl" />
+            <h1 className="text-5xl md:text-7xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white to-primary">
+              ARMADO F1
+            </h1>
+          </div>
+          <p className="text-light/50 text-sm md:text-base max-w-2xl">
+            Instala 1 parte por categoría (5) desde inventario, asigna conductor y finaliza el carro.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 xl:gap-8">
+        {/* Sidebar */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-8 space-y-4">
+            {/* Equipos */}
+            <div className="bg-[#0f1419]/80 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
+              <div className="p-4 border-b border-light/5">
+                <h2 className="text-sm font-bold text-light/70 uppercase tracking-wider">EQUIPOS ({teams.length})</h2>
               </div>
-              <p className="text-light/50 text-sm md:text-base max-w-2xl">
-                Configura tu equipo con carros: selecciona partes de 5 categorías y elige conductor
-              </p>
+
+              <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto px-3 py-3 custom-scrollbar">
+                {teams.map((t) => {
+                  const active = Number(selectedTeamId) === Number(t.id_equipo);
+                  const locked = userRole === 'engineer' && Number(user?.id_equipo) !== Number(t.id_equipo);
+
+                  return (
+                    <button
+                      key={t.id_equipo}
+                      disabled={locked}
+                      onClick={() => setSelectedTeamId(t.id_equipo)}
+                      className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 group ${
+                        active
+                          ? 'bg-primary/20 border border-primary shadow-lg shadow-primary/20'
+                          : 'bg-[#1a1f3a]/50 border border-light/5 hover:bg-[#1a1f3a] hover:border-primary/30'
+                      } ${locked ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-sm md:text-base text-white truncate">{t.nombre}</span>
+                        <FiChevronRight className={`text-primary transition-transform ${active ? 'translate-x-1' : ''}`} />
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-light/50">{locked ? 'Solo tu equipo' : 'Equipo'}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {selectedTeam?.nombre && (
+                <div className="p-4 border-t border-light/5 text-xs text-light/60">
+                  Seleccionado: <span className="text-white font-bold">{selectedTeam.nombre}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Carros */}
+            <div className="bg-[#0f1419]/80 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
+              <div className="p-4 border-b border-light/5">
+                <h2 className="text-sm font-bold text-light/70 uppercase">Carros</h2>
+              </div>
+
+              <div className="p-3 space-y-2">
+                {cars.length === 0 ? (
+                  <div className="p-4 text-center">
+                    <p className="text-light/50 text-xs font-bold">No hay carros disponibles</p>
+                    <p className="text-light/40 text-xs mt-2">
+                      Crea carros con POST /api/cars/team/:id_equipo (SP: sp_crear_carro).
+                    </p>
+                  </div>
+                ) : (
+                  cars.map((car) => (
+                    <button
+                      key={car.id_carro}
+                      onClick={() => setSelectedCarId(car.id_carro)}
+                      className={`w-full text-left px-4 py-3 rounded-lg transition-all group ${
+                        Number(selectedCarId) === Number(car.id_carro)
+                          ? 'bg-primary/20 border border-primary shadow-lg shadow-primary/20'
+                          : 'bg-[#1a1f3a]/50 border border-light/5 hover:bg-[#1a1f3a]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-white">{car.nombre || `Carro ${car.id_carro}`}</span>
+                        {car.finalizado ? (
+                          <div className="flex items-center gap-1 bg-green-500/20 px-2 py-1 rounded-full">
+                            <FiCheckCircle className="text-green-400 text-sm" />
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 bg-yellow-500/20 px-2 py-1 rounded-full">
+                            <span className="text-xs text-yellow-400 font-bold text-center w-10">
+                              {completedItems}/{REQUIRED_CATEGORIES_COUNT}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-xs text-light/60">{car.finalizado ? 'Finalizado' : 'En armado'}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Progreso */}
+            <div className="bg-gradient-to-br from-accent/20 via-[#0f1419] to-transparent border border-accent/30 rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="text-xs text-light/50 uppercase font-bold">Progreso</div>
+                  <div className="text-2xl font-black text-white mt-1">
+                    {completedItems}
+                    <span className="text-light/50 text-lg">/{REQUIRED_CATEGORIES_COUNT}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <FiTrendingUp className="text-accent text-3xl mb-1" />
+                  <div className="text-2xl font-black text-accent">{Math.round(progressPercentage)}%</div>
+                </div>
+              </div>
+              <div className="w-full h-3 bg-[#1a1f3a] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-accent via-red-600 to-red-700 transition-all duration-500 rounded-full shadow-lg shadow-accent/50"
+                  style={{ width: `${progressPercentage}%` }}
+                />
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Grid Principal */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 xl:gap-8">
-            {/* Sidebar */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-8 space-y-4">
-                {/* Lista de equipos */}
-                <div className="bg-[#0f1419]/80 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
-                  <div className="p-4 border-b border-light/5">
-                    <h2 className="text-sm font-bold text-light/70 uppercase tracking-wider">EQUIPOS ({EQUIPOS.length})</h2>
+        {/* Main */}
+        <div className="lg:col-span-3 space-y-6">
+          {!selectedCar && (
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/15 via-[#0f1419] to-transparent border border-primary/30 p-12 backdrop-blur-xl flex items-center justify-center min-h-96">
+              <div className="relative z-10 text-center">
+                <FiFlag className="text-primary/40 text-8xl mx-auto mb-4" />
+                <h2 className="text-3xl md:text-4xl font-black text-light/50 mb-2">Sin Auto Seleccionado</h2>
+                <p className="text-light/40 text-sm md:text-base max-w-2xl">Selecciona un carro para comenzar a configurarlo</p>
+              </div>
+            </div>
+          )}
+
+          {selectedCar && (
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/15 via-[#0f1419] to-transparent border border-primary/30 p-8 backdrop-blur-xl">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl -z-0"></div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-4 h-4 bg-gradient-to-r from-primary to-red-700 rounded-full animate-pulse"></div>
+                    <span className="text-xs font-bold text-primary uppercase tracking-widest">
+                      {selectedCar.finalizado ? 'Finalizado' : 'En Configuración'}
+                    </span>
                   </div>
 
-                  <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto px-3 py-3 custom-scrollbar">
-                    {EQUIPOS.map((equipo) => (
-                      <button
-                        key={equipo.id_equipo}
-                        onClick={() => setSelectedEquipoId(equipo.id_equipo)}
-                        className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 group ${
-                          selectedEquipoId === equipo.id_equipo
-                            ? 'bg-primary/20 border border-primary shadow-lg shadow-primary/20'
-                            : 'bg-[#1a1f3a]/50 border border-light/5 hover:bg-[#1a1f3a] hover:border-primary/30'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-bold text-sm md:text-base text-white truncate">{equipo.nombre}</span>
-                          <FiChevronRight className={`text-primary transition-transform ${selectedEquipoId === equipo.id_equipo ? 'translate-x-1' : ''}`} />
+                  <h2 className="text-4xl md:text-5xl font-black text-white mb-2">
+                    {selectedCar.nombre || `Carro ${selectedCar.id_carro}`}
+                  </h2>
+
+                  {/* selector de conductor */}
+                  <div className="mt-6 bg-[#0f1419]/50 border border-light/10 rounded-2xl p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-xs text-light/50 uppercase font-bold">Conductor</div>
+                        <div className="text-sm text-white font-black mt-1">
+                          {currentDriverName ? currentDriverName : 'No asignado'}
                         </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-light/50">2 carros</span>
-                        </div>
-                      </button>
-                    ))}
+                      </div>
+
+                      <div className="min-w-[220px]">
+                        <select
+                          value={selectedDriverId || ''}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setSelectedDriverId(v ? Number(v) : null);
+                          }}
+                          disabled={!canChangeDriver || loadingDrivers || assigningDriver || saving || finalizing}
+                          className="w-full bg-[#1a1f3a]/60 border border-light/10 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-primary/50"
+                        >
+                          <option value="">
+                            {loadingDrivers ? 'Cargando...' : 'Seleccionar conductor'}
+                          </option>
+                          {drivers.map((d) => (
+                            <option key={d.id_conductor} value={d.id_conductor}>
+                              {d.nombre}
+                            </option>
+                          ))}
+                        </select>
+
+                        <button
+                          onClick={() => handleAssignDriver(selectedDriverId)}
+                          disabled={
+                            !canChangeDriver ||
+                            !isPosInt(Number(selectedDriverId)) ||
+                            assigningDriver ||
+                            loadingDrivers ||
+                            saving ||
+                            finalizing
+                          }
+                          className={`mt-2 w-full py-2 rounded-xl font-bold text-white transition-all ${
+                            !isPosInt(Number(selectedDriverId)) || assigningDriver || loadingDrivers || saving || finalizing
+                              ? 'bg-[#1a1f3a]/50 border border-light/10 cursor-not-allowed opacity-50'
+                              : 'bg-gradient-to-r from-primary via-red-600 to-red-700 hover:opacity-95 shadow-lg shadow-red-500/30'
+                          }`}
+                        >
+                          {assigningDriver ? 'ASIGNANDO...' : 'ASIGNAR / CAMBIAR'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 mt-6">
+                    <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-500/5 border border-yellow-500/30 rounded-xl p-4 backdrop-blur text-center">
+                      <div className="text-xs text-yellow-400 mb-2 uppercase font-bold">P</div>
+                      <div className="text-3xl font-black text-yellow-400">{P}</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-500/20 to-green-500/5 border border-green-500/30 rounded-xl p-4 backdrop-blur text-center">
+                      <div className="text-xs text-green-400 mb-2 uppercase font-bold">A</div>
+                      <div className="text-3xl font-black text-green-400">{A}</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-blue-500/20 to-blue-500/5 border border-blue-500/30 rounded-xl p-4 backdrop-blur text-center">
+                      <div className="text-xs text-blue-400 mb-2 uppercase font-bold">M</div>
+                      <div className="text-3xl font-black text-blue-400">{M}</div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Carros Disponibles */}
-                <div className="bg-[#0f1419]/80 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
-                  <div className="p-4 border-b border-light/5">
-                    <h2 className="text-sm font-bold text-light/70 uppercase">Carros</h2>
-                  </div>
-
-                  <div className="p-3 space-y-2">
-                    {carsForTeam.length === 0 ? (
-                      <div className="p-4 text-center">
-                        <p className="text-light/50 text-xs font-bold">No hay carros disponibles</p>
-                      </div>
-                    ) : (
-                      carsForTeam.map((car) => {
-                        const carComplete = isCarComplete(carSetups[car.id_carro] || {});
-                        return (
-                          <button
-                            key={car.id_carro}
-                            onClick={() => setSelectedCarId(car.id_carro)}
-                            className={`w-full text-left px-4 py-3 rounded-lg transition-all group ${
-                              selectedCarId === car.id_carro
-                                ? 'bg-primary/20 border border-primary shadow-lg shadow-primary/20'
-                                : 'bg-[#1a1f3a]/50 border border-light/5 hover:bg-[#1a1f3a]'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-bold text-white">Carro {car.numero_carro}</span>
-                              {carComplete ? (
-                                <div className="flex items-center gap-1 bg-green-500/20 px-2 py-1 rounded-full">
-                                  <FiCheckCircle className="text-green-400 text-sm" />
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-1 bg-yellow-500/20 px-2 py-1 rounded-full">
-                                  <span className="text-xs text-yellow-400 font-bold text-center w-4">
-                                    {Object.values(carSetups[car.id_carro] || {}).filter(Boolean).length}/6
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                            <span className="text-xs text-light/60">{car.descripcion}</span>
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-
-                {/* Barra de Progreso */}
-                <div className="bg-gradient-to-br from-accent/20 via-[#0f1419] to-transparent border border-accent/30 rounded-2xl p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <div className="text-xs text-light/50 uppercase font-bold">Progreso</div>
-                      <div className="text-2xl font-black text-white mt-1">
-                        {completedItems}<span className="text-light/50 text-lg">/6</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <FiTrendingUp className="text-accent text-3xl mb-1" />
-                      <div className="text-2xl font-black text-accent">{Math.round(progressPercentage)}%</div>
-                    </div>
-                  </div>
-                  <div className="w-full h-3 bg-[#1a1f3a] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-accent via-red-600 to-red-700 transition-all duration-500 rounded-full shadow-lg shadow-accent/50"
-                      style={{ width: `${progressPercentage}%` }}
+                <div className="flex items-center justify-center lg:justify-end">
+                  <div className="relative">
+                    <div className="absolute -inset-10 bg-gradient-to-br from-primary/25 via-transparent to-accent/15 rounded-full blur-3xl -z-10"></div>
+                    <img
+                      src={carImage}
+                      alt="F1 Car"
+                      className="w-auto h-[260px] md:h-[380px] object-contain drop-shadow-[0_0_20px_rgba(225,6,0,0.2)]"
+                      loading="lazy"
                     />
                   </div>
                 </div>
               </div>
             </div>
+          )}
 
-            {/* Main Content */}
-            <div className="lg:col-span-3 space-y-6">
-              {/* No Car Selected Message */}
-              {!selectedCar && (
-                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/15 via-[#0f1419] to-transparent border border-primary/30 p-12 backdrop-blur-xl flex items-center justify-center min-h-96">
-                  <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl -z-0"></div>
-                  <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl -z-0"></div>
+          {/* Acordeón categorías */}
+          {selectedCar && setupCategories?.length > 0 && (
+            <div className="space-y-3">
+              {setupCategories.map((cat) => {
+                const categoryId = Number(cat.category_id);
+                const selectedPartId = cat.id_pieza ? Number(cat.id_pieza) : null;
+                const isExpanded = expandedCategoryId === categoryId;
 
-                  <div className="relative z-10 text-center">
-                    <FiFlag className="text-primary/40 text-8xl mx-auto mb-4" />
-                    <h2 className="text-3xl md:text-4xl font-black text-light/50 mb-2">
-                      Sin Auto Seleccionado
-                    </h2>
-                    <p className="text-light/40 text-sm md:text-base max-w-2xl">
-                      Selecciona uno de los carros disponibles en el panel izquierdo para comenzar a configurarlo
+                return (
+                  <div
+                    key={categoryId}
+                    className="bg-[#0f1419]/50 border border-light/5 backdrop-blur rounded-2xl overflow-hidden hover:border-primary/20 transition-all"
+                  >
+                    <button
+                      onClick={() => toggleCategory(categoryId)}
+                      className="w-full px-6 py-4 flex items-center justify-between hover:bg-[#1a1f3a]/30 transition-all"
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        <span className="w-2 h-2 rounded-full bg-primary"></span>
+                        <h3 className="text-sm font-bold text-light/70 uppercase tracking-wider">{cat.categoria}</h3>
+
+                        {selectedPartId && (
+                          <div className="flex items-center gap-2 ml-3 px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full">
+                            <FiCheck className="text-green-400 text-xs" />
+                            <span className="text-xs text-green-400 font-bold truncate">{cat.pieza}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <FiChevronDown className={`transition-transform text-light/50 ${isExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {isExpanded && (
+                      <div className="border-t border-light/5 p-6 space-y-4 bg-gradient-to-b from-[#0a0e27]/50 to-transparent">
+                        {selectedPartId && (
+                          <div className="bg-gradient-to-r from-primary/30 to-primary/10 border border-primary/40 rounded-xl p-4">
+                            <div className="text-xs text-primary font-bold uppercase mb-1 flex items-center gap-2">
+                              <FiCheckCircle className="text-green-400" /> Seleccionada
+                            </div>
+                            <h4 className="text-lg font-bold text-white">{cat.pieza}</h4>
+
+                            <div className="grid grid-cols-3 gap-2 mt-3">
+                              <div className="bg-[#1a1f3a] rounded p-2 text-center">
+                                <div className="text-xs text-yellow-400 font-bold">P</div>
+                                <div className="text-xl font-black text-yellow-400">+{safeNum(cat.p)}</div>
+                              </div>
+                              <div className="bg-[#1a1f3a] rounded p-2 text-center">
+                                <div className="text-xs text-green-400 font-bold">A</div>
+                                <div className="text-xl font-black text-green-400">+{safeNum(cat.a)}</div>
+                              </div>
+                              <div className="bg-[#1a1f3a] rounded p-2 text-center">
+                                <div className="text-xs text-blue-400 font-bold">M</div>
+                                <div className="text-xl font-black text-blue-400">+{safeNum(cat.m)}</div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div>
+                          <p className="text-xs text-light/60 mb-2 font-bold">
+                            Opciones disponibles (inventario){loadingOptions ? ' • cargando...' : ''}
+                          </p>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-72 overflow-y-auto custom-scrollbar">
+                            {(optionsByCategory[categoryId] || []).map((part) => {
+                              const nombre = part?.nombre ?? part?.parte ?? part?.pieza ?? 'Parte';
+                              const qty = Number(part?.cantidad ?? 0);
+
+                              const p = part?.p ?? part?.P ?? part?.rendimiento_p ?? 0;
+                              const a = part?.a ?? part?.A ?? part?.rendimiento_a ?? 0;
+                              const m = part?.m ?? part?.M ?? part?.rendimiento_m ?? 0;
+
+                              const noStock = qty <= 0;
+
+                              return (
+                                <button
+                                  key={part.id_pieza}
+                                  onClick={() => handleInstallPart(part.id_pieza)}
+                                  disabled={saving || finalizing || noStock}
+                                  className={`text-left p-3 rounded-lg transition-all group ${
+                                    selectedPartId === Number(part.id_pieza)
+                                      ? 'bg-primary/20 border border-primary'
+                                      : 'border border-light/10 bg-[#1a1f3a]/50 hover:border-primary/40 hover:bg-[#1a1f3a]'
+                                  } ${saving || finalizing || noStock ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                >
+                                  <div className="flex items-start justify-between mb-2">
+                                    <span className="text-sm font-bold text-light/80 group-hover:text-white">{nombre}</span>
+                                    <span className="text-xs text-light/50 font-bold">x{qty}</span>
+                                  </div>
+
+                                  <div className="flex gap-2 text-xs">
+                                    <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded font-bold">
+                                      P:{safeNum(p)}
+                                    </span>
+                                    <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded font-bold">
+                                      A:{safeNum(a)}
+                                    </span>
+                                    <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded font-bold">
+                                      M:{safeNum(m)}
+                                    </span>
+                                  </div>
+
+                                  {noStock && <div className="mt-2 text-xs text-red-300 font-bold">Sin stock</div>}
+                                </button>
+                              );
+                            })}
+
+                            {(optionsByCategory[categoryId] || []).length === 0 && !loadingOptions && (
+                              <div className="text-light/50 text-sm p-3">No hay partes disponibles en inventario para esta categoría.</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Acciones */}
+          {selectedCar && (
+            <div className="space-y-4">
+              {allRequirementsMet && !selectedCar.finalizado && (
+                <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/30 flex items-start gap-3 animate-pulse">
+                  <FiCheckCircle className="text-green-400 text-xl flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-green-300 font-bold">¡Listo para finalizar!</p>
+                    <p className="text-xs text-green-300/70 mt-1">
+                      Tu carro tiene las 5 categorías instaladas. Asigna conductor y presiona para guardarlo como finalizado.
                     </p>
                   </div>
                 </div>
               )}
 
-              {/* Hero Card */}
-              {selectedCar && (
-                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/15 via-[#0f1419] to-transparent border border-primary/30 p-8 backdrop-blur-xl">
-                  <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl -z-0"></div>
-                  <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl -z-0"></div>
+              <button
+                onClick={handleFinalizeCar}
+                disabled={!allRequirementsMet || finalizing || saving || !!selectedCar.finalizado}
+                className={`w-full py-4 px-6 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 text-lg ${
+                  allRequirementsMet && !selectedCar.finalizado
+                    ? 'bg-gradient-to-r from-green-500 via-green-600 to-emerald-700 hover:from-green-600 hover:via-green-700 hover:to-emerald-800 shadow-lg shadow-green-500/50 hover:shadow-green-500/70 cursor-pointer transform hover:scale-105'
+                    : 'bg-[#1a1f3a]/50 border border-light/10 cursor-not-allowed opacity-50'
+                }`}
+              >
+                <FiCheckCircle className="text-xl" />
+                {selectedCar.finalizado
+                  ? 'CARRO FINALIZADO'
+                  : allRequirementsMet
+                    ? finalizing
+                      ? 'FINALIZANDO...'
+                      : 'FINALIZAR CARRO'
+                    : `COMPLETA ARMADO (${completedItems}/${REQUIRED_CATEGORIES_COUNT})`}
+              </button>
+            </div>
+          )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-                    {/* Info */}
-                    <div>
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-4 h-4 bg-gradient-to-r from-primary to-red-700 rounded-full animate-pulse"></div>
-                        <span className="text-xs font-bold text-primary uppercase tracking-widest">En Configuración</span>
-                      </div>
-                      <h2 className="text-4xl md:text-5xl font-black text-white mb-2">
-                        Carro {selectedCar.numero_carro}
-                      </h2>
-                      <p className="text-light/60 text-sm mb-6">{selectedCar.descripcion}</p>
-
-                      {/* Stats Grid */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-500/5 border border-yellow-500/30 rounded-xl p-4 backdrop-blur text-center">
-                          <div className="text-xs text-yellow-400 mb-2 uppercase font-bold">P</div>
-                          <div className="text-3xl font-black text-yellow-400">{carStats.P}</div>
-                        </div>
-                        <div className="bg-gradient-to-br from-green-500/20 to-green-500/5 border border-green-500/30 rounded-xl p-4 backdrop-blur text-center">
-                          <div className="text-xs text-green-400 mb-2 uppercase font-bold">A</div>
-                          <div className="text-3xl font-black text-green-400">{carStats.A}</div>
-                        </div>
-                        <div className="bg-gradient-to-br from-blue-500/20 to-blue-500/5 border border-blue-500/30 rounded-xl p-4 backdrop-blur text-center">
-                          <div className="text-xs text-blue-400 mb-2 uppercase font-bold">M</div>
-                          <div className="text-3xl font-black text-blue-400">{carStats.M}</div>
-                        </div>
-                        <div className="bg-gradient-to-br from-red-500/20 to-red-500/5 border border-red-500/30 rounded-xl p-4 backdrop-blur text-center">
-                          <div className="text-xs text-red-400 mb-2 uppercase font-bold">H</div>
-                          <div className="text-3xl font-black text-red-400">{selectedDriver?.habilidad_h || 0}</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Imagen del Auto */}
-                    <div className="flex items-center justify-center lg:justify-end">
-                      <div className="relative">
-                        <div className="absolute -inset-6 sm:-inset-8 md:-inset-10 lg:-inset-12 bg-gradient-to-br from-primary/25 via-transparent to-accent/15 rounded-full blur-xl sm:blur-2xl md:blur-3xl -z-10"></div>
-                        <div className="relative w-full h-full">
-                          <img
-                            src={carImage}
-                            alt="F1 Car"
-                            className="w-auto h-[240px] xs:h-[280px] sm:h-[320px] md:h-[360px] lg:h-[400px] xl:h-[440px] 2xl:h-[500px]
-                                    object-contain 
-                                    drop-shadow-[0_0_20px_rgba(225,6,0,0.2)] 
-                                    filter brightness-105 contrast-110 
-                                    transition-all duration-500 
-                                    hover:scale-105 hover:drop-shadow-[0_0_40px_rgba(225,6,0,0.4)]
-                                    transform translateX(5%) lg:translateX(15%) xl:translateX(20%)"
-                            loading="lazy"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+          {/* Generar Carros */}
+          <div className="pt-6">
+            <div className="bg-[#0f1419]/50 border border-light/5 backdrop-blur rounded-2xl p-6">
+              <div className="flex items-center justify-between gap-4 mb-2">
+                <h3 className="text-white font-black text-xl">Generar carros</h3>
+                <div className="text-xs px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary font-bold uppercase tracking-wider">
+                  Máx 2 por equipo
                 </div>
-              )}
+              </div>
 
-              {/* Partes - Acordeón */}
-              {selectedCar && (
-                <div className="space-y-3">
-                  {CATEGORIES.map((category) => {
-                    const categoryKey = `id_${category.toLowerCase().replace(/ /g, '_')}`;
-                    const selectedPartId = currentSetup[categoryKey];
-                    const parts = getPartsByCategory(category, ALL_PARTS);
-                    const selectedPart = getPartById(selectedPartId, ALL_PARTS);
-                    const isExpanded = expandedCategory === category;
+              <p className="text-light/60 text-sm mb-4">Si tu equipo aún no tiene carros, podés generarlos automáticamente desde aquí.</p>
 
-                    return (
-                      <div
-                        key={category}
-                        className="bg-[#0f1419]/50 border border-light/5 backdrop-blur rounded-2xl overflow-hidden hover:border-primary/20 transition-all"
-                      >
-                        <button
-                          onClick={() => setExpandedCategory(isExpanded ? null : category)}
-                          className="w-full px-6 py-4 flex items-center justify-between hover:bg-[#1a1f3a]/30 transition-all"
-                        >
-                          <div className="flex items-center gap-3 flex-1">
-                            <span className="w-2 h-2 rounded-full bg-primary"></span>
-                            <h3 className="text-sm font-bold text-light/70 uppercase tracking-wider">{category}</h3>
-                            {selectedPart && (
-                              <div className="flex items-center gap-2 ml-3 px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full">
-                                <FiCheck className="text-green-400 text-xs" />
-                                <span className="text-xs text-green-400 font-bold truncate">{selectedPart.nombre}</span>
-                              </div>
-                            )}
-                          </div>
-                          <FiChevronDown
-                            className={`transition-transform text-light/50 ${isExpanded ? 'rotate-180' : ''}`}
-                          />
-                        </button>
+              <button
+                onClick={handleGenerateCars}
+                disabled={saving || finalizing || !selectedTeamId}
+                className={`w-full py-4 px-6 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 text-lg ${
+                  saving || finalizing || !selectedTeamId
+                    ? 'bg-[#1a1f3a]/50 border border-light/10 cursor-not-allowed opacity-50'
+                    : 'bg-gradient-to-r from-primary via-red-600 to-red-700 hover:opacity-95 shadow-lg shadow-red-500/30'
+                }`}
+              >
+                {saving ? 'GENERANDO...' : 'GENERAR 2 CARROS'}
+              </button>
 
-                        {isExpanded && (
-                          <div className="border-t border-light/5 p-6 space-y-4 bg-gradient-to-b from-[#0a0e27]/50 to-transparent">
-                            {selectedPart && (
-                              <div className="bg-gradient-to-r from-primary/30 to-primary/10 border border-primary/40 rounded-xl p-4">
-                                <div className="flex items-start justify-between mb-3">
-                                  <div>
-                                    <div className="text-xs text-primary font-bold uppercase mb-1 flex items-center gap-2">
-                                      <FiCheckCircle className="text-green-400" /> Seleccionada
-                                    </div>
-                                    <h4 className="text-lg font-bold text-white">{selectedPart.nombre}</h4>
-                                    <p className="text-xs text-light/60 mt-1">{selectedPart.descripcion}</p>
-                                  </div>
-                                  <button
-                                    onClick={() => handlePartChange(category, null)}
-                                    className="px-3 py-1 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30 transition-all text-xs font-bold"
-                                  >
-                                    Cambiar
-                                  </button>
-                                </div>
-
-                                <div className="grid grid-cols-3 gap-2">
-                                  <div className="bg-[#1a1f3a] rounded p-2 text-center">
-                                    <div className="text-xs text-yellow-400 font-bold">P</div>
-                                    <div className="text-xl font-black text-yellow-400">+{selectedPart.rendimiento.p}</div>
-                                  </div>
-                                  <div className="bg-[#1a1f3a] rounded p-2 text-center">
-                                    <div className="text-xs text-green-400 font-bold">A</div>
-                                    <div className="text-xl font-black text-green-400">+{selectedPart.rendimiento.a}</div>
-                                  </div>
-                                  <div className="bg-[#1a1f3a] rounded p-2 text-center">
-                                    <div className="text-xs text-blue-400 font-bold">M</div>
-                                    <div className="text-xl font-black text-blue-400">+{selectedPart.rendimiento.m}</div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            <div>
-                              <p className="text-xs text-light/60 mb-2 font-bold">Opciones disponibles:</p>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-72 overflow-y-auto custom-scrollbar">
-                                {parts.map((part) => (
-                                  <button
-                                    key={part.id_parte}
-                                    onClick={() => handlePartChange(category, part.id_parte)}
-                                    className={`text-left p-3 rounded-lg transition-all group ${
-                                      selectedPartId === part.id_parte
-                                        ? 'bg-primary/20 border border-primary'
-                                        : 'border border-light/10 bg-[#1a1f3a]/50 hover:border-primary/40 hover:bg-[#1a1f3a]'
-                                    }`}
-                                  >
-                                    <div className="flex items-start justify-between mb-2">
-                                      <span className="text-sm font-bold text-light/80 group-hover:text-white">
-                                        {part.nombre}
-                                      </span>
-                                      <span className="text-xs text-light/50 font-bold">${(part.precio / 1000).toFixed(0)}k</span>
-                                    </div>
-                                    <div className="flex gap-2 text-xs">
-                                      <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded font-bold">P:{part.rendimiento.p}</span>
-                                      <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded font-bold">A:{part.rendimiento.a}</span>
-                                      <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded font-bold">M:{part.rendimiento.m}</span>
-                                    </div>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Conductor */}
-              {selectedCar && (
-                <div className="bg-[#0f1419]/50 border border-light/5 backdrop-blur rounded-2xl overflow-hidden">
-                  <div className="border-b border-light/5 px-6 py-4">
-                    <h3 className="text-sm font-bold text-light/70 uppercase tracking-wider flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-accent"></span>
-                      Conductor
-                    </h3>
-                  </div>
-
-                  <div className="p-6 space-y-4">
-                    {selectedDriver && (
-                      <div className="bg-gradient-to-r from-red-500/30 to-red-500/10 border border-red-500/40 rounded-xl p-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <h4 className="text-lg font-bold text-white">{selectedDriver.nombre}</h4>
-                            <p className="text-xs text-light/60">{selectedDriver.equipo_nombre}</p>
-                          </div>
-                          <FiCheckCircle className="text-red-400 text-2xl" />
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-light/60 font-bold">Habilidad</span>
-                            <span className="text-sm font-black text-red-400">{selectedDriver.habilidad_h}</span>
-                          </div>
-                          <div className="w-full h-3 bg-[#1a1f3a] rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-red-500 to-red-700 shadow-lg shadow-red-500/40"
-                              style={{ width: `${(selectedDriver.habilidad_h / 100) * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {getDriversForTeam().map((driver) => (
-                        <button
-                          key={driver.id_conductor}
-                          onClick={() => handleDriverChange(driver.id_conductor)}
-                          className={`text-left p-3 rounded-lg transition-all ${
-                            currentSetup.id_conductor === driver.id_conductor
-                              ? 'bg-red-500/20 border border-red-500/40'
-                              : 'bg-[#1a1f3a]/50 border border-light/10 hover:border-red-400/40 hover:bg-[#1a1f3a]'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between mb-1">
-                            <span className="text-sm font-bold text-light/80">{driver.nombre}</span>
-                            <span className="text-sm font-black text-red-400">{driver.habilidad_h}</span>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Acciones */}
-              {selectedCar && (
-                <div className="space-y-4">
-                  {allRequirementsMet && (
-                    <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/30 flex items-start gap-3 animate-pulse">
-                      <FiCheckCircle className="text-green-400 text-xl flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-green-300 font-bold">¡Listo para crear!</p>
-                        <p className="text-xs text-green-300/70 mt-1">
-                          Tu carro está completamente configurado. Presiona el botón para guardarlo.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  <button
-                    onClick={handleFinalizeCar}
-                    disabled={!allRequirementsMet}
-                    className={`w-full py-4 px-6 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 text-lg ${
-                      allRequirementsMet
-                        ? 'bg-gradient-to-r from-green-500 via-green-600 to-emerald-700 hover:from-green-600 hover:via-green-700 hover:to-emerald-800 shadow-lg shadow-green-500/50 hover:shadow-green-500/70 cursor-pointer transform hover:scale-105'
-                        : 'bg-[#1a1f3a]/50 border border-light/10 cursor-not-allowed opacity-50'
-                    }`}
-                  >
-                    <FiCheckCircle className="text-xl" />
-                    {allRequirementsMet ? `CREAR CARRO ${selectedCar?.numero_carro}` : `COMPLETA ARMADO (${completedItems}/6)`}
-                  </button>
-                </div>
-              )}
+              <div className="mt-3 text-xs text-light/40">Si ya existen 2 carros, el SP bloquea la creación (regla del proyecto).</div>
             </div>
           </div>
-        </>
-      )}
+        </div>
+      </div>
 
       {/* Modal Éxito */}
       {showSuccessModal && (
@@ -587,26 +936,17 @@ export function CarSetup( { user } ) {
               <FiCheckCircle className="text-green-400 text-6xl mx-auto mb-4" />
               <h3 className="text-2xl font-black text-white mb-2">¡Éxito!</h3>
               <p className="text-light/70 mb-4">{successMessage}</p>
-              <div className="text-sm text-green-300 font-bold">Carro guardado exitosamente</div>
+              <div className="text-sm text-green-300 font-bold">Cambios guardados</div>
             </div>
           </div>
         </div>
       )}
 
       <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(225, 6, 0, 0.2);
-          border-radius: 2px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(225, 6, 0, 0.4);
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(225, 6, 0, 0.2); border-radius: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(225, 6, 0, 0.4); }
       `}</style>
     </div>
   );
