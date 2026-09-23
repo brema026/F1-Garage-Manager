@@ -19,7 +19,7 @@ export const validatePassword = (password) => {
   }
 
   // Caracter especial
-  const specialChars = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;
+  const specialChars = /[!@#$%^&*()_+=[\]{};':"\\|,.<>/?-]/;
   if (!specialChars.test(password)) {
     errors.push('La contraseña debe tener al menos 1 caracter especial (!@#$%^&*...)');
   }
@@ -200,7 +200,7 @@ export const validateTeamName = (nombre) => {
   }
 
   // Solo letras, números, espacios y guiones
-  const validNameRegex = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\-]+$/;
+  const validNameRegex = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s-]+$/;
   if (!validNameRegex.test(nombre)) {
     errors.push('El nombre solo puede contener letras, números, espacios y guiones');
   }

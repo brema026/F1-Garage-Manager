@@ -578,7 +578,7 @@ export default function VehicleSelection({ circuit, onBack, onStartRace, user })
                     <motion.button
                       key="results"
                       initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1, scale: [1, 1.02, 1] }}
+                      animate={{ opacity: 1, scale: [1, 1.02, 1] }}
                       transition={{
                         scale: { duration: 1.5, repeat: Infinity, repeatType: "reverse" },
                       }}

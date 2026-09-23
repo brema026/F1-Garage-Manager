@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../api/axios';
-import { FiEdit, FiPlus, FiX, FiChevronRight, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiX, FiChevronRight, FiTrash2 } from 'react-icons/fi';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import { InputWithValidation } from '../components/common/Validation'; 
 import { validateSponsorName, validateSponsorEmail, validateAporteMonto, validateAporteEquipo } from '../utils/validations'; 
@@ -199,13 +199,6 @@ export function Sponsors({ user }) {
     setModalMode('create');
     setFormData({ nombre: '', email: '' });
     setSponsorError('');
-    setShowModal(true);
-  };
-
-  const handleEditSponsor = () => {
-    setModalMode('edit');
-    setFormData({ nombre: selectedSponsor?.nombre || '', email: selectedSponsor?.email || '' });
-    setSponsorError('Editar no está implementado en backend (solo crear).');
     setShowModal(true);
   };
 

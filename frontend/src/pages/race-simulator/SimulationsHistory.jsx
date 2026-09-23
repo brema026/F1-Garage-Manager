@@ -9,7 +9,6 @@ import {
   FiAward,
   FiChevronRight
 } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
 import { simulationsHistoryData } from "../../data/SimulationsHistoryData";
 
 // Imagen de fondo
@@ -18,8 +17,6 @@ import resultsBg from "../../assets/circuits/results.jpg";
 export default function SimulationsHistory( { onBack, onSimulationClick } ) {
   const [isLoading, setIsLoading] = useState(true);
   const [visibleSimulations, setVisibleSimulations] = useState([]);
-  const [selectedSimulation, setSelectedSimulation] = useState(null);
-  const navigate = useNavigate();
 
   // Cargar simulaciones con animación
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FiCheck,
   FiChevronDown,
@@ -68,14 +68,14 @@ export function CarSetup({ user }) {
     return Array.isArray(r.data) ? r.data : [];
   }
 
-  async function fetchCarsForTeam(id_equipo) {
+  const fetchCarsForTeam = useCallback(async (id_equipo) => {
     if (userRole === 'engineer') {
       const r = await api.get('/cars/my');
       return Array.isArray(r.data) ? r.data : [];
     }
     const r = await api.get(`/cars/team/${id_equipo}`);
     return Array.isArray(r.data) ? r.data : [];
-  }
+  }, [userRole]);
 
   async function fetchCarSetup(id_carro) {
     const r = await api.get(`/car-setup/car/${id_carro}`);
@@ -215,7 +215,7 @@ export function CarSetup({ user }) {
     return () => {
       cancelled = true;
     };
-  }, [canUsePage, showEngineerNoTeamView, selectedTeamId, userRole, user?.id_equipo, teams]);
+  }, [canUsePage, fetchCarsForTeam, showEngineerNoTeamView, selectedTeamId, userRole, user?.id_equipo, teams]);
 
   // ===== Cargar setup cuando cambia carro =====
   useEffect(() => {

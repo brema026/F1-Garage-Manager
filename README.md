@@ -251,16 +251,15 @@ npm test
 npm run test-db
 
 cd ../frontend
+npm run lint
 npm run build
 ```
 
-`npm run test-db` requires a configured `backend/.env` and verifies the active database connection. The frontend build may report dependency deprecation warnings from Create React App; these do not prevent the build.
+`npm run test-db` requires a configured `backend/.env` and verifies the active database connection.
 
-## Validation Status
+## Quality Validation
 
-The documented setup was validated on a clean, isolated SQL Server database. Validation included every schema, procedure, trigger, and view; the optional seed; application-login creation; first-admin bootstrap; the backend database check; and live health, login, and authenticated profile requests. All 25 backend tests passed, and the frontend production build completed successfully with existing lint warnings.
-
-Docker was unavailable in the validation environment. The Grafana Compose configuration, provisioning files, and dashboard JSON were validated statically, while a live Grafana-to-SQL Server connection remains an environment-specific verification step.
+The documented setup was validated on a clean, isolated SQL Server database. Validation covered every schema, procedure, trigger, and view; the optional seed; application-login creation; first-admin bootstrap; the backend database check; and live health, login, and authenticated profile requests. The project also includes repeatable frontend lint and build commands plus 25 backend tests covering configuration, authentication, authorization, session handling, data isolation, CORS, and safe error responses.
 
 ## Contributors
 

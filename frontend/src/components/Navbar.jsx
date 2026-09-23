@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Logo from '../assets/logo/logo.png';
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
