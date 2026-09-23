@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { 
-  FiUser, FiUsers, FiAward, FiZap, FiTarget, 
-  FiShield, FiTrendingUp, FiCpu, FiActivity, FiMail 
+import {
+  FiUsers, FiAward, FiZap, FiTarget,
+  FiShield, FiTrendingUp, FiActivity, FiMail
 } from 'react-icons/fi';
 import api from '../api/axios';
 

@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 // import { DRIVERS } from '../data/DriversData';
 import { FiEdit, FiPlus, FiX, FiChevronRight } from 'react-icons/fi';
-import { HABILIDAD_COLORES, getHabilidadColor, getHabilidadLabel, formatCurrency, calculateTotalAportes, calculateTotalByTeam, getTotalItems, getCategoriesCount, formatDate, getPartsByCategory, getPartById, calculateCarStats, isCarComplete } from '../utils/helpers';
+import { getHabilidadColor, getHabilidadLabel } from '../utils/helpers';
 import api from '../api/axios';
 import { InputWithValidation } from '../components/common/Validation'; 
-import { validateDriverName, validateDriverSkill } from '../utils/validations'; 
+import { validateDriverName } from '../utils/validations';
 
 // Drivers Page Component
 export function Drivers() {
@@ -22,7 +22,7 @@ export function Drivers() {
   };
 
   // Cargar drivers y equipos desde la API
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [driversRes, teamsRes] = await Promise.all([
@@ -44,9 +44,7 @@ export function Drivers() {
 
       setDrivers(dataTransformada);
 
-      if (dataTransformada.length > 0 && !selectedDriver) {
-        setSelectedDriver(dataTransformada[0]);
-      }
+      setSelectedDriver(current => current || dataTransformada[0] || null);
       
     } catch (error) {
       console.error("Error al cargar datos:", error);
@@ -54,11 +52,11 @@ export function Drivers() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   // Manejo del modal
   const handleCreateDriver = () => {

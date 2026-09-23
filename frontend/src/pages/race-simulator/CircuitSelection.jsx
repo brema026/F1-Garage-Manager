@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import { FiArrowLeft, FiPlus, FiTrash2, FiEdit2, FiCheck, FiMapPin, FiHash } from "react-icons/fi";
+import { FiArrowLeft, FiPlus, FiTrash2, FiCheck, FiMapPin, FiHash } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { validateCircuitName, validateCircuitDistance, validateCircuitCurves } from "../../utils/validations";
@@ -15,10 +15,8 @@ export default function CircuitSelection({ onSelect, onShowHistory }) {
   const [circuitName, setCircuitName] = useState("");
   const [distance, setDistance] = useState("");
   const [curves, setCurves] = useState("");
-  const [editingId, setEditingId] = useState(null);
   const [randomVideo, setRandomVideo] = useState(null);
   const [isFormValid, setIsFormValid] = useState(false);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const [errors, setErrors] = useState({
     circuitName: "",
@@ -120,6 +118,8 @@ export default function CircuitSelection({ onSelect, onShowHistory }) {
           setErrors(prev => ({ ...prev, curves: "" }));
         }
         break;
+      default:
+        return;
     }
   };
 
@@ -134,14 +134,11 @@ export default function CircuitSelection({ onSelect, onShowHistory }) {
 
   const fetchCircuits = async () => {
     try {
-      setLoading(true);
       const response = await api.get('/circuits');
       setCreatedCircuits(response.data);
     } catch (error) {
       console.error("Error cargando circuitos:", error);
       alert("Error al cargar los circuitos");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -355,19 +352,15 @@ export default function CircuitSelection({ onSelect, onShowHistory }) {
                   transition={{ delay: 0.8 }}
                   className="flex items-center gap-4 mb-8 pb-6 border-b border-white/[0.05]"
                 >
-                  <div className={`p-3 rounded-xl ${editingId ? 'bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 border border-yellow-500/30' : 'bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30'}`}>
-                    {editingId ? (
-                      <FiEdit2 className="text-2xl text-yellow-500" />
-                    ) : (
-                      <FiPlus className="text-2xl text-red-500" />
-                    )}
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30">
+                    <FiPlus className="text-2xl text-red-500" />
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-white tracking-wide">
-                      {editingId ? "Editar Circuito" : "Nuevo Circuito"}
+                      Nuevo Circuito
                     </h2>
                     <p className="text-sm text-gray-400 mt-1 tracking-wide">
-                      {editingId ? "Modifica los datos" : "Define características"}
+                      Define características
                     </p>
                   </div>
                 </motion.div>
@@ -471,9 +464,7 @@ export default function CircuitSelection({ onSelect, onShowHistory }) {
                       className={`flex-1 py-4 rounded-xl font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-3 group relative overflow-hidden ${
                         !isFormValid
                           ? 'cursor-not-allowed bg-white/[0.03] border border-white/[0.08] text-white/20'
-                          : editingId 
-                            ? 'bg-gradient-to-r from-yellow-600/90 to-yellow-700/90 hover:from-yellow-700 hover:to-yellow-800 text-white'
-                            : 'bg-gradient-to-r from-red-600/90 to-red-700/90 hover:from-red-700 hover:to-red-800 text-white'
+                          : 'bg-gradient-to-r from-red-600/90 to-red-700/90 hover:from-red-700 hover:to-red-800 text-white'
                       }`}
                       whileHover={isFormValid ? { scale: 1.02 } : {}}
                       whileTap={isFormValid ? { scale: 0.98 } : {}}

@@ -1,6 +1,5 @@
 import { useCarousel } from '../../hooks/useCarousel'
 import { CAROUSEL_IMAGES, CAROUSEL_INTERVAL } from '../../utils/constants'
-import FullLogo from '../../assets/logo/full-logo.png'
 
 /**
  * Displays an image carousel with auto-rotation and manual navigation controls
