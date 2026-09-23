@@ -4,7 +4,7 @@
 -- Descripción: Procedimientos para gestión de usuarios, autenticación,
 --              sesiones y asignación de equipos
 -- =====================================================================
-USE f1_garage_tec;
+USE [$(DatabaseName)];
 GO
 
 -- =========================================

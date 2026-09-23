@@ -4,7 +4,7 @@
 -- Descripción: Procedimientos para gestión de equipos, carros y
 --              conductores asociados a cada equipo
 -- =====================================================================
-USE f1_garage_tec;
+USE [$(DatabaseName)];
 GO
 
 -- =========================================

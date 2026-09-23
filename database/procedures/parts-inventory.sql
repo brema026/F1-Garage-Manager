@@ -4,7 +4,7 @@
 -- Descripción: Procedimientos para gestión de piezas, stock de tienda,
 --              inventario de equipos y compras
 -- =====================================================================
-USE f1_garage_tec;
+USE [$(DatabaseName)];
 GO
 
 -- =========================================

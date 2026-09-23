@@ -1,6 +1,11 @@
+-- HISTORICAL MANUAL FIXTURE: not an installation seed.
+-- It duplicates categories created by schema.sql and contains a password
+-- placeholder that cannot be used to log in. Fresh installations should use
+-- database/setup.ps1 and database/seeds/demo.sql instead.
+
 -- Inserts Dummy para verificacion de tablas.
 
-USE f1_garage_tec;
+USE [$(DatabaseName)];
 GO
 
 -- BLOQUE 1 

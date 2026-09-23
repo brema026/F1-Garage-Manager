@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Logo from '../assets/logo/logo.png';
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import { GRAFANA_URL } from "../config";
 
 function Navbar({ setView, setIsLoggedIn, user }) {
   // State management
@@ -20,8 +21,7 @@ function Navbar({ setView, setIsLoggedIn, user }) {
 
   // Función para manejar clic en botón Grafana
   const handleGrafanaClick = () => {
-    console.log("Abriendo Grafana para todos los resultados");
-    window.open('http://localhost:3003/d/adxgd9d', '_blank');
+    window.open(GRAFANA_URL, '_blank');
     if (mobileMenuOpen) setMobileMenuOpen(false);
     if (profileOpen) setProfileOpen(false);
   };

@@ -3,7 +3,7 @@
 -- Base de datos: f1_garage_tec
 -- Descripción: Procedimientos para gestión de carros (creación, límites)
 -- =====================================================================
-USE f1_garage_tec;
+USE [$(DatabaseName)];
 GO
 
 -- =========================================
@@ -370,15 +370,6 @@ GO
 -- =========================================
 -- Asignacion de conductor al carro
 -- =========================================
-ALTER TABLE dbo.carro
-ADD id_conductor INT NULL;
-
-ALTER TABLE dbo.carro
-ADD CONSTRAINT fk_carro_conductor
-FOREIGN KEY (id_conductor) REFERENCES dbo.conductor(id_conductor);
-GO
-
-
 CREATE OR ALTER PROCEDURE dbo.sp_asignar_conductor_a_carro
   @id_carro INT,
   @id_equipo INT,

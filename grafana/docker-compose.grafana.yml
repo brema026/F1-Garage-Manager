@@ -1,6 +1,6 @@
 services:
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:12.4.11
     container_name: f1_garage_grafana
     ports:
       - "127.0.0.1:3003:3000"
@@ -13,10 +13,10 @@ services:
       GRAFANA_DB_NAME: ${GRAFANA_DB_NAME:-f1_garage_tec}
       GRAFANA_DB_USER: ${GRAFANA_DB_USER:?Set a read-only SQL login in grafana/.env}
       GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:?Set GRAFANA_DB_PASSWORD in grafana/.env}
-      GF_INSTALL_PLUGINS: grafana-simple-json-datasource,grafana-clock-panel,marcusolsson-dynamictext-panel,frser-sqlite-datasource
     volumes:
       - ./grafana-data:/var/lib/grafana
       - ./provisioning:/etc/grafana/provisioning:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro
     restart: unless-stopped
     networks:
       - f1-network

@@ -1,21 +1,16 @@
-# Base de Datos – F1 Garage Manager
+# Database Setup
 
-Scripts SQL correspondientes a la base de datos del proyecto
+The supported database installation is the ordered PowerShell installer:
 
-## Contenido
+```powershell
+$env:F1_SETUP_APP_PASSWORD = 'choose-a-local-password'
+./database/setup.ps1 -Server localhost -Database f1_garage_tec -AppUser f1_app_user -SeedDemo
+```
 
-- **Schema_Inicial_DB.sql**
-  - Definición del esquema inicial en SQL Server.
-  - Incluye tablas, claves primarias (PK), claves foráneas (FK) y restricciones básicas.
-  - El esquema está alineado con el modelo Entidad–Relación y el diagrama Crow’s Foot del proyecto.
+It creates the database when needed, applies all schema objects in dependency order, optionally inserts fictional demo data, and can create a write-capable login for the backend.
 
-- **Inserts_Dummy.sql**
-  - Scripts de inserción de datos dummy.
-  - Utilizados únicamente para pruebas, verificación de relaciones y demostración del sistema.
-  - Los inserts deben ejecutarse por bloques y en orden.
+The target database must be empty. The installer stops when tables already exist so it cannot silently overwrite an installation.
 
-## Uso recomendado
+See the root [README](../README.md#database) for prerequisites, authentication options, the exact script order, backend configuration, and validation steps.
 
-1. Ejecutar el archivo `Schema_Inicial_DB.sql` en SQL Server.
-2. Ejecutar el archivo `Inserts_Dummy.sql` por secciones para poblar la base con datos de prueba.
-3. Verificar el correcto funcionamiento mediante consultas `SELECT`.
+`tests/Inserts_Dummy.sql` is a historical manual fixture. It is not part of the supported setup path.

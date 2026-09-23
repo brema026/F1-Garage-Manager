@@ -1,8 +1,8 @@
-USE f1_garage_tec;
+USE [$(DatabaseName)];
 GO
 
 /* =========================================================
-   0) Drop seguro de objetos de simulación (solo los nuevos)
+   0) Drop seguro de objetos de simulaciÃ³n (solo los nuevos)
    ========================================================= */
 IF OBJECT_ID('dbo.simulacion_participante_pieza', 'U') IS NOT NULL DROP TABLE dbo.simulacion_participante_pieza;
 IF OBJECT_ID('dbo.simulacion_participante', 'U') IS NOT NULL DROP TABLE dbo.simulacion_participante;
@@ -14,7 +14,7 @@ IF OBJECT_ID('dbo.sp_listar_carros_elegibles', 'P') IS NOT NULL DROP PROCEDURE d
 GO
 
 /* =========================================================
-   1) Parámetros globales del sistema (dc)
+   1) ParÃ¡metros globales del sistema (dc)
    ========================================================= */
 
 CREATE TABLE dbo.parametro_sistema (
@@ -31,7 +31,7 @@ GO
 
 
 /* =========================================================
-   3) Asegurar 1 setup actual por carro (evita múltiples es_actual=1)
+   3) Asegurar 1 setup actual por carro (evita mÃºltiples es_actual=1)
    ========================================================= */
 
 IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ux_car_setup_actual_por_carro' AND object_id = OBJECT_ID('dbo.car_setup'))
@@ -44,11 +44,11 @@ WHERE es_actual = 1;
 GO
 
 /* =========================================================
-   4) Snapshot de resultados por carro (para Grafana / histórico)
-   - 1 fila por (simulación, carro)
+   4) Snapshot de resultados por carro (para Grafana / histÃ³rico)
+   - 1 fila por (simulaciÃ³n, carro)
    ========================================================= */
 
-USE f1_garage_tec;
+USE [$(DatabaseName)];
 GO
 
 CREATE TABLE dbo.simulacion_participante (
@@ -91,8 +91,8 @@ GO
 
 
 /* =========================================================
-   5) Snapshot de setup por categoría (congelado)
-   - 5 filas por (simulación, carro)
+   5) Snapshot de setup por categorÃ­a (congelado)
+   - 5 filas por (simulaciÃ³n, carro)
    ========================================================= */
 
    CREATE TABLE dbo.simulacion_participante_pieza (
@@ -123,18 +123,18 @@ GO
 GO
 
 /* =========================================================
-   6) Stored Procedure principal: ejecutar simulación
+   6) Stored Procedure principal: ejecutar simulaciÃ³n
    - Valida: circuito, dc, Drectas >= 0, carros finalizados,
-             setup actual completo (5 categorías), conductor asignado.
+             setup actual completo (5 categorÃ­as), conductor asignado.
    - Inserta: simulacion, snapshot participantes, snapshot piezas,
              calcula ranking y actualiza posicion.
-   - Todo en transacción.
+   - Todo en transacciÃ³n.
    ========================================================= */
 
-USE f1_garage_tec;
+USE [$(DatabaseName)];
 GO
 
-USE f1_garage_tec;
+USE [$(DatabaseName)];
 GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_ejecutar_simulacion
@@ -149,7 +149,7 @@ BEGIN
   BEGIN TRY
     BEGIN TRAN;
 
-    /* ===== Validar que haya selección ===== */
+    /* ===== Validar que haya selecciÃ³n ===== */
     IF NOT EXISTS (SELECT 1 FROM @carros_seleccionados)
     BEGIN
       RAISERROR('Debe seleccionar al menos 1 carro para simular.', 16, 1);
@@ -189,7 +189,7 @@ BEGIN
       ROLLBACK; RETURN;
     END;
 
-    /* ===== Crear simulación ===== */
+    /* ===== Crear simulaciÃ³n ===== */
     INSERT INTO dbo.simulacion(id_circuito, id_usuario)
     VALUES (@id_circuito, @id_usuario);
 
@@ -201,7 +201,7 @@ BEGIN
        - finalizado=1
        - id_conductor NOT NULL
        - setup actual es_actual=1
-       - setup tiene exactamente 5 categorías
+       - setup tiene exactamente 5 categorÃ­as
        ========================================================= */
 
     ;WITH setup_actual AS (
@@ -296,10 +296,10 @@ BEGIN
       NULL
     FROM totales t;
 
-    /* ===== Si no insertó nada, fallar con mensaje claro ===== */
+    /* ===== Si no insertÃ³ nada, fallar con mensaje claro ===== */
     IF NOT EXISTS (SELECT 1 FROM dbo.simulacion_participante WHERE id_simulacion = @id_simulacion)
     BEGIN
-      RAISERROR('Ninguno de los carros seleccionados es elegible: revise finalizado, setup completo (5 categorías) y conductor asignado.', 16, 1);
+      RAISERROR('Ninguno de los carros seleccionados es elegible: revise finalizado, setup completo (5 categorÃ­as) y conductor asignado.', 16, 1);
       ROLLBACK; RETURN;
     END;
 
@@ -452,14 +452,4 @@ BEGIN
 END;
 GO
 
- USE f1_garage_tec
- GO
-
-IF TYPE_ID('dbo.IntList') IS NOT NULL
-  DROP TYPE dbo.IntList;
-GO
-
-CREATE TYPE dbo.IntList AS TABLE (
-  id INT NOT NULL PRIMARY KEY
-);
-GO
+-- dbo.IntList is created once by procedures/users.sql before this file.

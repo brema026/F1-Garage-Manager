@@ -3,7 +3,7 @@
 -- Base de datos: f1_garage_tec
 -- Descripción: Procedimientos para la creación, eliminacion, etc... de circuitos
 -- =====================================================================
-USE f1_garage_tec;
+USE [$(DatabaseName)];
 GO
 
 -- =============================================

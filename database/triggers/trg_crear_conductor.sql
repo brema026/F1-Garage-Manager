@@ -1,4 +1,4 @@
-USE f1_garage_tec;
+USE [$(DatabaseName)];
 GO
 
 DROP TRIGGER IF EXISTS dbo.trg_crear_conductor;

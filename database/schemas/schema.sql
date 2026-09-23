@@ -1,28 +1,10 @@
 --F1 Garage Manager - Schema inicial (SQL Server)
-USE f1_garage_tec;
+USE [$(DatabaseName)];
 GO
 
---  DROP (para re-ejecutar)
-IF OBJECT_ID('dbo.resultado_simulacion', 'U') IS NOT NULL DROP TABLE dbo.resultado_simulacion;
-IF OBJECT_ID('dbo.car_setup_pieza', 'U') IS NOT NULL DROP TABLE dbo.car_setup_pieza;
-IF OBJECT_ID('dbo.car_setup', 'U') IS NOT NULL DROP TABLE dbo.car_setup;
-IF OBJECT_ID('dbo.part_stock', 'U') IS NOT NULL DROP TABLE dbo.part_stock;
-IF OBJECT_ID('dbo.inventario_equipo', 'U') IS NOT NULL DROP TABLE dbo.inventario_equipo;
-
-IF OBJECT_ID('dbo.simulacion', 'U') IS NOT NULL DROP TABLE dbo.simulacion;
-IF OBJECT_ID('dbo.circuito', 'U') IS NOT NULL DROP TABLE dbo.circuito;
-
-IF OBJECT_ID('dbo.conductor', 'U') IS NOT NULL DROP TABLE dbo.conductor;
-IF OBJECT_ID('dbo.aporte', 'U') IS NOT NULL DROP TABLE dbo.aporte;
-IF OBJECT_ID('dbo.patrocinador', 'U') IS NOT NULL DROP TABLE dbo.patrocinador;
-
-IF OBJECT_ID('dbo.sesion', 'U') IS NOT NULL DROP TABLE dbo.sesion;
-IF OBJECT_ID('dbo.usuario', 'U') IS NOT NULL DROP TABLE dbo.usuario;
-IF OBJECT_ID('dbo.carro', 'U') IS NOT NULL DROP TABLE dbo.carro;
-IF OBJECT_ID('dbo.pieza', 'U') IS NOT NULL DROP TABLE dbo.pieza;
-IF OBJECT_ID('dbo.part_category', 'U') IS NOT NULL DROP TABLE dbo.part_category;
-IF OBJECT_ID('dbo.equipo', 'U') IS NOT NULL DROP TABLE dbo.equipo;
-IF OBJECT_ID('dbo.compra_equipo' , 'U') IS NOT NULL DROP TABLE dbo.compra_equipo;
+-- Fresh databases only. Existing installations require deliberate migrations.
+IF EXISTS (SELECT 1 FROM sys.tables WHERE schema_id = SCHEMA_ID('dbo'))
+    THROW 51000, 'Schema initialization requires an empty database.', 1;
 GO
 
 /* =========================
@@ -182,10 +164,12 @@ GO
 CREATE TABLE dbo.carro (
     id_carro         INT IDENTITY(1,1) NOT NULL,
     id_equipo        INT NOT NULL,
+    id_conductor     INT NULL,
     nombre           NVARCHAR(120) NOT NULL,
     finalizado       BIT NOT NULL CONSTRAINT df_carro_finalizado DEFAULT (0),
     CONSTRAINT pk_carro PRIMARY KEY (id_carro),
-    CONSTRAINT fk_carro_equipo FOREIGN KEY (id_equipo) REFERENCES dbo.equipo(id_equipo)
+    CONSTRAINT fk_carro_equipo FOREIGN KEY (id_equipo) REFERENCES dbo.equipo(id_equipo),
+    CONSTRAINT fk_carro_conductor FOREIGN KEY (id_conductor) REFERENCES dbo.conductor(id_conductor)
     -- Regla "máximo 2 carros por equipo" -> se valida por Stored Procedure
 );
 GO

@@ -15,6 +15,7 @@ import resultsBg from "../../assets/circuits/results.jpg";
 // Dummy fallback SOLO cuando no hay simulationData
 import { raceResultsData } from "../../data/RaceResultsData";
 import { formatTime, formatDiff } from "../../utils/helpers";
+import { GRAFANA_URL } from "../../config";
 
 /* ---------------- helpers anti-crash ---------------- */
 
@@ -175,7 +176,7 @@ export default function RaceResults({ onBack, circuit, cars, simulationData }) {
   // Función para manejar clic en botón Grafana
   const handleGrafanaClick = () => {
     console.log("Abriendo Grafana para todos los resultados");
-    window.open('http://localhost:3003/d/adxgd9d', '_blank');
+    window.open(GRAFANA_URL, '_blank');
   };
 
   const hasResults = results && results.length > 0;

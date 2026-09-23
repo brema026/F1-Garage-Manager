@@ -1,7 +1,17 @@
-cd grafana
+F1 Garage Manager - Grafana quick start
 
-# Esto crea el contenedor con el grafana en docker
-docker-compose -f docker-compose.grafana.yml up -d
+From the repository root:
 
-# Esto comprueba que esté levantado
-docker ps
+1. Copy grafana/.env.example to grafana/.env.
+2. Add local Grafana admin values and a dedicated read-only SQL Server login.
+3. Start the provisioned instance:
+
+   docker compose --env-file grafana/.env -f grafana/docker-compose.grafana.yml up -d
+
+4. Open http://localhost:3003.
+5. Stop it with:
+
+   docker compose --env-file grafana/.env -f grafana/docker-compose.grafana.yml down
+
+The datasource and F1 Garage dashboard are provisioned automatically.
+See ../README.md for SQL permissions, variables, network notes, and validation status.

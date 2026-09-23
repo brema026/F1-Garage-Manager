@@ -4,7 +4,7 @@
 -- Descripción: Procedimientos para gestión de patrocinadores, aportes
 --              y cálculo de presupuesto/saldo de equipos
 -- =====================================================================
-USE f1_garage_tec;
+USE [$(DatabaseName)];
 GO
 
 -- =========================================

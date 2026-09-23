@@ -19,7 +19,7 @@
 --  - Cada setup tiene 1 pieza por categoría (5 categorías) -> P/A/M no quedan en 0.
 --  - Script idempotente: borra SOLO data dummy en rangos de ID usados aquí.
 -- =====================================================================
-USE f1_garage_tec;
+USE [$(DatabaseName)];
 GO
 
 SET NOCOUNT ON;

@@ -1,3 +1,6 @@
+USE [$(DatabaseName)];
+GO
+
 CREATE OR ALTER VIEW vw_presupuesto_equipo AS
 SELECT
     e.id_equipo,

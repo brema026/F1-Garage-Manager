@@ -1,0 +1,565 @@
+{
+  "uid": "f1-garage",
+  "title": "F1 Garage Manager",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "timezone": "browser",
+  "tags": [
+    "academic",
+    "f1-garage"
+  ],
+  "time": {
+    "from": "now-1y",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "circuito",
+        "label": "circuito",
+        "type": "query",
+        "datasource": {
+          "type": "mssql",
+          "uid": "f1-sqlserver"
+        },
+        "query": "SELECT DISTINCT circuito AS __text, circuito AS __value FROM dbo.v_grafana_carro_historial ORDER BY circuito;",
+        "definition": "SELECT DISTINCT circuito AS __text, circuito AS __value FROM dbo.v_grafana_carro_historial ORDER BY circuito;",
+        "refresh": 1,
+        "multi": false,
+        "includeAll": false,
+        "options": [],
+        "current": {}
+      },
+      {
+        "name": "simulation_id",
+        "label": "simulation_id",
+        "type": "query",
+        "datasource": {
+          "type": "mssql",
+          "uid": "f1-sqlserver"
+        },
+        "query": "SELECT s.id_simulacion AS __text, s.id_simulacion AS __value FROM dbo.simulacion s JOIN dbo.circuito c ON c.id_circuito = s.id_circuito WHERE c.nombre = ${circuito:sqlstring} ORDER BY s.id_simulacion;",
+        "definition": "SELECT s.id_simulacion AS __text, s.id_simulacion AS __value FROM dbo.simulacion s JOIN dbo.circuito c ON c.id_circuito = s.id_circuito WHERE c.nombre = ${circuito:sqlstring} ORDER BY s.id_simulacion;",
+        "refresh": 1,
+        "multi": false,
+        "includeAll": false,
+        "options": [],
+        "current": {}
+      },
+      {
+        "name": "carro",
+        "label": "carro",
+        "type": "query",
+        "datasource": {
+          "type": "mssql",
+          "uid": "f1-sqlserver"
+        },
+        "query": "SELECT DISTINCT CONCAT(equipo, ' - ', carro) AS __text, id_carro AS __value FROM dbo.v_grafana_carro_historial ORDER BY __text;",
+        "definition": "SELECT DISTINCT CONCAT(equipo, ' - ', carro) AS __text, id_carro AS __value FROM dbo.v_grafana_carro_historial ORDER BY __text;",
+        "refresh": 1,
+        "multi": false,
+        "includeAll": false,
+        "options": [],
+        "current": {}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "table",
+      "title": "Ranking de Resultados",
+      "description": "Clasificación final de los carros en la simulación seleccionada. Incluye equipo, carro, velocidades, penalizaciones y tiempo final, ordenado por posición.",
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "h": 18,
+        "w": 24
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "footer": {
+              "reducers": []
+            },
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "color": {
+            "mode": "fixed"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "posicion"
+            },
+            "properties": [
+              {
+                "id": "custom.align",
+                "value": "center"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 1
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 2
+                    },
+                    {
+                      "color": "orange",
+                      "value": 3
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tiempo_segundos"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 3
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "penalizacion"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 3
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "vrecta"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "kmh"
+              },
+              {
+                "id": "decimals",
+                "value": 3
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "vcurva"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "kmh"
+              },
+              {
+                "id": "decimals",
+                "value": 3
+              }
+            ]
+          }
+        ]
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "dataset": "f1_garage_tec",
+          "datasource": {
+            "type": "mssql",
+            "uid": "f1-sqlserver"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n  posicion,\r\n  equipo,\r\n  carro,\r\n  vrecta,\r\n  vcurva,\r\n  penalizacion,\r\n  tiempo_segundos\r\nFROM dbo.v_grafana_ranking_simulacion\r\nWHERE circuito = ${circuito:sqlstring}\r\n  AND id_simulacion = $simulation_id \r\nORDER BY posicion;\r\n",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "datasource": {
+        "type": "mssql",
+        "uid": "f1-sqlserver"
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Historial del carro (Tiempo por simulación)",
+      "description": "Este panel muestra la evolución del tiempo del mismo carro a lo largo de distintas simulaciones, permitiendo comparar su desempeño en diferentes condiciones de pista y momentos de simulación.",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "h": 13,
+        "w": 12
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "lineWidth": 2,
+            "fillOpacity": 35,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "always",
+            "showValues": false,
+            "pointSize": 6,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": "Tiempo (s)",
+            "axisColorMode": "text",
+            "axisBorderShow": false,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "axisCenteredZero": false,
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "decimals": 3,
+          "displayName": "Tiempo",
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "dataset": "f1_garage_tec",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n  fecha_simulacion AS time,\r\n  CAST(tiempo_segundos AS DECIMAL(12,3)) AS value,\r\n  CONCAT('Sim ', CAST(id_simulacion AS VARCHAR(10))) AS sim_label,\r\n  circuito AS circuito_label\r\nFROM dbo.v_grafana_carro_historial\r\nWHERE id_carro = $carro  -- Cambió de carro a id_carro\r\nORDER BY fecha_simulacion;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 500
+          },
+          "datasource": {
+            "type": "mssql",
+            "uid": "f1-sqlserver"
+          }
+        }
+      ],
+      "datasource": {
+        "type": "mssql",
+        "uid": "f1-sqlserver"
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "asc",
+          "hideZeros": false
+        },
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "min",
+            "max"
+          ]
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "barchart",
+      "title": "Tiempo vs P / A / M del carro (Simulación)",
+      "description": "Este panel relaciona el tiempo final del carro con los valores acumulados de Potencia (P), Aerodinámica (A) y Manejo (M) del setup utilizado en una simulación y circuito específicos.",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "h": 13,
+        "w": 12
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 50,
+            "gradientMode": "opacity",
+            "axisPlacement": "auto",
+            "axisLabel": "",
+            "axisColorMode": "text",
+            "axisBorderShow": false,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "axisCenteredZero": false,
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "decimals": 2,
+          "unit": "none"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tiempo_segundos"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "displayName",
+                "value": "Tiempo (s)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p_total"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Potencia (P)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "a_total"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Aerodinámica (A)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "m_total"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Manejo (M)"
+              }
+            ]
+          }
+        ]
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT \n  CONCAT(equipo, ' - ', carro) AS category, \n  CAST(tiempo_segundos AS DECIMAL(12,3)) AS tiempo_segundos,\n  CAST(p_total AS INT) AS p_total,\n  CAST(a_total AS INT) AS a_total,\n  CAST(m_total AS INT) AS m_total,\n  circuito,\n  equipo\nFROM dbo.v_grafana_tiempo_vs_pam\nWHERE circuito = ${circuito:sqlstring}\n  AND id_simulacion = $simulation_id\n  AND id_carro = $carro \nORDER BY tiempo_segundos ASC;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          },
+          "datasource": {
+            "type": "mssql",
+            "uid": "f1-sqlserver"
+          }
+        }
+      ],
+      "datasource": {
+        "type": "mssql",
+        "uid": "f1-sqlserver"
+      },
+      "options": {
+        "orientation": "vertical",
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "showValue": "auto",
+        "stacking": "none",
+        "groupWidth": 0.75,
+        "barWidth": 0.85,
+        "barRadius": 4,
+        "fullHighlight": false,
+        "tooltip": {
+          "mode": "single",
+          "sort": "none",
+          "hideZeros": false
+        },
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
+      }
+    }
+  ]
+}
