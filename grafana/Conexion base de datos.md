@@ -11,8 +11,8 @@
 Base de datos: f1_garage_tec
 IP Local: 192.168.1.20
 Puerto SQL Server: 1433
-Grafana Container: f1-grafana
-Grafana Port: 3004:3000
+Grafana Container: f1_garage_grafana
+Grafana Port: 3003:3000
 ```
 
 ---
@@ -67,10 +67,12 @@ Restart-Service MSSQLSERVER
 
 ### 3. Configurar Firewall de Windows
 
+Solo si la conexión lo requiere, sustituye `<TRUSTED_CLIENT_IP>` por el origen autorizado. No abras SQL Server a toda la red.
+
 #### PowerShell (como Administrador):
 
 ```powershell
-New-NetFirewallRule -DisplayName "SQL Server" -Direction Inbound -Protocol TCP -LocalPort 1433 -Action Allow
+New-NetFirewallRule -DisplayName "SQL Server" -Direction Inbound -Protocol TCP -LocalPort 1433 -RemoteAddress <TRUSTED_CLIENT_IP> -Action Allow
 ```
 
 ---
@@ -117,36 +119,11 @@ Esa es tu IP local que usarás en Grafana.
 
 ### 1. Archivo docker-compose.grafana.yml
 
-```yaml
-version: '3.8'
+Usa el [Compose versionado](docker-compose.grafana.yml) y copia [.env.example](.env.example) a `.env` dentro de esta carpeta. Completa las credenciales locales antes de iniciar Grafana.
 
-services:
-  grafana:
-    image: grafana/grafana:latest
-    container_name: f1-grafana
-    ports:
-      - "3004:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_INSTALL_PLUGINS=grafana-clock-panel
-      - GF_FEATURE_TOGGLES_ENABLE=publicDashboards
-    volumes:
-      - ./grafana-data:/var/lib/grafana
-    restart: unless-stopped
-    networks:
-      - f1-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+La contraseña de administrador y la del datasource provienen de variables de entorno. Para SQL usa una cuenta independiente de solo lectura. Mantén `.env` fuera de Git; usa comillas simples si una contraseña contiene `$`.
 
-networks:
-  f1-network:
-    driver: bridge
-```
-
-**Nota importante:** 
-- `extra_hosts` permite que Grafana se conecte a SQL Server en el host
-- Puerto `3004:3000` expone Grafana en el puerto 3004
+El volumen de provisioning se monta en modo de solo lectura. Grafana queda accesible únicamente desde `127.0.0.1:3003`, sin acceso anónimo ni registro público.
 
 ---
 
@@ -172,7 +149,7 @@ docker ps
 
 ```plaintext
 CONTAINER ID   IMAGE                    STATUS         PORTS                    NAMES
-abc123def456   grafana/grafana:latest   Up 2 minutes   0.0.0.0:3004->3000/tcp   f1-grafana
+abc123def456   grafana/grafana:latest   Up 2 minutes   0.0.0.0:3003->3000/tcp   f1_garage_grafana
 ```
 
 ---
@@ -182,7 +159,7 @@ abc123def456   grafana/grafana:latest   Up 2 minutes   0.0.0.0:3004->3000/tcp   
 #### PowerShell:
 
 ```powershell
-docker logs f1-grafana -f
+docker logs f1_garage_grafana -f
 ```
 
 Presiona `Ctrl + C` para salir.
@@ -194,14 +171,16 @@ Presiona `Ctrl + C` para salir.
 ### 1. Acceder a Grafana
 
 1. Abre tu navegador
-2. Ve a: `http://localhost:3004`
+2. Ve a: `http://localhost:3003`
 3. Login:
-   - **Usuario:** `admin`
-   - **Password:** `admin`
+   - **Usuario:** valor local de `GRAFANA_ADMIN_USER`
+   - **Password:** valor local de `GRAFANA_ADMIN_PASSWORD`
 
 ---
 
 ### 2. Agregar Data Source
+
+Con el Compose versionado, el datasource se aprovisiona automáticamente y se cambia mediante las variables de entorno. Los pasos manuales siguientes son una referencia para una instalación que no use provisioning.
 
 1. Click en **⚙️ Configuration** → **Data sources**
 2. Click en **Add data source**
@@ -223,16 +202,18 @@ Database: f1_garage_tec
 
 #### TLS/SSL Auth:
 
+Usa un certificado confiable y un hostname que coincida con él. El cifrado está habilitado; no desactives la verificación TLS para una instalación compartida.
+
 ```plaintext
-Encrypt: disable
+Encrypt: true
 ```
 
 #### Authentication:
 
 ```plaintext
 Authentication Type: SQL Server Authentication
-Username: f1_app_user
-Password: F1Garage!2025
+Username: YOUR_READ_ONLY_DB_USER
+Password: YOUR_LOCAL_DB_PASSWORD
 ```
 
 #### Additional Settings (despliega):
@@ -330,13 +311,13 @@ Get-NetFirewallRule -DisplayName "SQL Server"
 **Ver logs:**
 
 ```powershell
-docker logs f1-grafana
+docker logs f1_garage_grafana
 ```
 
 **Reiniciar contenedor:**
 
 ```powershell
-docker restart f1-grafana
+docker restart f1_garage_grafana
 ```
 
 **Detener y volver a iniciar:**
@@ -363,13 +344,13 @@ netstat -an | findstr 1433
 docker ps
 
 # Ver logs de Grafana
-docker logs f1-grafana -f
+docker logs f1_garage_grafana -f
 
 # Reiniciar SQL Server
 Restart-Service MSSQLSERVER
 
 # Reiniciar Grafana
-docker restart f1-grafana
+docker restart f1_garage_grafana
 
 # Detener Grafana
 docker-compose -f docker-compose.grafana.yml down
@@ -389,7 +370,7 @@ Get-NetFirewallRule -DisplayName "SQL Server"
 - [ ] SQL Server reiniciado después de cambios
 - [ ] Firewall permite puerto 1433
 - [ ] IP local identificada con `ipconfig`
-- [ ] Grafana container corriendo (puerto 3004)
+- [ ] Grafana container corriendo (puerto 3003)
 - [ ] Data source `F1_Garage_DB` configurado
 - [ ] Conexión probada (Database Connection OK)
 - [ ] Query de prueba ejecutado exitosamente
@@ -402,20 +383,28 @@ Get-NetFirewallRule -DisplayName "SQL Server"
 Red:
   IP Local: 192.168.1.20
   Puerto SQL: 1433
-  Puerto Grafana: 3004
+  Puerto Grafana: 3003
 
 Base de Datos:
   Nombre: f1_garage_tec
-  Usuario: f1_app_user
-  Password: F1Garage!2025
+  Usuario: YOUR_READ_ONLY_DB_USER
+  Password: YOUR_LOCAL_DB_PASSWORD
 
 Grafana Data Source:
   Nombre: F1_Garage_DB
   Host: 192.168.1.20:1433
-  Encrypt: disable
+  Encrypt: true
   Auth: SQL Server Authentication
 ```
 
 ---
 
-**Estado:** ✅ Conexión establecida y funcional
+**Estado:** guía de referencia del proyecto; cada instalación debe validar su propia conexión.
+
+## Nota de seguridad
+
+Las versiones anteriores incluían credenciales históricamente expuestas. No existe confirmación de que sigan activas. Los valores públicos se sustituyeron por placeholders: no reutilices valores antiguos. Este cambio no elimina el historial previo.
+
+`GRAFANA_ADMIN_PASSWORD` inicializa nuevas instancias; no restablece una contraseña en un volumen existente. No borres el volumen para intentar cambiarla.
+
+Referencias: [provisioning de Grafana](https://grafana.com/docs/grafana/latest/administration/provisioning/) y [datasource MSSQL](https://grafana.com/docs/grafana/latest/datasources/mssql/configure/).

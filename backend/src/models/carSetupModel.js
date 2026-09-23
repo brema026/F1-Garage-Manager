@@ -3,6 +3,11 @@ const sql = require('mssql');
 const { getPool } = require('../config/database');
 
 const carSetupModel = {
+  async getCarTeam(id_carro) {
+    return getPool().request().input('id_carro', sql.Int, id_carro)
+      .query('SELECT id_equipo FROM dbo.carro WHERE id_carro = @id_carro');
+  },
+
   async getOrCreateCurrentSetup(id_carro) {
     const pool = await getPool();
     return pool.request()

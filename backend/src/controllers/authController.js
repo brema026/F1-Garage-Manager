@@ -1,122 +1,79 @@
-const authService = require('../services/authService'); // Import the auth service
-const logger = require('../config/logger'); // Import logger for logging errors
-const { getPool } = require('../config/database'); // Import database connection pool
-const sql = require('mssql'); // Import mssql package for SQL Server interaction
+const authService = require('../services/authService');
+const logger = require('../config/logger');
+const { getPool } = require('../config/database');
+const sql = require('mssql');
+const { publicUser } = require('../security/userResponse');
+const { sessionTimeoutMs } = require('../security/authPolicy');
+
+const cookieOptions = () => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'Lax',
+  path: '/'
+});
+
+function authFailure(res, error) {
+  const expected = ['INVALID_REGISTRATION', 'REGISTRATION_FORBIDDEN', 'INVALID_ROLE',
+    'INVALID_TEAM', 'EMAIL_EXISTS', 'FORBIDDEN', 'INVALID_CREDENTIALS'];
+  if (expected.includes(error.code)) {
+    return res.status(error.status).json({ error: error.message });
+  }
+  logger.error('Authentication operation failed');
+  return res.status(500).json({ error: 'Error interno del servidor' });
+}
 
 const authController = {
-    // Handle user registration
-    async register(req, res, next) {
-        try {
-            const newUser = await authService.registerUser(req.body); // Call the auth service to register user
-            logger.info(`User registered: ${req.body.email}`); // Log successful registration
-            res.status(201).json({ message: 'User registered successfully', user: newUser }); // Send success response
-        } catch (e) {
-            logger.error(`Registration error: ${e.message}`);
-            
-            // Manejar error de email duplicado
-            if (e.code === 'EMAIL_EXISTS' || e.message.includes('correo electrónico ya está registrado')) {
-                return res.status(409).json({ error: 'El correo electrónico ya está registrado' });
-            }
+  async register(req, res) {
+    try {
+      const user = await authService.registerUser(req.body);
+      logger.info('Public account registered');
+      return res.status(201).json({ message: 'User registered successfully', user: publicUser(user) });
+    } catch (error) { return authFailure(res, error); }
+  },
 
-            // Manejar error de ingeniero sin equipo
-            if (e.message.includes('ingeniero debe estar asociado')) {
-                return res.status(400).json({ error: 'Un ingeniero debe estar asociado a un equipo' });
-            }
+  async createAccount(req, res) {
+    try {
+      const user = await authService.createAccount(req.body, req.user);
+      logger.info('Account created by administrator');
+      return res.status(201).json({ message: 'User registered successfully', user: publicUser(user) });
+    } catch (error) { return authFailure(res, error); }
+  },
 
-            res.status(500).json({ error: 'Error al registrar usuario' });
-        }
-    },
+  async login(req, res) {
+    try {
+      const { sessionId, user } = await authService.loginUser(req.body?.email, req.body?.password);
+      res.cookie('sessionId', sessionId, { ...cookieOptions(), maxAge: sessionTimeoutMs() });
+      logger.info('User logged in');
+      return res.status(200).json({ message: 'Login successful', user: publicUser(user) });
+    } catch (error) { return authFailure(res, error); }
+  },
 
-    // Handle user login
-    async login(req, res, next) {
-        try {
-            const { email, password } = req.body; // Extract email and password from request body
-            const { sessionId, user } = await authService.loginUser(email, password); // Call auth service to login user
-            logger.info(`User logged in: ${email}`); // Log successful login
+  async logout(req, res) {
+    try {
+      const sessionId = req.cookies?.sessionId;
+      if (sessionId) {
+        const pool = getPool();
+        await pool.request().input('id_sesion', sql.NVarChar, sessionId).execute('dbo.sp_cerrar_sesion');
+      }
+      logger.info('User logged out');
+      res.clearCookie('sessionId', cookieOptions());
+      return res.status(200).json({ message: 'Logout successful' });
+    } catch (error) { return authFailure(res, error); }
+  },
 
-            // Cookie configuration for session management
-            res.cookie('sessionId', sessionId, {
-                httpOnly: true, // Mitigate XSS attacks
-                secure: process.env.NODE_ENV === 'production', // Only HTTPs in production
-                sameSite: 'Lax', // Mitigate CSRF attacks
-                maxAge: parseInt(process.env.SESSION_TIMEOUT) || 86400000 // Default to 1 day if not set
-            });
+  async checkAuth(req, res) {
+    return res.status(200).json({ authenticated: true, user: publicUser(req.user) });
+  },
 
-            // Send success response with user info
-            res.status(200).json({ message: 'Login successful', user }); // Send success response with user info
-        } catch (e) {
-            logger.error(`Login error: ${e.message}`);
-            
-            // Manejar errores específicos de login
-            if (e.message.includes('Usuario no encontrado') || e.message.includes('inactivo')) {
-                return res.status(401).json({ error: 'Usuario no encontrado o inactivo' });
-            }
-            
-            if (e.message.includes('Contraseña incorrecta') || e.message.includes('Invalid password')) {
-                return res.status(401).json({ error: 'Contraseña incorrecta' });
-            }
-
-            res.status(401).json({ error: 'Credenciales inválidas' });
-        }
-    },
-
-    // Handle user logout
-    async logout(req, res, next) {
-        try {
-            const sessionId = req.cookies.sessionId; // Get session ID from cookies
-
-            // If session ID exists, delete the session from the database
-            if (sessionId) {
-                const pool = await getPool(); // Get database connection pool
-                await pool.request()
-                .input('id_sesion', sql.NVarChar, sessionId)
-                .execute('dbo.sp_cerrar_sesion'); // Execute stored procedure to close session
-
-                logger.info(`User logged out, session closed: ${sessionId}`); // Log successful logout
-            }
-
-            // Clear the session cookie
-            res.clearCookie('sessionId', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Lax'
-            });
-            
-            // Clear session cookie
-            res.status(200).json({ message: 'Logout successful' }); // Send success response
-        } catch (e) {
-            logger.error(`Logout error: ${e.message}`);
-            res.status(500).json({ error: 'Error logging out user' });
-        }
-    },
-
-    // Check authentication status
-    async checkAuth(req, res, next) {
-        res.status(200).json({ authenticated: true, user: req.user });
-    },
-
-    // Get profile
-    async getProfile(req, res) {
-        try {
-            const pool = await getPool();
-            const result = await pool.request()
-                .input('id_usuario', sql.Int, req.user.id_usuario)
-                .execute('dbo.sp_obtener_perfil_detallado');
-
-            if (result.recordset.length === 0) {
-                return res.status(404).json({ error: 'User not found' });
-            }
-
-            res.status(200).json({
-                status: 'SUCCESS',
-                user: result.recordset[0]
-            });
-        } catch (e) {
-            logger.error(`Error getting profile: ${e.message}`);
-            res.status(500).json({ error: 'Server error getting profile' });
-        }
-    }
+  async getProfile(req, res) {
+    try {
+      const result = await getPool().request()
+        .input('id_usuario', sql.Int, req.user.id_usuario)
+        .execute('dbo.sp_obtener_perfil_detallado');
+      if (!result.recordset.length) return res.status(404).json({ error: 'User not found' });
+      return res.status(200).json({ status: 'SUCCESS', user: publicUser(result.recordset[0]) });
+    } catch (error) { return authFailure(res, error); }
+  }
 };
 
-// Export the auth controller for use in routes
 module.exports = authController;

@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const authController = require('../controllers/authController');
 const userController = require('../controllers/userController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requireRole } = require('../middleware/authMiddleware');
 
 /**
  * GET /api/users/engineers
@@ -10,7 +11,7 @@ const { protect } = require('../middleware/authMiddleware');
  * @route GET /api/users/engineers
  * @returns {Array} List of engineers
  */
-router.get('/engineers', protect, userController.getEngineers);
+router.get('/engineers', protect, requireRole('Admin'), userController.getEngineers);
 
 /**
  * GET /api/users/drivers
@@ -19,7 +20,7 @@ router.get('/engineers', protect, userController.getEngineers);
  * @route GET /api/users/drivers
  * @returns {Array} List of drivers
  */
-router.get('/drivers', protect, userController.getDrivers);
+router.get('/drivers', protect, requireRole('Admin', 'Engineer'), userController.getDrivers);
 
 /**
  * PUT /api/users/:id_usuario/assign-team
@@ -30,7 +31,7 @@ router.get('/drivers', protect, userController.getDrivers);
  * @body {number} id_equipo - ID of the team to assign
  * @returns {Object} Success message
  */
-router.put('/:id_usuario/assign-team', protect, userController.assignTeam);
+router.put('/:id_usuario/assign-team', protect, requireRole('Admin'), userController.assignTeam);
 
 /**
  * PATCH /api/users/:id_usuario/skill
@@ -41,7 +42,7 @@ router.put('/:id_usuario/assign-team', protect, userController.assignTeam);
  * @body {number} habilidad - New skill level
  * @returns {Object} Success message
  */
-router.patch('/drivers/:id_conductor/skill', protect, userController.updateSkill);
+router.patch('/drivers/:id_conductor/skill', protect, requireRole('Admin'), userController.updateSkill);
 
 /**
  * POST /api/users/drivers
@@ -51,7 +52,10 @@ router.patch('/drivers/:id_conductor/skill', protect, userController.updateSkill
  * @body {string} nombre - Name of the driver
  * @returns {Object} Success message with new driver ID
  */
-router.post('/drivers', protect, userController.createDriver);
+router.post('/drivers', protect, requireRole('Admin'), userController.createDriver);
+
+// Privileged roles and team assignments are never accepted by public registration.
+router.post('/accounts', protect, requireRole('Admin'), authController.createAccount);
 
 // Export router for use in main app.js
 module.exports = router;

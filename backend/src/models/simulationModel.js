@@ -46,7 +46,9 @@ const simulationModel = {
     req.input('limit', sql.Int, safeLimit);
     req.input('offset', sql.Int, safeOffset);
 
-    let where = '1=1';
+    let where = '1=0';
+    let scopeTeam = -1;
+    if (rol === 'Admin') { where = '1=1'; scopeTeam = null; }
 
     if (rol === 'Engineer') {
       where = `
@@ -57,13 +59,15 @@ const simulationModel = {
             AND sp.id_equipo = @id_equipo
         )
       `;
-      req.input('id_equipo', sql.Int, Number(id_equipo));
+      scopeTeam = Number(id_equipo) > 0 ? Number(id_equipo) : -1;
+      req.input('id_equipo', sql.Int, scopeTeam);
     } else if (rol === 'Driver') {
       const con = await this.getConductorByUser(id_usuario);
       const row = con.recordset?.[0];
       const equipoDriver = row?.id_equipo != null ? Number(row.id_equipo) : null;
 
-      req.input('id_equipo_driver', sql.Int, equipoDriver ? equipoDriver : -1);
+      scopeTeam = equipoDriver > 0 ? equipoDriver : -1;
+      req.input('id_equipo_driver', sql.Int, scopeTeam);
 
       where = `
         EXISTS (
@@ -75,6 +79,7 @@ const simulationModel = {
       `;
     }
 
+    req.input('scopeTeam', sql.Int, scopeTeam);
     return req.query(`
       SELECT
         s.id_simulacion,
@@ -83,9 +88,9 @@ const simulationModel = {
         c.nombre AS circuito_nombre,
         s.id_usuario AS ejecutada_por_usuario,
 
-        (SELECT COUNT(*) FROM dbo.simulacion_participante sp WHERE sp.id_simulacion = s.id_simulacion) AS total_participantes,
-        (SELECT MIN(sp.tiempo_segundos) FROM dbo.simulacion_participante sp WHERE sp.id_simulacion = s.id_simulacion) AS mejor_tiempo,
-        (SELECT MAX(sp.tiempo_segundos) FROM dbo.simulacion_participante sp WHERE sp.id_simulacion = s.id_simulacion) AS peor_tiempo
+        (SELECT COUNT(*) FROM dbo.simulacion_participante sp WHERE sp.id_simulacion = s.id_simulacion AND (@scopeTeam IS NULL OR sp.id_equipo = @scopeTeam)) AS total_participantes,
+        (SELECT MIN(sp.tiempo_segundos) FROM dbo.simulacion_participante sp WHERE sp.id_simulacion = s.id_simulacion AND (@scopeTeam IS NULL OR sp.id_equipo = @scopeTeam)) AS mejor_tiempo,
+        (SELECT MAX(sp.tiempo_segundos) FROM dbo.simulacion_participante sp WHERE sp.id_simulacion = s.id_simulacion AND (@scopeTeam IS NULL OR sp.id_equipo = @scopeTeam)) AS peor_tiempo
 
       FROM dbo.simulacion s
       JOIN dbo.circuito c ON c.id_circuito = s.id_circuito

@@ -20,7 +20,6 @@ const partController = {
                 stock_inicial
             } = req.body;
 
-            logger.info(`registerPart body: ${JSON.stringify(req.body)}`);
             if (
                 !nombre || precio == null || p == null || a == null || m == null ||
                 !categoria_id || stock_inicial == null
@@ -42,8 +41,8 @@ const partController = {
             res.status(201).json(result.recordset[0]);
 
         } catch (e) {
-            logger.error(`Error registering part: ${e.message}`);
-            res.status(500).json({ error: e.message });
+            logger.error(`Error registering part: [internal error]`);
+            res.status(500).json({ error: 'Error interno del servidor' });
         }
     },
 
@@ -67,8 +66,8 @@ const partController = {
             res.status(200).json(result.recordset[0]);
 
         } catch (e) {
-            logger.error(`Error updating stock: ${e.message}`);
-            res.status(500).json({ error: e.message });
+            logger.error(`Error updating stock: [internal error]`);
+            res.status(500).json({ error: 'Error interno del servidor' });
         }
     },
 
@@ -79,7 +78,7 @@ const partController = {
             res.status(200).json(result.recordset);
 
         } catch (e) {
-            logger.error(`Error fetching parts: ${e.message}`);
+            logger.error(`Error fetching parts: [internal error]`);
             res.status(500).json({ error: 'Error fetching parts' });
         }
     },
@@ -102,7 +101,7 @@ const partController = {
         const result = await partModel.buyPart(id_equipo, id_pieza, cantidad);
         return res.status(200).json(result.recordset?.[0] || { message: 'OK' });
     } catch (e) {
-    logger.error(`Error buying part: ${e.message}`);
+    logger.error(`Error buying part: [internal error]`);
 
     const msg = (e.message || '').toLowerCase();
 
@@ -113,10 +112,10 @@ const partController = {
         return res.status(409).json({ error: 'Stock insuficiente' });
     }
     if (msg.includes('la pieza no existe') || msg.includes('cantidad debe ser mayor')) {
-        return res.status(400).json({ error: e.message });
+        return res.status(400).json({ error: 'Pieza o cantidad inválida' });
     }
 
-    return res.status(500).json({ error: e.message });
+    return res.status(500).json({ error: 'Error interno del servidor' });
     }
     },
 
@@ -144,8 +143,8 @@ const partController = {
 
       return res.status(200).json(result.recordset?.[0] || { message: 'OK' });
     } catch (e) {
-      logger.error(`Error reducing stock: ${e.message}`);
-      return res.status(500).json({ error: e.message });
+      logger.error(`Error reducing stock: [internal error]`);
+      return res.status(500).json({ error: 'Error interno del servidor' });
     }
   },
 
@@ -162,8 +161,8 @@ const partController = {
       logger.info(`Part deleted ${id_pieza} by ${req.user.nombre}`);
       return res.status(200).json(result.recordset?.[0] || { message: 'OK' });
     } catch (e) {
-      logger.error(`Error deleting part: ${e.message}`);
-      return res.status(500).json({ error: e.message });
+      logger.error(`Error deleting part: [internal error]`);
+      return res.status(500).json({ error: 'Error interno del servidor' });
     }
   },
 
@@ -178,8 +177,8 @@ const partController = {
     const result = await partModel.getTeamBalance(Number(id_equipo));
     return res.status(200).json(result.recordset?.[0] || {});
   } catch (e) {
-    logger.error(`Error fetching balance: ${e.message}`);
-    return res.status(500).json({ error: e.message });
+    logger.error(`Error fetching balance: [internal error]`);
+    return res.status(500).json({ error: 'Error interno del servidor' });
   }
 }
 

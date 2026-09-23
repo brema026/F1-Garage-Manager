@@ -1,18 +1,30 @@
-const app = require('./src/app'); // Import Express application
-const { closeDB } = require('./src/config/database'); // Import database connection close function
-const logger = require('./src/config/logger'); // Import Winston logger
+require('dotenv').config();
+const { connectDB, closeDB } = require('./src/config/database');
+const logger = require('./src/config/logger');
+const { sessionTimeoutMs } = require('./src/security/authPolicy');
 
-// Get port from environment variables or use default
-const PORT = process.env.PORT || 3001;
+async function start() {
+  sessionTimeoutMs(); // Validate session settings before accepting requests.
+  const app = require('./src/app');
+  await connectDB(); // Missing/invalid credentials fail closed.
+  const server = app.listen(process.env.PORT || 3001, () => logger.info('HTTP server started'));
+  server.on('error', async () => {
+    logger.error('HTTP server failed to start');
+    await closeDB();
+    process.exitCode = 1;
+  });
+  process.on('SIGINT', () => server.close(async () => {
+    await closeDB();
+    process.exitCode = 0;
+  }));
+  return server;
+}
 
-// Start Express server and listen on specified port
-app.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`);
-});
+if (require.main === module) {
+  start().catch(() => {
+    logger.error('Startup failed; check local environment, database access and TLS configuration');
+    process.exitCode = 1;
+  });
+}
 
-// Handle graceful shutdown on SIGINT (Ctrl+C)
-process.on('SIGINT', async () => {
-  logger.info('Shutting down server...');
-  await closeDB(); // Close database connection properly
-  process.exit(0); // Exit process with success code
-});
+module.exports = { start };

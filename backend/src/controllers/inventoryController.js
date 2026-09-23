@@ -14,7 +14,7 @@ const inventoryController = {
       return res.status(200).json(result.recordset);
 
     } catch (e) {
-      logger.error(`Error fetching my inventory: ${e.message}`);
+      logger.error(`Error fetching my inventory: [internal error]`);
       return res.status(500).json({ error: 'Error fetching inventory' });
     }
   },
@@ -50,7 +50,7 @@ const inventoryController = {
     return res.status(403).json({ error: 'Rol no autorizado' });
 
   } catch (e) {
-    logger.error(`Error fetching inventory by team: ${e.message}`);
+    logger.error(`Error fetching inventory by team: [internal error]`);
     return res.status(500).json({ error: 'Error fetching inventory' });
   }
 },
@@ -93,8 +93,8 @@ const inventoryController = {
       return res.status(200).json(result.recordset?.[0] || { message: 'OK' });
 
     } catch (e) {
-      logger.error(`Error reducing inventory item: ${e.message}`);
-      return res.status(500).json({ error: e.message });
+      logger.error(`Error reducing inventory item: [internal error]`);
+      return res.status(500).json({ error: 'Error interno del servidor' });
     }
   },
 
@@ -130,8 +130,8 @@ const inventoryController = {
       return res.status(200).json(result.recordset?.[0] || { message: 'OK' });
 
     } catch (e) {
-      logger.error(`Error deleting inventory item: ${e.message}`);
-      return res.status(500).json({ error: e.message });
+      logger.error(`Error deleting inventory item: [internal error]`);
+      return res.status(500).json({ error: 'Error interno del servidor' });
     }
   }
 
