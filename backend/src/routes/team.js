@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const teamController = require('../controllers/teamController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requireRole } = require('../middleware/authMiddleware');
 
 
 /**
@@ -11,7 +11,7 @@ const { protect } = require('../middleware/authMiddleware');
  * @route GET /api/teams
  * @returns {Array} List of teams
  */
-router.get('/', protect, teamController.getTeams);
+router.get('/', protect, requireRole('Admin', 'Engineer'), teamController.getTeams);
 
 /**
  * POST /api/teams

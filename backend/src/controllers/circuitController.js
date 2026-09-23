@@ -12,7 +12,7 @@ const circuitController = {
             
             logger.info(`Circuits fetched by ${req.user.nombre} (${rol})`);
         } catch (error) {
-            logger.error(`Error fetching circuits: ${error.message}`);
+            logger.error(`Error fetching circuits: [internal error]`);
             res.status(500).json({ error: 'Error fetching circuits' });
         }
     },
@@ -31,9 +31,9 @@ const circuitController = {
             res.status(200).json(result.recordset[0]);
         } catch (error) {
             if (error.message.includes('Circuito no encontrado')) {
-                return res.status(404).json({ error: error.message });
+                return res.status(404).json({ error: 'Circuito no encontrado' });
             }
-            logger.error(`Error fetching circuit ${req.params.id}: ${error.message}`);
+            logger.error(`Error fetching circuit ${req.params.id}: [internal error]`);
             res.status(500).json({ error: 'Error fetching circuit' });
         }
     },
@@ -51,9 +51,9 @@ const circuitController = {
             
         } catch (error) {
             if (error.message.includes('Ya existe un circuito')) {
-                return res.status(409).json({ error: error.message });
+                return res.status(409).json({ error: 'Ya existe un circuito con ese nombre' });
             }
-            logger.error(`Error creating circuit: ${error.message}`);
+            logger.error(`Error creating circuit: [internal error]`);
             res.status(500).json({ error: 'Error creating circuit' });
         }
     },
@@ -71,12 +71,12 @@ const circuitController = {
             
         } catch (error) {
             if (error.message.includes('Circuito no encontrado')) {
-                return res.status(404).json({ error: error.message });
+                return res.status(404).json({ error: 'Circuito no encontrado' });
             }
             if (error.message.includes('No se puede eliminar')) {
-                return res.status(400).json({ error: error.message });
+                return res.status(400).json({ error: 'No se puede eliminar un circuito con simulaciones asociadas' });
             }
-            logger.error(`Error deleting circuit ${req.params.id}: ${error.message}`);
+            logger.error(`Error deleting circuit ${req.params.id}: [internal error]`);
             res.status(500).json({ error: 'Error deleting circuit' });
         }
     }

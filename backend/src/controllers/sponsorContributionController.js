@@ -14,7 +14,7 @@ const sponsorContributionController = {
       return res.status(200).json(result.recordset);
 
     } catch (e) {
-      logger.error(`Error fetching sponsors: ${e.message}`);
+      logger.error(`Error fetching sponsors: [internal error]`);
       return res.status(500).json({ error: 'Error fetching sponsors' });
     }
   },
@@ -41,8 +41,8 @@ const sponsorContributionController = {
       return res.status(201).json(result.recordset?.[0] || { message: 'OK' });
 
     } catch (e) {
-      logger.error(`Error creating sponsor: ${e.message}`);
-      return res.status(500).json({ error: e.message });
+      logger.error(`Error creating sponsor: [internal error]`);
+      return res.status(500).json({ error: 'Error interno del servidor' });
     }
   },
 
@@ -77,8 +77,8 @@ const sponsorContributionController = {
       return res.status(201).json(result.recordset?.[0] || { message: 'OK' });
 
     } catch (e) {
-      logger.error(`Error creating contribution: ${e.message}`);
-      return res.status(500).json({ error: e.message });
+      logger.error(`Error creating contribution: [internal error]`);
+      return res.status(500).json({ error: 'Error interno del servidor' });
     }
   },
 
@@ -107,7 +107,7 @@ const sponsorContributionController = {
       return res.status(403).json({ error: 'Rol no autorizado' });
 
     } catch (e) {
-      logger.error(`Error fetching contributions: ${e.message}`);
+      logger.error(`Error fetching contributions: [internal error]`);
       return res.status(500).json({ error: 'Error fetching contributions' });
     }
   },
@@ -132,7 +132,7 @@ const sponsorContributionController = {
       return res.status(200).json(result.recordset?.[0] || { id_equipo, presupuesto: 0 });
 
     } catch (e) {
-      logger.error(`Error fetching budget: ${e.message}`);
+      logger.error(`Error fetching budget: [internal error]`);
       return res.status(500).json({ error: 'Error fetching budget' });
     }
   },
@@ -157,7 +157,7 @@ const sponsorContributionController = {
       return res.status(200).json(result.recordset?.[0] || { id_equipo, presupuesto: 0, gasto: 0, saldo: 0 });
 
     } catch (e) {
-      logger.error(`Error fetching balance: ${e.message}`);
+      logger.error(`Error fetching balance: [internal error]`);
       return res.status(500).json({ error: 'Error fetching balance' });
     }
   },
@@ -167,7 +167,7 @@ const sponsorContributionController = {
       const result = await model.getTeams();
       return res.status(200).json(result.recordset);
     } catch (e) {
-      logger.error(`Error fetching teams: ${e.message}`);
+      logger.error(`Error fetching teams: [internal error]`);
       return res.status(500).json({ error: 'Error fetching teams' });
     }
   },

@@ -21,7 +21,7 @@ const teamController = {
       return res.status(200).json(result.recordset || []);
 
     } catch (e) {
-      logger.error(`Error while fetching teams: ${e.message}`);
+      logger.error(`Error while fetching teams: [internal error]`);
       return res.status(500).json({ error: 'Error while fetching teams' });
     }
   },
@@ -48,7 +48,7 @@ const teamController = {
       return res.status(201).json(result.recordset?.[0] || { message: 'OK' });
 
     } catch (e) {
-      logger.error(`Error creating team: ${e.message}`);
+      logger.error(`Error creating team: [internal error]`);
       return res.status(500).json({ error: 'Error creating team' });
     }
   },
@@ -84,7 +84,7 @@ const teamController = {
       return res.status(200).json(result.recordset?.[0] || { message: 'OK' });
 
     } catch (e) {
-      logger.error(`Error updating team: ${e.message}`);
+      logger.error(`Error updating team: [internal error]`);
       return res.status(500).json({ error: 'Error updating team' });
     }
   },
@@ -119,8 +119,8 @@ const teamController = {
       );
 
     } catch (e) {
-      logger?.error?.(`Error fetching team finance: ${e.message}`);
-      return res.status(500).json({ error: e.message });
+      logger?.error?.(`Error fetching team finance: [internal error]`);
+      return res.status(500).json({ error: 'Error interno del servidor' });
     }
   }
 };

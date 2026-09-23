@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 
 const simulationController = require('../controllers/simulationController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requireRole } = require('../middleware/authMiddleware');
 
 /**
  * GET /api/simulations/eligible-cars
  */
-router.get('/eligible-cars', protect, simulationController.eligibleCars);
+router.get('/eligible-cars', protect, requireRole('Admin'), simulationController.eligibleCars);
 
 /**
  * POST /api/simulations

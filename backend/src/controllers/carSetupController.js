@@ -1,5 +1,5 @@
 // backend/controllers/CarSetupController.js
-const carSetupModel = require('../models/CarSetupModel');
+const carSetupModel = require('../models/carSetupModel');
 const logger = require('../config/logger');
 
 function isIntPos(n) {
@@ -20,6 +20,13 @@ const carSetupController = {
         return res.status(403).json({ error: 'Rol no autorizado' });
       }
 
+      // Authorize before reading or creating a setup.
+      const car = (await carSetupModel.getCarTeam(id_carro)).recordset?.[0];
+      if (!car) return res.status(404).json({ error: 'Carro no encontrado' });
+      if (rol === 'Engineer' && !(Number(req.user.id_equipo) > 0 && Number(car.id_equipo) === Number(req.user.id_equipo))) {
+        return res.status(403).json({ error: 'Solo puedes consultar carros de tu equipo' });
+      }
+
       // Garantiza que exista setup actual
       await carSetupModel.getOrCreateCurrentSetup(id_carro);
 
@@ -30,7 +37,7 @@ const carSetupController = {
 
       return res.status(200).json({ summary, categories });
     } catch (e) {
-      logger.error(`Error fetching car setup: ${e.message}`);
+      logger.error(`Error fetching car setup: [internal error]`);
       return res.status(500).json({ error: 'Error fetching car setup' });
     }
   },
@@ -56,7 +63,7 @@ const carSetupController = {
       const result = await carSetupModel.getInventoryByCategory(myTeam, category_id);
       return res.status(200).json(result.recordset || []);
     } catch (e) {
-      logger.error(`Error fetching inventory by category: ${e.message}`);
+      logger.error(`Error fetching inventory by category: [internal error]`);
       return res.status(500).json({ error: 'Error fetching inventory by category' });
     }
   },
@@ -91,7 +98,7 @@ const carSetupController = {
       const result = await carSetupModel.getInventoryByCategory(id_equipo, category_id);
       return res.status(200).json(result.recordset || []);
     } catch (e) {
-      logger.error(`Error fetching TEAM inventory by category: ${e.message}`);
+      logger.error(`Error fetching TEAM inventory by category: [internal error]`);
       return res.status(500).json({ error: 'Error fetching inventory by category' });
     }
   },
@@ -140,8 +147,8 @@ const carSetupController = {
         categories
       });
     } catch (e) {
-      logger.error(`Error installing/replacing part: ${e.message}`);
-      return res.status(500).json({ error: e.message });
+      logger.error(`Error installing/replacing part: [internal error]`);
+      return res.status(500).json({ error: 'Error interno del servidor' });
     }
   },
 
@@ -175,8 +182,8 @@ const carSetupController = {
       const result = await carSetupModel.finalizeCar(id_carro, teamToUse);
       return res.status(200).json(result.recordset?.[0] || { message: 'Carro finalizado' });
     } catch (e) {
-      logger.error(`Error finalizing car: ${e.message}`);
-      return res.status(500).json({ error: e.message });
+      logger.error(`Error finalizing car: [internal error]`);
+      return res.status(500).json({ error: 'Error interno del servidor' });
     }
   },
 
@@ -223,8 +230,8 @@ const carSetupController = {
       categories
     });
   } catch (e) {
-    logger.error(`Error assigning driver: ${e.message}`);
-    return res.status(500).json({ error: e.message });
+    logger.error(`Error assigning driver: [internal error]`);
+    return res.status(500).json({ error: 'Error interno del servidor' });
   }
 },
 
@@ -256,8 +263,8 @@ const carSetupController = {
       const result = await carSetupModel.removeDriverFromCar(id_carro, teamToUse);
       return res.status(200).json(result.recordset?.[0] || { message: 'OK' });
     } catch (e) {
-      logger.error(`Error removing driver from car: ${e.message}`);
-      return res.status(500).json({ error: e.message });
+      logger.error(`Error removing driver from car: [internal error]`);
+      return res.status(500).json({ error: 'Error interno del servidor' });
     }
   },
 };

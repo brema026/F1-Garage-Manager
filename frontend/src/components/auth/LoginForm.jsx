@@ -84,7 +84,7 @@ export function LoginForm({ setIsLoggedIn, setUser }) {
       }, 3000);
       
     } catch (e) {
-      console.error("Error during login:", e);
+
       const errorMessage = parseBackendError(e);
       
       // Mostrar error en el campo más relevante

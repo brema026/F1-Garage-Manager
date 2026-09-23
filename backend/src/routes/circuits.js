@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const circuitController = require('../controllers/circuitController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requireRole } = require('../middleware/authMiddleware');
 
 /**
  * GET /api/circuits
@@ -32,7 +32,7 @@ router.get('/:id', protect, circuitController.getCircuitById);
  * @body {number} curvas_c - Number of curves
  * @returns {Object} Created circuit
  */
-router.post('/', protect, circuitController.createCircuit);
+router.post('/', protect, requireRole('Admin'), circuitController.createCircuit);
 
 /**
  * DELETE /api/circuits/:id
@@ -42,6 +42,6 @@ router.post('/', protect, circuitController.createCircuit);
  * @param {number} id - ID of the circuit to delete
  * @returns {Object} Confirmation message
  */
-router.delete('/:id', protect, circuitController.deleteCircuit);
+router.delete('/:id', protect, requireRole('Admin'), circuitController.deleteCircuit);
 
 module.exports = router;

@@ -1,5 +1,6 @@
 const userModel = require('../models/userModel');
 const logger = require('../config/logger');
+const { publicUser } = require('../security/userResponse');
 
 // Controller for user-related operations
 const userController = {
@@ -7,10 +8,10 @@ const userController = {
     async getEngineers(req, res) {
         try {
             const result = await userModel.getUsersByRole('engineer');
-            res.status(200).json(result.recordset);
+            res.status(200).json(result.recordset.map(publicUser));
             
         } catch (e) {
-            logger.error(`Error fetching engineers: ${e.message}`);
+            logger.error(`Error fetching engineers: [internal error]`);
             res.status(500).json({ error: 'Error fetching engineers' });
         }
     },
@@ -19,10 +20,13 @@ const userController = {
     async getDrivers(req, res) {
         try {
             const result = await userModel.getAllDrivers();
-            res.status(200).json(result.recordset);
+            const rows = req.user.rol === 'Engineer'
+                ? result.recordset.filter(row => Number(req.user.id_equipo) > 0 && Number(row.id_equipo) === Number(req.user.id_equipo))
+                : result.recordset;
+            res.status(200).json(rows.map(publicUser));
 
         } catch (e) {
-            logger.error(`Error fetching drivers: ${e.message}`);
+            logger.error(`Error fetching drivers: [internal error]`);
             res.status(500).json({ error: 'Error fetching drivers' });
         }
     },
@@ -37,7 +41,7 @@ const userController = {
             res.status(200).json({ message: 'Team assigned successfully' });
 
         } catch (e) {
-            logger.error(`Error assigning team: ${e.message}`);
+            logger.error(`Error assigning team: [internal error]`);
             res.status(500).json({ error: 'Failed to assign team' });
         }
     },
@@ -64,7 +68,7 @@ const userController = {
             });
 
         } catch (e) {
-            logger.error(`Error creating driver profile: ${e.message}`);
+            logger.error(`Error creating driver profile: [internal error]`);
             res.status(500).json({ error: 'Error creating driver profile' });
         }
     },
@@ -87,7 +91,7 @@ const userController = {
             });
 
         } catch (e) {
-            logger.error(`Error updating skill for conductor ID_${id_conductor}: ${e.message}`);
+            logger.error(`Error updating skill for conductor ID_${id_conductor}: [internal error]`);
             res.status(500).json({ error: 'Error updating driver skill' });
         }
     }

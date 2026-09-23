@@ -2,7 +2,9 @@ const express = require('express'); // Import Express web framework
 const cors = require('cors'); // Import CORS middleware for cross-origin requests
 const bodyParser = require('body-parser'); // Import body parser for request parsing
 
-const { connectDB } = require('./config/database'); // Import database connection function
+require('dotenv').config();
+const { corsOptions } = require('./config/cors');
+const errorHandler = require('./middleware/errorHandler');
 const logger = require('./config/logger'); // Import Winston logger
 
 const cookieParser = require('cookie-parser'); // Import cookie parser middleware
@@ -24,58 +26,15 @@ const app = express(); // Initialize Express application
 
 // Logging middleware - logs every incoming HTTP request
 app.use((req, res, next) => {
-  logger.info(`${req.method} ${req.url}`);
+  logger.info(`${req.method} ${req.path}`);
   next();
 });
 
 // Application middlewares
-app.use(cors({
-  origin: function (origin, callback) {
-    // Permitir Postman/curl/requests sin Origin
-    if (!origin) return callback(null, true);
-
-    try {
-      const url = new URL(origin);
-
-      const hostname = url.hostname; // ej: localhost, 192.168.1.40
-      const port = url.port || (url.protocol === 'https:' ? '443' : '80');
-
-      // Puerto permitido del frontend (string para comparar con `port`)
-      const FRONTEND_PORT = String(process.env.FRONTEND_PORT || '3002');
-
-      const isLocalHost =
-        hostname === 'localhost' ||
-        hostname === '127.0.0.1';
-
-      const isPrivateIp =
-        /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
-        /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
-        /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname);
-
-      // Permite localhost o IP privada + puerto correcto
-      if ((isLocalHost || isPrivateIp) && port === FRONTEND_PORT) {
-        return callback(null, true);
-      }
-
-      return callback(new Error(`Not allowed by CORS: ${origin}`));
-    } catch (e) {
-      return callback(new Error(`Invalid Origin: ${origin}`));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-// (opcional pero recomendado)
-app.options('*', cors());
-
+app.use(cors(corsOptions()));
 
 app.use(bodyParser.json()); // Parse JSON request bodies
 app.use(bodyParser.urlencoded({ extended: true })); // Parse URL-encoded request bodies
-
-// Establish database connection
-connectDB();
 
 // Cookie parser middleware
 app.use(cookieParser());
@@ -104,16 +63,7 @@ app.use('/api/cars', carsRoutes);
 app.use('/api/simulations', simulationsRoutes);
 
 // Error handling middleware - catches errors from routes and middlewares
-app.use((err, req, res, next) => {
-  logger.error(`Error: ${err.message}`);
-
-  if (String(err.message || '').includes('Not allowed by CORS')) {
-    return res.status(403).json({ error: err.message });
-  }
-
-  res.status(500).json({ error: 'Internal server error' });
-});
-
+app.use(errorHandler);
 
 // Export Express application for use in server.js
 module.exports = app;

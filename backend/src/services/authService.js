@@ -1,70 +1,61 @@
-const argon2 = require('argon2'); // Import Argon2 for password hashing
-const userModel = require('../models/userModel'); // Import the user model
-const sessionModel = require('../models/sessionModel'); // Import the session model
-const crypto = require('crypto'); // Import crypto for generating session IDs
+const argon2 = require('argon2');
+const crypto = require('crypto');
+const userModel = require('../models/userModel');
+const sessionModel = require('../models/sessionModel');
+const { publicUser } = require('../security/userResponse');
+const { authError, registrationData, sessionTimeoutMs } = require('../security/authPolicy');
 
-// Auth service with authentication functions
-const authService = {
-    // Register a new user
-    async registerUser(userData) {
-        const passwordHash = await argon2.hash(userData.password); // Hash the password using Argon2
-
-        try {
-            // Call the user model to register the new user
-            const result = await userModel.register({
-                nombre: userData.nombre,
-                email: userData.email,
-                password_hash: passwordHash,
-                rol: userData.rol,
-                id_equipo: userData.id_equipo
-            });
-
-            return result.recordset[0]; // Return the newly created user
-        } catch (error) {
-            // Detectar error de email duplicado de SQL Server
-            if (error.message && error.message.includes('correo electrónico ya está registrado')) {
-                const duplicateError = new Error('El correo electrónico ya está registrado');
-                duplicateError.code = 'EMAIL_EXISTS';
-                throw duplicateError;
-            }
-            
-            // Detectar constraint violation de SQL Server (UK violation)
-            if (error.number === 2627 || error.number === 2601) {
-                const duplicateError = new Error('El correo electrónico ya está registrado');
-                duplicateError.code = 'EMAIL_EXISTS';
-                throw duplicateError;
-            }
-
-            throw error; // Re-throw other errors
-        }
-    },
-
-    async loginUser(email, password) {
-        const result = await userModel.getByEmail(email); // Get user by email
-        const user = result.recordset[0]; // Extract user from result
-
-        // Check if user exists
-        if (!user) {
-            throw new Error('Usuario no encontrado'); // Throw error if user does not exist
-        }
-
-        // Verify the provided password against the stored hash
-        const validPassword = await argon2.verify(user.password_hash, password); 
-        if (!validPassword) throw new Error('Contraseña incorrecta'); // Throw error if password is invalid
-
-        // Generate a new session ID (for simplicity, using a random string here)
-        const sessionId = crypto.randomBytes(32).toString('hex');
-
-        // Calculate session timeout in minutes from environment variable
-        const timeoutMs = parseInt(process.env.SESSION_TIMEOUT) || 3600000; // Default to 1 hour if not set
-        const timeoutMinutes = Math.floor(timeoutMs / 60000); // Convert timeout to minutes
-
-        // Save the new session in the database
-        await sessionModel.saveSession(sessionId, user.id_usuario, timeoutMinutes);
-
-        return { sessionId, user }; // Return session ID and user info
+async function persistUser(data) {
+  const passwordHash = await argon2.hash(data.password);
+  try {
+    const result = await userModel.register({
+      nombre: data.nombre, email: data.email, password_hash: passwordHash,
+      rol: data.rol, id_equipo: data.id_equipo
+    });
+    return publicUser(result.recordset[0]);
+  } catch (error) {
+    if (error.number === 2627 || error.number === 2601 ||
+        String(error.message).includes('correo electrónico ya está registrado')) {
+      throw authError(409, 'El correo electrónico ya está registrado', 'EMAIL_EXISTS');
     }
+    throw error;
+  }
+}
+
+const authService = {
+  async registerUser(userData) {
+    return persistUser(registrationData(userData));
+  },
+
+  async createAccount(userData, actor) {
+    if (actor?.rol !== 'Admin') {
+      throw authError(403, 'No autorizado', 'FORBIDDEN');
+    }
+    return persistUser(registrationData(userData, true));
+  },
+
+  async loginUser(email, password) {
+    const invalid = () => authError(401, 'Credenciales inválidas', 'INVALID_CREDENTIALS');
+    if (typeof email !== 'string' || typeof password !== 'string' ||
+        !email.trim() || email.length > 200 || !password || password.length > 128) {
+      throw invalid();
+    }
+
+    let result;
+    try {
+      result = await userModel.getByEmail(email.trim());
+    } catch (error) {
+      if (String(error.message).includes('Usuario no encontrado')) throw invalid();
+      throw error;
+    }
+    const user = result.recordset?.[0];
+    if (!user || user.activo === false || user.activo === 0) throw invalid();
+
+    if (!await argon2.verify(user.password_hash, password)) throw invalid();
+    const sessionId = crypto.randomBytes(32).toString('hex');
+    await sessionModel.saveSession(sessionId, user.id_usuario, Math.floor(sessionTimeoutMs() / 60000));
+    return { sessionId, user: publicUser(user) };
+  }
 };
 
-// Export the auth service for use in other parts of the application
 module.exports = authService;

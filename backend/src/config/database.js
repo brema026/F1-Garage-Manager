@@ -1,73 +1,59 @@
-const sql = require('mssql'); // Import library for SQL Server connection
-const logger = require('./logger'); // Import professional logger
-require('dotenv').config(); // Load environment variables from .env file
+const sql = require('mssql');
+const logger = require('./logger');
+require('dotenv').config();
 
-// Configuration for SQL Server connection
-const config = {
-    server: process.env.DB_SERVER || 'localhost', // Server address
-    database: process.env.DB_NAME || 'f1_garage_tec', // Database name
-    
-    authentication: {
-        type: 'default',
-        options: {
-            userName: process.env.DB_USER || 'f1_app_user', // Username
-            password: process.env.DB_PASSWORD || 'F1Garage!2025' // Password
-        }
-    },
-    
-    options: {
-        encrypt: false, // Disable encryption for local development
-        trustServerCertificate: true, // Trust server certificate
-        port: parseInt(process.env.DB_PORT) || 1433 // Port number
+function buildDatabaseConfig(env = process.env) {
+  for (const key of ['DB_USER', 'DB_PASSWORD']) {
+    if (!env[key] || !env[key].trim() || /^(YOUR_|CHANGE_ME|REPLACE_ME)/i.test(env[key])) {
+      throw new Error(key + ' must be supplied in the local environment');
     }
-};
+  }
+  function bool(key, fallback) {
+    if (env[key] == null || env[key] === '') return fallback;
+    if (!['true', 'false'].includes(env[key])) throw new Error(key + ' must be true or false');
+    return env[key] === 'true';
+  }
+  const encrypt = bool('DB_ENCRYPT', true);
+  const trustServerCertificate = bool('DB_TRUST_SERVER_CERTIFICATE', false);
+  if (env.NODE_ENV === 'production' && (!encrypt || trustServerCertificate)) {
+    throw new Error('Production SQL connections require verified TLS');
+  }
+  const port = Number(env.DB_PORT || 1433);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid DB_PORT');
+  return {
+    server: env.DB_SERVER || 'localhost',
+    database: env.DB_NAME || 'f1_garage_tec',
+    port,
+    authentication: { type: 'default', options: { userName: env.DB_USER, password: env.DB_PASSWORD } },
+    options: { encrypt, trustServerCertificate }
+  };
+}
 
-let pool; // Variable to hold the connection pool
-
-/**
- * Establishes a connection to the SQL Server database using a connection pool.
- * Logs an error and retries automatically after 5 seconds if the connection fails.
- * 
- * @async
- * @function connectDB
- * @returns {Promise<sql.ConnectionPool|undefined>} The SQL Server connection pool if successful; otherwise undefined.
- */
+let pool;
 async function connectDB() {
-    try {
-        pool = new sql.ConnectionPool(config); // Establish connection
-        await pool.connect(); // Ensure the pool is connected
-        logger.info('Connected to SQL Server');
-        return pool; // Return the connection pool
-    }
-
-    catch (e) {
-        logger.error(`Database connection failed: ${e.message}`);
-        setTimeout(connectDB, 5000); // Retry connection after 5 seconds
-    }
-}
-
-/**
- * Retrieves the current SQL Server connection pool.
- * 
- * @function getPool
- * @returns {sql.ConnectionPool} The current SQL Server connection pool.
- */
-function getPool() {
+  const connection = new sql.ConnectionPool(buildDatabaseConfig());
+  try {
+    await connection.connect();
+    pool = connection;
+    logger.info('Connected to SQL Server');
     return pool;
+  } catch (error) {
+    await connection.close().catch(() => {});
+    throw error;
+  }
 }
 
-/**
- * Closes the SQL Server connection pool.
- * 
- * @async
- * @function closeDB
- */
+function getPool() {
+  if (!pool?.connected) throw new Error('Database is not connected');
+  return pool;
+}
+
 async function closeDB() {
-    if (pool) {
-        await pool.close();
-        logger.info('Database connection closed');
-    }
+  if (pool) {
+    await pool.close();
+    pool = undefined;
+    logger.info('Database connection closed');
+  }
 }
 
-// Export the functions for external use
-module.exports = { connectDB, getPool, closeDB };
+module.exports = { buildDatabaseConfig, connectDB, getPool, closeDB };

@@ -4,12 +4,11 @@ import { FiCheckCircle } from "react-icons/fi";
 import FullLogo from '../../assets/logo/full-logo-white.png';
 import api from '../../api/axios';
 import { useNavigate } from "react-router-dom";
-import { InputWithValidation, SelectWithValidation } from '../common/Validation';
+import { InputWithValidation } from '../common/Validation';
 import { 
   validatePassword, 
   validateEmail, 
   validateName, 
-  validateRole,
   validatePasswordMatch,
   parseBackendError 
 } from '../../utils/validations';
@@ -26,10 +25,8 @@ export function RegisterForm() {
         nombre: '',
         apellido: '',
         email: '',
-        rol: '',
         password: '',
         confirmPassword: '',
-        id_equipo: '0'
     });
 
     const handleChange = (e) => {
@@ -86,12 +83,6 @@ export function RegisterForm() {
             }
         }
 
-        // Validar rol
-        const rolValidation = validateRole(formData.rol);
-        if (!rolValidation.isValid) {
-            newErrors.rol = rolValidation.errors[0];
-        }
-
         // Validar contraseña
         if (!formData.password) {
             newErrors.password = 'La contraseña es obligatoria';
@@ -127,9 +118,7 @@ export function RegisterForm() {
             const dataToSubmit = {
                 nombre: `${formData.nombre} ${formData.apellido}`,
                 email: formData.email,
-                password: formData.password,
-                rol: formData.rol,
-                id_equipo: formData.id_equipo
+                password: formData.password
             };
 
             await api.post('/auth/register', dataToSubmit);
@@ -140,7 +129,7 @@ export function RegisterForm() {
             }, 1500);
 
         } catch (e) {
-            console.error("Error during registration:", e);
+            // The response may contain sensitive request data; do not log the Axios error.
             const errorMessage = parseBackendError(e);
             
             // Mostrar error en el campo correspondiente
@@ -224,19 +213,9 @@ export function RegisterForm() {
                         onClearError={clearError}
                     />
                     
-                    {/* Rol */}
-                    <SelectWithValidation
-                        name="rol"
-                        value={formData.rol}
-                        onChange={handleChange}
-                        error={errors.rol}
-                        onClearError={clearError}
-                    >
-                        <option value="" disabled>Seleccione un rol</option>
-                        <option value="Driver">Conductor</option>
-                        <option value="Engineer">Ingeniero</option>
-                        <option value="Admin">Administrador</option>
-                    </SelectWithValidation>
+                    <p className="text-sm text-light">
+                        Se creará una cuenta de conductor sin equipo. Un administrador asigna los equipos y las cuentas de gestión.
+                    </p>
 
                     {/* Contraseña */}
                     <InputWithValidation

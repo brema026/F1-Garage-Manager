@@ -14,7 +14,7 @@ const carController = {
       const result = await carModel.getCarsByTeam(id_equipo);
       return res.status(200).json(result.recordset || []);
     } catch (e) {
-      logger.error(`Error getCarsByTeam: ${e.message}`);
+      logger.error(`Error getCarsByTeam: [internal error]`);
       return res.status(500).json({ error: 'Error obteniendo carros' });
     }
   },
@@ -31,7 +31,7 @@ const carController = {
       const result = await carModel.getMyCars(myTeam);
       return res.status(200).json(result.recordset || []);
     } catch (e) {
-      logger.error(`Error getMyCars: ${e.message}`);
+      logger.error(`Error getMyCars: [internal error]`);
       return res.status(500).json({ error: 'Error obteniendo mis carros' });
     }
   },
@@ -51,8 +51,8 @@ const carController = {
       const result = await carModel.createCar(id_equipo, nombre);
       return res.status(200).json(result.recordset?.[0] || { message: 'Carro creado' });
     } catch (e) {
-      logger.error(`Error createCarForTeam: ${e.message}`);
-      return res.status(500).json({ error: e.message });
+      logger.error(`Error createCarForTeam: [internal error]`);
+      return res.status(500).json({ error: 'Error interno del servidor' });
     }
   },
 
@@ -84,8 +84,8 @@ const carController = {
         ].filter(Boolean)
       });
     } catch (e) {
-      logger.error(`Error generateMyCars: ${e.message}`);
-      return res.status(500).json({ error: e.message });
+      logger.error(`Error generateMyCars: [internal error]`);
+      return res.status(500).json({ error: 'Error interno del servidor' });
     }
   }
 };

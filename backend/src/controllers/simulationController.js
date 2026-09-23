@@ -24,6 +24,17 @@ function normalizeCarIds(input) {
   return out;
 }
 
+async function visibleParticipants(user, rows) {
+  if (user.rol === 'Admin') return rows;
+  let team = user.rol === 'Engineer' ? user.id_equipo : null;
+  if (user.rol === 'Driver') {
+    const result = await simulationModel.getConductorByUser(user.id_usuario);
+    team = Number(result.recordset?.[0]?.id_equipo);
+  }
+  if (!Number.isInteger(team) || team <= 0) return [];
+  return rows.filter(row => Number(row.id_equipo) === team);
+}
+
 const simulationController = {
   // POST /api/simulations  (Admin only)
   async run(req, res) {
@@ -48,7 +59,7 @@ const simulationController = {
 
       if (!id_simulacion) {
         logger.error('SP sp_ejecutar_simulacion no devolvió id_simulacion en el recordset.');
-        return res.status(500).json({ error: 'El SP no devolvió id_simulacion. Verifica el SELECT final del SP.' });
+        return res.status(500).json({ error: 'Error ejecutando simulación' });
       }
 
       logger.info(`Simulación ejecutada por usuario ${u.id_usuario} en circuito ${id_circuito}. SimID=${id_simulacion}. Carros=${carros.join(',')}`);
@@ -58,8 +69,8 @@ const simulationController = {
         resultados: rows
       });
     } catch (e) {
-      logger.error(`Error ejecutando simulación: ${e.message}`);
-      return res.status(500).json({ error: e.message || 'Error ejecutando simulación' });
+      logger.error(`Error ejecutando simulación: [internal error]`);
+      return res.status(500).json({ error: 'Error interno del servidor' });
     }
   },
 
@@ -86,7 +97,7 @@ const simulationController = {
 
       return res.status(200).json(result.recordset || []);
     } catch (e) {
-      logger.error(`Error listando simulaciones: ${e.message}`);
+      logger.error(`Error listando simulaciones: [internal error]`);
       return res.status(500).json({ error: 'Error listando simulaciones' });
     }
   },
@@ -101,31 +112,19 @@ const simulationController = {
       if (!id_simulacion) return res.status(400).json({ error: 'id_simulacion inválido' });
 
       const results = await simulationModel.getSimulationResults(id_simulacion);
-      const participantes = results.recordset || [];
+      let participantes = results.recordset || [];
 
       if (participantes.length === 0) return res.status(404).json({ error: 'Simulación no encontrada o sin participantes' });
 
-      if (u.rol === 'Engineer') {
-        const ok = participantes.some(r => Number(r.id_equipo) === Number(u.id_equipo));
-        if (!ok) return res.status(403).json({ error: 'No autorizado' });
-      }
-
-      if (u.rol === 'Driver') {
-        const con = await simulationModel.getConductorByUser(u.id_usuario);
-        const row = con.recordset?.[0];
-        const equipoDriver = row?.id_equipo != null ? Number(row.id_equipo) : null;
-
-        if (!equipoDriver) return res.status(403).json({ error: 'No autorizado (driver sin conductor/equipo)' });
-
-        const ok = participantes.some(r => Number(r.id_equipo) === equipoDriver);
-        if (!ok) return res.status(403).json({ error: 'No autorizado' });
-      }
+      participantes = await visibleParticipants(u, participantes);
+      if (!participantes.length) return res.status(403).json({ error: 'No autorizado' });
 
       const header = await simulationModel.getSimulationHeader(id_simulacion);
       const headerRow = header.recordset?.[0] || null;
 
       const pieces = await simulationModel.getSimulationPiecesSnapshot(id_simulacion);
-      const piezas = pieces.recordset || [];
+      const visibleCars = new Set(participantes.map(row => Number(row.id_carro)));
+      const piezas = (pieces.recordset || []).filter(row => visibleCars.has(Number(row.id_carro)));
 
       const piezasPorCarro = {};
       for (const p of piezas) {
@@ -148,7 +147,7 @@ const simulationController = {
         setup_snapshot: piezasPorCarro
       });
     } catch (e) {
-      logger.error(`Error detalle simulación: ${e.message}`);
+      logger.error(`Error detalle simulación: [internal error]`);
       return res.status(500).json({ error: 'Error detalle simulación' });
     }
   },
@@ -163,29 +162,16 @@ const simulationController = {
       if (!id_simulacion) return res.status(400).json({ error: 'id_simulacion inválido' });
 
       const results = await simulationModel.getSimulationResults(id_simulacion);
-      const participantes = results.recordset || [];
+      let participantes = results.recordset || [];
 
       if (participantes.length === 0) return res.status(404).json({ error: 'Simulación no encontrada' });
 
-      if (u.rol === 'Engineer') {
-        const ok = participantes.some(r => Number(r.id_equipo) === Number(u.id_equipo));
-        if (!ok) return res.status(403).json({ error: 'No autorizado' });
-      }
-
-      if (u.rol === 'Driver') {
-        const con = await simulationModel.getConductorByUser(u.id_usuario);
-        const row = con.recordset?.[0];
-        const equipoDriver = row?.id_equipo != null ? Number(row.id_equipo) : null;
-
-        if (!equipoDriver) return res.status(403).json({ error: 'No autorizado (driver sin conductor/equipo)' });
-
-        const ok = participantes.some(r => Number(r.id_equipo) === equipoDriver);
-        if (!ok) return res.status(403).json({ error: 'No autorizado' });
-      }
+      participantes = await visibleParticipants(u, participantes);
+      if (!participantes.length) return res.status(403).json({ error: 'No autorizado' });
 
       return res.status(200).json(participantes);
     } catch (e) {
-      logger.error(`Error resultados simulación: ${e.message}`);
+      logger.error(`Error resultados simulación: [internal error]`);
       return res.status(500).json({ error: 'Error resultados simulación' });
     }
   },
@@ -199,7 +185,7 @@ const simulationController = {
       const result = await simulationModel.getEligibleCarsForSimulation();
       return res.status(200).json(result.recordset || []);
     } catch (e) {
-      logger.error(`Error eligible-cars: ${e.message}`);
+      logger.error(`Error eligible-cars: [internal error]`);
       return res.status(500).json({ error: 'Error obteniendo carros elegibles' });
     }
   },

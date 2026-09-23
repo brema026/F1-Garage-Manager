@@ -1,24 +1,25 @@
-version: '3.8'
-
 services:
   grafana:
     image: grafana/grafana:latest
     container_name: f1_garage_grafana
     ports:
-      - "3003:3000"
+      - "127.0.0.1:3003:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_SECURITY_ADMIN_USER=admin
-      # Agregamos el plugin de SQL Server
-      - GF_INSTALL_PLUGINS=grafana-simple-json-datasource,grafana-clock-panel,marcusolsson-dynamictext-panel,frser-sqlite-datasource
-      - GF_FEATURE_TOGGLES_ENABLE=publicDashboards
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:?Set GRAFANA_ADMIN_USER in grafana/.env}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in grafana/.env}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GRAFANA_DB_HOST: ${GRAFANA_DB_HOST:-host.docker.internal:1433}
+      GRAFANA_DB_NAME: ${GRAFANA_DB_NAME:-f1_garage_tec}
+      GRAFANA_DB_USER: ${GRAFANA_DB_USER:?Set a read-only SQL login in grafana/.env}
+      GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:?Set GRAFANA_DB_PASSWORD in grafana/.env}
+      GF_INSTALL_PLUGINS: grafana-simple-json-datasource,grafana-clock-panel,marcusolsson-dynamictext-panel,frser-sqlite-datasource
     volumes:
       - ./grafana-data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./provisioning:/etc/grafana/provisioning:ro
     restart: unless-stopped
     networks:
       - f1-network
-    # Agregamos extra_hosts para conectar a SQL Server local
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
