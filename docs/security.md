@@ -42,6 +42,8 @@ These tests do not establish end-to-end SQL Server or Grafana behavior. Live dat
 
 ## Remaining security work
 
+The [2026-09-23 dependency review](dependency-review.md) traces all seven remaining package reports, runtime/install exposure and deferred upgrade paths. No compatible fix remained after the earlier P0 patches; this follow-up leaves package versions unchanged.
+
 - Compatible backend dependency patches reduce the initial production audit from 13 to 7 reported package vulnerabilities. The remaining report includes 1 critical and 1 high in the `tar` / `@mapbox/node-pre-gyp` installation chain, plus 5 moderate reports in the SQL driver/Azure dependency chain. These package advisories are not proof of an exploitable API route. Further fixes require reviewing upstream replacements rather than forcing untested transitive overrides.
 - Rate limiting / brute-force defenses and account recovery are not implemented in this block.
 - Concurrency and budget/stock invariants need database integration tests and a focused SQL review.
